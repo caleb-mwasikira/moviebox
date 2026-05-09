@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('movies', function (Blueprint $table) {
             $table->id();
+            $table->uuid('uuid')->nullable()->unique();
             $table->string('title');
             $table->text('description');
             $table->string('genre')->nullable();
@@ -17,7 +18,9 @@ return new class extends Migration
             $table->unsignedSmallInteger('duration')->nullable();
             $table->string('thumbnail')->nullable();
             $table->string('video_path');
+            $table->string('trailer_path')->nullable();
             $table->enum('status', ['published', 'hidden'])->default('hidden');
+            $table->boolean('featured')->default(false);
             $table->timestamps();
         });
     }
