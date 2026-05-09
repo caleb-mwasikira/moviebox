@@ -229,4 +229,11 @@ class MovieController extends Controller
 
         return back();
     }
+
+    public function toggleFeatured(Movie $movie)
+    {
+        $movie->update(['featured' => !$movie->featured]);
+
+        return back();
+    }
 }

@@ -22,6 +22,7 @@
           <th class="pb-3 font-bold uppercase text-xs text-gray-500 tracking-widest pr-4">Genre</th>
           <th class="pb-3 font-bold uppercase text-xs text-gray-500 tracking-widest pr-4">Year</th>
           <th class="pb-3 font-bold uppercase text-xs text-gray-500 tracking-widest pr-4">Status</th>
+          <th class="pb-3 font-bold uppercase text-xs text-gray-500 tracking-widest pr-4">Featured</th>
           <th class="pb-3 font-bold uppercase text-xs text-gray-500 tracking-widest"></th>
         </tr>
       </thead>
@@ -46,6 +47,15 @@
                 <button type="submit"
                   class="text-xs font-bold uppercase px-2 py-1 {{ $movie->isPublished() ? 'bg-accent/20 text-accent' : 'bg-gray-100 dark:bg-gray-700 text-gray-500' }}">
                   {{ $movie->isPublished() ? 'Published' : 'Hidden' }}
+                </button>
+              </form>
+            </td>
+            <td class="py-4 pr-4">
+              <form method="POST" action="{{ route('admin.movies.toggle-featured', $movie) }}">
+                @csrf @method('PATCH')
+                <button type="submit"
+                  class="text-xs font-bold uppercase px-2 py-1 {{ $movie->isFeatured() ? 'bg-primary/20 text-primary dark:text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500' }}">
+                  {{ $movie->isFeatured() ? '★ Featured' : '☆ Feature' }}
                 </button>
               </form>
             </td>

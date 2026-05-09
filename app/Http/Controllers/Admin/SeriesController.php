@@ -203,4 +203,11 @@ class SeriesController extends Controller
 
         return back();
     }
+
+    public function toggleFeatured(Series $series)
+    {
+        $series->update(['featured' => !$series->featured]);
+
+        return back();
+    }
 }

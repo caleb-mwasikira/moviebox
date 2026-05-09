@@ -96,13 +96,14 @@
                 @endif
               </div>
 
-              {{-- Inline trailer --}}
+              {{-- Trailer button --}}
               @if ($movie->trailerIsReady())
-              <div>
-                <p class="text-xs font-bold uppercase text-gray-500 tracking-widest mb-3">Trailer</p>
-                <video style="display:block; width:100%; aspect-ratio:16/9; background:#000;"
-                  controls preload="metadata" src="{{ $movie->trailerUrl() }}"></video>
-              </div>
+              <button type="button"
+                onclick="openTrailerModal('{{ $movie->trailerUrl() }}')"
+                class="inline-flex items-center gap-x-3 font-bold leading-none uppercase py-4 px-8 text-sm text-gray-900 dark:text-white ring-2 ring-inset ring-gray-300 dark:ring-gray-600 hover:ring-accent hover:text-accent transition-colors bg-transparent">
+                <svg class="h-4 w-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                Watch Trailer
+              </button>
               @endif
             </div>
 
@@ -114,4 +115,32 @@
     </div>
 
   </main>
+
+  {{-- Trailer modal --}}
+  <div id="trailer-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.92); align-items:center; justify-content:center;" onclick="if(event.target===this)closeTrailerModal()">
+    <button onclick="closeTrailerModal()" style="position:absolute; top:20px; right:24px; background:none; border:none; color:#fff; font-size:28px; line-height:1; cursor:pointer; z-index:1;">&#x2715;</button>
+    <video id="trailer-modal-video" style="width:90vw; max-width:1100px; aspect-ratio:16/9; background:#000; display:block;" controls></video>
+  </div>
 @endsection
+
+@push('scripts')
+<script>
+window.openTrailerModal = function (url) {
+  var modal = document.getElementById('trailer-modal');
+  var video = document.getElementById('trailer-modal-video');
+  video.src = url;
+  modal.style.display = 'flex';
+  video.play().catch(function () {});
+};
+window.closeTrailerModal = function () {
+  var modal = document.getElementById('trailer-modal');
+  var video = document.getElementById('trailer-modal-video');
+  video.pause();
+  video.src = '';
+  modal.style.display = 'none';
+};
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') window.closeTrailerModal();
+});
+</script>
+@endpush

@@ -10,7 +10,7 @@ class Movie extends Model
 {
     protected $fillable = [
         'title', 'description', 'genre', 'year', 'duration',
-        'thumbnail', 'video_path', 'trailer_path', 'status',
+        'thumbnail', 'video_path', 'trailer_path', 'status', 'featured',
     ];
 
     protected static function booted(): void
@@ -33,6 +33,11 @@ class Movie extends Model
     public function isPublished(): bool
     {
         return $this->status === 'published';
+    }
+
+    public function isFeatured(): bool
+    {
+        return (bool) $this->featured;
     }
 
     public function videoIsReady(): bool

@@ -11,7 +11,7 @@ class Series extends Model
 {
     protected $fillable = [
         'title', 'description', 'genre', 'year',
-        'thumbnail', 'trailer_path', 'status',
+        'thumbnail', 'trailer_path', 'status', 'featured',
     ];
 
     protected static function booted(): void
@@ -39,6 +39,11 @@ class Series extends Model
     public function isPublished(): bool
     {
         return $this->status === 'published';
+    }
+
+    public function isFeatured(): bool
+    {
+        return (bool) $this->featured;
     }
 
     public function thumbnailUrl(): ?string

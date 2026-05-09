@@ -4,67 +4,113 @@
 
 @section('content')
   <main id="main-content" class="grow lg:pt-0">
-    <div class="mx-auto max-w-[1360px] px-5 pb-20 md:pb-24 lg:pb-[150px]">
 
-      <div class="relative min-h-[220px] bg-[url('../../../assets/img/str1/countdown-bg.jpg')] bg-cover bg-no-repeat">
+    {{-- Featured movies and series --}}
+    @if ($featured->isNotEmpty())
+    <div class="pb-20 md:pb-24 lg:pb-[150px]">
+      <div class="swiper js-featured-swiper">
+        <div class="swiper-wrapper">
+          @foreach ($featured as $f)
+          @php
+            $bgUrl = $f->posters->isNotEmpty()
+              ? $f->posters->first()->url()
+              : ($f->thumbnail ? $f->thumbnailUrl() : null);
+            $isMovie = $f->content_type === 'movie';
+          @endphp
+          <div class="swiper-slide">
+            <div style="position:relative; min-height:520px; background:#0d0d0d; overflow:hidden;">
 
-        <div class="container relative z-10 text-white">
-          <div class="grid grid-cols-12 gap-x-5 gap-y-8 py-7 px-2 md:gap-x-6 lg:gap-y-12 lg:gap-x-7.5 lg:py-11 lg:px-0">
+              {{-- Background poster --}}
+              @if ($bgUrl)
+              <div style="position:absolute; inset:0; background-image:url('{{ $bgUrl }}'); background-size:cover; background-position:center top;"></div>
+              @endif
 
-            <div class="col-span-full md:col-span-5 md:col-start-3 xl:-ml-7.5">
-              <div class="text-lg font-bold">New Arrival</div>
-              <h3 class="mb-3 text-2xl font-bold leading-none md:text-2.5xl lg:mb-4 lg:text-4xl xl:text-[42px]">Dune: Prophecy — Season 2</h3>
-              <div class="text-base font-medium leading-normal">
-                The highly anticipated second season of Dune: Prophecy arrives exclusively on MovieBox. Stream it before anywhere else — premium subscribers get early access.
+              {{-- Gradient overlays --}}
+              <div style="position:absolute; inset:0; background:linear-gradient(to right, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.65) 55%, rgba(0,0,0,0.15) 100%);"></div>
+              <div style="position:absolute; bottom:0; left:0; right:0; height:200px; background:linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);"></div>
+
+              {{-- Content --}}
+              <div class="container" style="position:relative; z-index:10; padding-top:70px; padding-bottom:70px; max-width:680px;">
+
+                <div style="margin-bottom:12px;">
+                  <span style="display:inline-block; background:var(--color-accent, #f5c518); color:#fff; font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; padding:3px 10px;">
+                    {{ $isMovie ? 'Movie' : 'Series' }}
+                  </span>
+                </div>
+
+                <h2 class="text-white" style="font-size:clamp(1.75rem,4vw,3rem); font-weight:700; line-height:1.1; margin-bottom:14px;">
+                  {{ $f->title }}
+                </h2>
+
+                <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:rgba(255,255,255,.55); margin-bottom:16px;">
+                  @if ($f->genre)<span style="color:var(--color-accent, #f5c518);">{{ $f->genre }}</span>@endif
+                  @if ($f->year)<span>{{ $f->year }}</span>@endif
+                  @if ($isMovie && $f->duration)<span>{{ $f->duration }} min</span>@endif
+                  @if (!$isMovie)<span>{{ $f->seasons->count() }} {{ Str::plural('Season', $f->seasons->count()) }}</span>@endif
+                </div>
+
+                @if ($f->description)
+                <p style="color:rgba(255,255,255,.7); font-size:15px; line-height:1.6; margin-bottom:28px; max-width:520px;">
+                  {{ Str::limit($f->description, 180) }}
+                </p>
+                @endif
+
+                <div style="display:flex; flex-wrap:wrap; gap:12px;">
+                  @if ($f->trailerIsReady())
+                  <button type="button"
+                    onclick="openTrailerModal('{{ $f->trailerUrl() }}')"
+                    style="display:inline-flex; align-items:center; gap:10px; padding:14px 28px; border:2px solid rgba(255,255,255,.4); background:transparent; color:#fff; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; cursor:pointer; transition:border-color .2s;"
+                    onmouseover="this.style.borderColor='var(--color-accent,#f5c518)'"
+                    onmouseout="this.style.borderColor='rgba(255,255,255,.4)'">
+                    <svg style="width:14px; height:14px; fill:currentColor;" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    Watch Trailer
+                  </button>
+                  @endif
+
+                  @if ($isMovie)
+                    @if ($f->videoIsReady())
+                    <a href="{{ route('movies.watch', $f) }}"
+                      style="display:inline-flex; align-items:center; gap:10px; padding:14px 28px; background:var(--color-accent, #f5c518); color:#fff; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; text-decoration:none;">
+                      <svg style="width:14px; height:14px; fill:currentColor;" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                      Watch Now
+                    </a>
+                    @endif
+                  @else
+                  <a href="{{ route('series.show', $f) }}"
+                    style="display:inline-flex; align-items:center; gap:10px; padding:14px 28px; background:var(--color-accent, #f5c518); color:#fff; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; text-decoration:none;">
+                    <svg style="width:14px; height:14px; fill:currentColor;" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    Watch Series
+                  </a>
+                  @endif
+                </div>
+
               </div>
+
+              {{-- Slide indicator --}}
+              <div style="position:absolute; bottom:24px; right:24px; z-index:10;">
+                <span class="js-featured-current" style="font-size:28px; font-weight:700; color:#fff; line-height:1;">01</span>
+                <span style="font-size:14px; color:rgba(255,255,255,.4); font-weight:700;"> / {{ str_pad($featured->count(), 2, '0', STR_PAD_LEFT) }}</span>
+              </div>
+
             </div>
-
-            <div
-              class="col-span-full flex flex-wrap items-center justify-center gap-y-4 self-center md:col-span-4 md:col-start-9 lg:gap-y-0">
-
-              <div
-                class="js-vv-countdown-container mb-4 grid w-full basis-full grid-cols-4 font-bold lg:mb-5 xl:pt-2.5 [&>div]:before:absolute [&>div]:before:-left-0.5 [&>div]:before:top-0 [&>div]:before:text-xl [&>div]:before:content-[':'] [&>div]:md:before:text-3xl [&>div]:lg:before:-left-1 [&>div]:xl:before:text-[42px] [&>div]:xl:before:leading-none [&>div:first-child]:before:hidden">
-
-                <div class="relative flex flex-col items-center">
-                  <div class="js-vv-days text-xl md:text-3xl xl:mb-1 xl:text-[42px] xl:leading-none">00</div>
-                  <div class="days-label leading-none">Days</div>
-                </div>
-
-                <div class="relative flex flex-col items-center">
-                  <div class="js-vv-hours text-xl md:text-3xl xl:mb-1 xl:text-[42px] xl:leading-none">00</div>
-                  <div class="hours-label leading-none">Hours</div>
-                </div>
-
-                <div class="relative flex flex-col items-center">
-                  <div class="js-vv-minutes text-xl md:text-3xl xl:mb-1 xl:text-[42px] xl:leading-none">00</div>
-                  <div class="minutes-label leading-none">Mins</div>
-                </div>
-
-                <div class="relative flex flex-col items-center">
-                  <div class="js-vv-seconds text-xl md:text-3xl xl:mb-1 xl:text-[42px] xl:leading-none">00</div>
-                  <div class="seconds-label leading-none">Secs</div>
-                </div>
-
-              </div>
-
-              <div class="js-vv-countdown-progress h-2 basis-full overflow-hidden rounded-full bg-gray-900">
-                <div class="js-vv-countdown-progress-bar h-full rounded-full bg-accent">test</div>
-              </div>
-
-            </div>
-
           </div>
+          @endforeach
         </div>
 
-        <div class="absolute inset-0 z-[1] bg-black mix-blend-color"></div>
-        <div class="absolute inset-0 z-[2] bg-primary mix-blend-multiply"></div>
-        <div class="absolute inset-0 z-[3] bg-gray-900 mix-blend-screen"></div>
+        {{-- Navigation --}}
+        <button class="js-featured-prev" style="position:absolute; left:20px; top:50%; transform:translateY(-50%); z-index:20; width:44px; height:44px; background:rgba(0,0,0,.5); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; transition:background .2s;"
+          onmouseover="this.style.background='rgba(0,0,0,.8)'" onmouseout="this.style.background='rgba(0,0,0,.5)'">
+          <svg style="width:10px; height:16px; fill:currentColor;" viewBox="0 0 6 10"><path d="M5 1L1 5l4 4"/></svg>
+        </button>
+        <button class="js-featured-next" style="position:absolute; right:20px; top:50%; transform:translateY(-50%); z-index:20; width:44px; height:44px; background:rgba(0,0,0,.5); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; transition:background .2s;"
+          onmouseover="this.style.background='rgba(0,0,0,.8)'" onmouseout="this.style.background='rgba(0,0,0,.5)'">
+          <svg style="width:10px; height:16px; fill:currentColor;" viewBox="0 0 6 10"><path d="M1 1l4 4-4 4"/></svg>
+        </button>
 
-        <img class="pointer-events-none absolute -left-8 bottom-0 z-[4] hidden md:block"
-          src="{{ asset('assets/img/str1/countdown-hero.png') }}" alt="">
       </div>
-
     </div>
+    @endif
+    {{-- End of featured movies and series --}}
 
     {{-- Latest Series strip --}}
     @if ($series->isNotEmpty())
@@ -724,24 +770,70 @@
     </section>
 
   </main>
+
+  {{-- Trailer modal --}}
+  <div id="trailer-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.92); align-items:center; justify-content:center;" onclick="if(event.target===this)closeTrailerModal()">
+    <button onclick="closeTrailerModal()" style="position:absolute; top:20px; right:24px; background:none; border:none; color:#fff; font-size:28px; line-height:1; cursor:pointer; z-index:1;">&#x2715;</button>
+    <video id="trailer-modal-video" style="width:90vw; max-width:1100px; aspect-ratio:16/9; background:#000; display:block;" controls></video>
+  </div>
 @endsection
 
 @push('scripts')
 <script>
 (function () {
-  var seriesSwiper = new Swiper('.js-vv-series-swiper', {
-    slidesPerView: 2,
-    spaceBetween: 20,
-    navigation: {
-      prevEl: '.js-vv-series-swiper-btn-prev',
-      nextEl: '.js-vv-series-swiper-btn-next',
-    },
-    breakpoints: {
-      640:  { slidesPerView: 3, spaceBetween: 20 },
-      768:  { slidesPerView: 4, spaceBetween: 24 },
-      1024: { slidesPerView: 5, spaceBetween: 30 },
-    },
+  // ── Featured hero carousel ────────────────────────────────────
+  var featuredEl = document.querySelector('.js-featured-swiper');
+  if (featuredEl) {
+    var featuredSwiper = new Swiper(featuredEl, {
+      loop: true,
+      speed: 700,
+      autoplay: { delay: 6000, disableOnInteraction: false },
+      navigation: { prevEl: '.js-featured-prev', nextEl: '.js-featured-next' },
+      on: {
+        slideChange: function () {
+          var el = document.querySelector('.js-featured-current');
+          if (el) el.textContent = String(this.realIndex + 1).padStart(2, '0');
+        },
+      },
+    });
+  }
+
+  // ── Trailer modal ─────────────────────────────────────────────
+  window.openTrailerModal = function (url) {
+    var modal = document.getElementById('trailer-modal');
+    var video = document.getElementById('trailer-modal-video');
+    video.src = url;
+    modal.style.display = 'flex';
+    video.play().catch(function () {});
+  };
+  window.closeTrailerModal = function () {
+    var modal = document.getElementById('trailer-modal');
+    var video = document.getElementById('trailer-modal-video');
+    video.pause();
+    video.src = '';
+    modal.style.display = 'none';
+  };
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') window.closeTrailerModal();
   });
+
+  // ── New Series swiper ─────────────────────────────────────────
+  var seriesEl = document.querySelector('.js-vv-series-swiper');
+  if (seriesEl) {
+    new Swiper(seriesEl, {
+      slidesPerView: 2,
+      spaceBetween: 20,
+      navigation: {
+        prevEl: '.js-vv-series-swiper-btn-prev',
+        nextEl: '.js-vv-series-swiper-btn-next',
+      },
+      breakpoints: {
+        640:  { slidesPerView: 3, spaceBetween: 20 },
+        768:  { slidesPerView: 4, spaceBetween: 24 },
+        1024: { slidesPerView: 5, spaceBetween: 30 },
+      },
+    });
+  }
 })();
 </script>
 @endpush
