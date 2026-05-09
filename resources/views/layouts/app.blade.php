@@ -21,6 +21,8 @@
   <!-- Mobile Specific Metas
   ================================================== -->
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  @stack('head')
 
   <!-- Google Web Fonts
   ================================================== -->
@@ -97,6 +99,24 @@
               </li>
               <li class="">
                 <a class="group text-gray-900 dark:text-white relative inline-flex items-center gap-x-3 leading-10 px-3.5 xl:px-4.5 after:absolute after:top-[15px] after:left-0 after:bg-current-marker-dark after:transition-transform after:w-1.5 after:h-[9px] dark:after:bg-current-marker after:origin-right hover:after:origin-left after:scale-x-0 hover:after:scale-x-100"
+                  href="{{ route('browse') }}">
+                  Browse
+                </a>
+              </li>
+              <li class="">
+                <a class="group text-gray-900 dark:text-white relative inline-flex items-center gap-x-3 leading-10 px-3.5 xl:px-4.5 after:absolute after:top-[15px] after:left-0 after:bg-current-marker-dark after:transition-transform after:w-1.5 after:h-[9px] dark:after:bg-current-marker after:origin-right hover:after:origin-left after:scale-x-0 hover:after:scale-x-100"
+                  href="{{ route('movies') }}">
+                  Movies
+                </a>
+              </li>
+              <li class="">
+                <a class="group text-gray-900 dark:text-white relative inline-flex items-center gap-x-3 leading-10 px-3.5 xl:px-4.5 after:absolute after:top-[15px] after:left-0 after:bg-current-marker-dark after:transition-transform after:w-1.5 after:h-[9px] dark:after:bg-current-marker after:origin-right hover:after:origin-left after:scale-x-0 hover:after:scale-x-100"
+                  href="{{ route('series') }}">
+                  Series
+                </a>
+              </li>
+              <li class="">
+                <a class="group text-gray-900 dark:text-white relative inline-flex items-center gap-x-3 leading-10 px-3.5 xl:px-4.5 after:absolute after:top-[15px] after:left-0 after:bg-current-marker-dark after:transition-transform after:w-1.5 after:h-[9px] dark:after:bg-current-marker after:origin-right hover:after:origin-left after:scale-x-0 hover:after:scale-x-100"
                   href="{{ route('events') }}">
                   Events
                 </a>
@@ -106,37 +126,6 @@
                   href="{{ route('contact') }}">
                   Contact
                 </a>
-              </li>
-              <li
-                class="relative hover:[&>.sub-menu]:visible hover:[&>.sub-menu]:animate-popper-pop-in hover:[&>.sub-menu]:opacity-100">
-                <a class="group text-gray-900 dark:text-white relative inline-flex items-center gap-x-3 leading-10 px-3.5 xl:px-4.5 after:absolute after:top-[15px] after:left-0 after:bg-current-marker-dark after:transition-transform after:w-1.5 after:h-[9px] dark:after:bg-current-marker after:origin-right hover:after:origin-left after:scale-x-0 hover:after:scale-x-100"
-                  href="{{ route('shop') }}">
-                  Shop
-                  <svg role="img" class="h-1.5 w-1.5 fill-gray-500 group-hover:fill-accent">
-                    <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#plus"></use>
-                  </svg>
-                </a>
-                <ul
-                  class="sub-menu invisible absolute z-20 flex w-40 flex-col bg-white dark:bg-gray-700 py-2.5 text-sm font-bold opacity-0 shadow-2xl transition-all">
-                  <li class="px-5.5">
-                    <a class="flex items-center justify-between py-1.5 transition-colors text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent"
-                      href="{{ route('shop') }}">
-                      Shop Page
-                    </a>
-                  </li>
-                  <li class="px-5.5">
-                    <a class="flex items-center justify-between py-1.5 transition-colors text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent"
-                      href="{{ route('single-product') }}">
-                      Single Product
-                    </a>
-                  </li>
-                  <li class="px-5.5">
-                    <a class="flex items-center justify-between py-1.5 transition-colors text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent"
-                      href="{{ route('account') }}">
-                      Account
-                    </a>
-                  </li>
-                </ul>
               </li>
             </ul>
             <!-- Navigation (Desktop) / End -->
@@ -226,6 +215,24 @@
           </li>
           <li class="flex flex-wrap items-center gap-x-4 border-b border-b-gray-200/50 dark:border-b-gray-200/10">
             <a class="flex-grow gap-x-1 py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
+              href="{{ route('browse') }}">
+              Browse
+            </a>
+          </li>
+          <li class="flex flex-wrap items-center gap-x-4 border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+            <a class="flex-grow gap-x-1 py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
+              href="{{ route('movies') }}">
+              Movies
+            </a>
+          </li>
+          <li class="flex flex-wrap items-center gap-x-4 border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+            <a class="flex-grow gap-x-1 py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
+              href="{{ route('series') }}">
+              Series
+            </a>
+          </li>
+          <li class="flex flex-wrap items-center gap-x-4 border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+            <a class="flex-grow gap-x-1 py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
               href="{{ route('events') }}">
               Events
             </a>
@@ -235,66 +242,6 @@
               href="{{ route('contact') }}">
               Contact
             </a>
-          </li>
-          <li class="flex flex-wrap items-center gap-x-4 border-b border-b-gray-200/50 dark:border-b-gray-200/10">
-            <a class="flex-grow gap-x-1 py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-              href="{{ route('shop') }}">
-              Shop
-            </a>
-
-            <button
-              class="js-mobile-submenu-toggle ml-auto inline-flex h-7 w-7 items-center justify-center transition-transform">
-              <svg role="img" class="sub-menu-toggle h-1.5 w-1.5 fill-accent">
-                <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#plus"></use>
-              </svg>
-            </button>
-
-            <ul
-              class="flex max-h-0 w-full flex-col overflow-hidden pl-4 text-sm transition-all duration-300 [&>li:last-child]:pb-4">
-              <li class="flex flex-wrap items-center gap-x-4">
-                <a class="flex-grow gap-x-1 py-2 text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-                  href="{{ route('shop') }}">
-                  Shop Page
-                </a>
-              </li>
-              <li class="flex flex-wrap items-center gap-x-4">
-                <a class="flex-grow gap-x-1 py-2 text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-                  href="{{ route('single-product') }}">
-                  Single Product
-                </a>
-              </li>
-              @auth
-              <li class="flex flex-wrap items-center gap-x-4">
-                <a class="flex-grow gap-x-1 py-2 text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-                  href="{{ route('account') }}">
-                  Account
-                </a>
-              </li>
-              <li class="flex flex-wrap items-center gap-x-4">
-                <form method="POST" action="{{ route('logout') }}">
-                  @csrf
-                  <button type="submit"
-                    class="flex-grow gap-x-1 py-2 text-left text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent">
-                    Logout
-                  </button>
-                </form>
-              </li>
-              @else
-              <li class="flex flex-wrap items-center gap-x-4">
-                <a class="flex-grow gap-x-1 py-2 text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-                  href="{{ route('login') }}">
-                  Login
-                </a>
-              </li>
-              <li class="flex flex-wrap items-center gap-x-4">
-                <a class="flex-grow gap-x-1 py-2 text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-                  href="{{ route('register') }}">
-                  Register
-                </a>
-              </li>
-              @endauth
-            </ul>
-
           </li>
         </ul>
         <!-- Navigation (Mobile) / End -->
@@ -495,6 +442,8 @@
   <!-- Template JS -->
   <script src="{{ asset('assets/js/common.js') }}"></script>
   <script src="{{ asset('assets/js/str1/init.js') }}"></script>
+
+  @stack('scripts')
 
 </body>
 

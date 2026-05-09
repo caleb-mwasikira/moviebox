@@ -5,48 +5,41 @@
 @section('content')
   <main id="main-content" class="grow lg:pt-0">
 
-    <section class="py-12 lg:py-16 lg:pb-[70px]">
-      <div class="mx-auto max-w-[1360px] px-5">
-        <div class="grid grid-cols-12 gap-x-5 gap-y-6 md:gap-x-6 lg:gap-x-7.5">
-          <div class="col-span-6 sm:col-span-4 lg:col-span-2 xl:col-span-2">
-            <a href="#" class="group">
-              <img class="mx-auto opacity-20 transition-opacity group-hover:opacity-100"
-                src="{{ asset('assets/img/str1/sponsor-1-md.png') }}" alt="">
+    {{-- Latest Series strip --}}
+    @if ($series->isNotEmpty())
+    <section class="py-10 lg:py-14">
+      <div class="container">
+        <div class="mb-6">
+          <h2 class="text-lg font-bold tracking-tighter text-gray-900 before:text-accent before:content-['.'] dark:text-white sm:text-xl md:text-2xl">
+            New Series
+          </h2>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-5 gap-y-6 md:gap-x-6 lg:gap-x-7.5">
+          @foreach ($series as $show)
+            <a href="{{ route('series.show', $show) }}" class="group flex flex-col gap-y-3">
+              <figure class="relative overflow-hidden bg-gray-100 dark:bg-gray-700">
+                @if ($show->thumbnail)
+                  <img class="aspect-[2/3] w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    src="{{ $show->thumbnailUrl() }}" alt="{{ $show->title }}">
+                @else
+                  <div class="aspect-[2/3] w-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                    <svg class="h-10 w-10 fill-gray-400" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>
+                  </div>
+                @endif
+                <div class="absolute top-2 left-2">
+                  <span class="bg-primary text-white text-[10px] font-bold uppercase px-2 py-0.5">Series</span>
+                </div>
+              </figure>
+              <div class="leading-tight">
+                <h5 class="font-bold text-gray-900 dark:text-white group-hover:text-accent transition-colors text-sm truncate">{{ $show->title }}</h5>
+                <div class="text-xs text-gray-500">{{ $show->genre }}@if($show->genre && $show->year) &middot; @endif{{ $show->year }}</div>
+              </div>
             </a>
-          </div>
-          <div class="col-span-6 sm:col-span-4 lg:col-span-2 xl:col-span-2">
-            <a href="#" class="group">
-              <img class="mx-auto opacity-20 transition-opacity group-hover:opacity-100"
-                src="{{ asset('assets/img/str1/sponsor-2-md.png') }}" alt="">
-            </a>
-          </div>
-          <div class="col-span-6 sm:col-span-4 lg:col-span-2 xl:col-span-2">
-            <a href="#" class="group">
-              <img class="mx-auto opacity-20 transition-opacity group-hover:opacity-100"
-                src="{{ asset('assets/img/str1/sponsor-3-md.png') }}" alt="">
-            </a>
-          </div>
-          <div class="col-span-6 sm:col-span-4 lg:col-span-2 xl:col-span-2">
-            <a href="#" class="group">
-              <img class="mx-auto opacity-20 transition-opacity group-hover:opacity-100"
-                src="{{ asset('assets/img/str1/sponsor-4-md.png') }}" alt="">
-            </a>
-          </div>
-          <div class="col-span-6 sm:col-span-4 lg:col-span-2 xl:col-span-2">
-            <a href="#" class="group">
-              <img class="mx-auto opacity-20 transition-opacity group-hover:opacity-100"
-                src="{{ asset('assets/img/str1/sponsor-5-md.png') }}" alt="">
-            </a>
-          </div>
-          <div class="col-span-6 sm:col-span-4 lg:col-span-2 xl:col-span-2">
-            <a href="#" class="group">
-              <img class="mx-auto opacity-20 transition-opacity group-hover:opacity-100"
-                src="{{ asset('assets/img/str1/sponsor-6-md.png') }}" alt="">
-            </a>
-          </div>
+          @endforeach
         </div>
       </div>
     </section>
+    @endif
 
     <div class="mx-auto max-w-[1360px] px-5 pb-20 md:pb-24 lg:pb-[150px]">
 
@@ -172,11 +165,16 @@
         <div class="swiper js-vv-games-swiper">
 
           <div class="swiper-wrapper">
+            @forelse ($movies as $movie)
             <div class="swiper-slide">
-              <a class="flex flex-col gap-y-5 group" href="{{ route('movies') }}">
-                <figure class="relative overflow-hidden">
-                  <img class="w-full object-cover aspect-[17/22] transition-transform duration-300 group-hover:scale-110"
-                    src="{{ asset('assets/img/str1/samples/game-1-170x220.jpg') }}" alt="Oppenheimer">
+              <a class="flex flex-col gap-y-5 group" href="{{ route('movies.show', $movie) }}">
+                <figure class="relative overflow-hidden bg-gray-100 dark:bg-gray-700">
+                  @if ($movie->thumbnail)
+                    <img class="w-full object-cover aspect-[17/22] transition-transform duration-300 group-hover:scale-110"
+                      src="{{ $movie->thumbnailUrl() }}" alt="{{ $movie->title }}">
+                  @else
+                    <div class="w-full aspect-[17/22] bg-gray-200 dark:bg-gray-600"></div>
+                  @endif
                   <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all bg-accent/80 duration-300">
                     <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-7.5 aspect-square bg-gray-900 grid place-items-center text-white scale-90 group-hover:scale-100 transition-all duration-300">
                       <svg class="h-2.5 aspect-square" fill="currentColor">
@@ -186,125 +184,20 @@
                   </div>
                 </figure>
                 <div class="leading-tight">
-                  <h5 class="font-bold text-gray-900 dark:text-white mb-1.5 group-hover:text-accent">Oppenheimer</h5>
-                  <div class="text-gray-500">Biography / Drama</div>
+                  <h5 class="font-bold text-gray-900 dark:text-white mb-1.5 group-hover:text-accent">{{ $movie->title }}</h5>
+                  <div class="text-gray-500">{{ $movie->genre ?? 'Film' }}</div>
                 </div>
               </a>
             </div>
+            @empty
             <div class="swiper-slide">
-              <a class="flex flex-col gap-y-5 group" href="{{ route('movies') }}">
-                <figure class="relative overflow-hidden">
-                  <img class="w-full object-cover aspect-[17/22] transition-transform duration-300 group-hover:scale-110"
-                    src="{{ asset('assets/img/str1/samples/game-2-170x220.jpg') }}" alt="Dune: Part Two">
-                  <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all bg-accent/80 duration-300">
-                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-7.5 aspect-square bg-gray-900 grid place-items-center text-white scale-90 group-hover:scale-100 transition-all duration-300">
-                      <svg class="h-2.5 aspect-square" fill="currentColor">
-                        <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#plus-thinest"></use>
-                      </svg>
-                    </div>
-                  </div>
-                </figure>
-                <div class="leading-tight">
-                  <h5 class="font-bold text-gray-900 dark:text-white mb-1.5 group-hover:text-accent">Dune: Part Two</h5>
-                  <div class="text-gray-500">Sci-Fi / Epic</div>
+              <div class="flex flex-col gap-y-5">
+                <div class="w-full aspect-[17/22] bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                  <span class="text-xs text-gray-400 uppercase font-bold">No movies yet</span>
                 </div>
-              </a>
+              </div>
             </div>
-            <div class="swiper-slide">
-              <a class="flex flex-col gap-y-5 group" href="{{ route('movies') }}">
-                <figure class="relative overflow-hidden">
-                  <img class="w-full object-cover aspect-[17/22] transition-transform duration-300 group-hover:scale-110"
-                    src="{{ asset('assets/img/str1/samples/game-3-170x220.jpg') }}" alt="Interstellar">
-                  <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all bg-accent/80 duration-300">
-                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-7.5 aspect-square bg-gray-900 grid place-items-center text-white scale-90 group-hover:scale-100 transition-all duration-300">
-                      <svg class="h-2.5 aspect-square" fill="currentColor">
-                        <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#plus-thinest"></use>
-                      </svg>
-                    </div>
-                  </div>
-                </figure>
-                <div class="leading-tight">
-                  <h5 class="font-bold text-gray-900 dark:text-white mb-1.5 group-hover:text-accent">Interstellar</h5>
-                  <div class="text-gray-500">Sci-Fi / Adventure</div>
-                </div>
-              </a>
-            </div>
-            <div class="swiper-slide">
-              <a class="flex flex-col gap-y-5 group" href="{{ route('movies') }}">
-                <figure class="relative overflow-hidden">
-                  <img class="w-full object-cover aspect-[17/22] transition-transform duration-300 group-hover:scale-110"
-                    src="{{ asset('assets/img/str1/samples/game-4-170x220.jpg') }}" alt="The Godfather">
-                  <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all bg-accent/80 duration-300">
-                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-7.5 aspect-square bg-gray-900 grid place-items-center text-white scale-90 group-hover:scale-100 transition-all duration-300">
-                      <svg class="h-2.5 aspect-square" fill="currentColor">
-                        <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#plus-thinest"></use>
-                      </svg>
-                    </div>
-                  </div>
-                </figure>
-                <div class="leading-tight">
-                  <h5 class="font-bold text-gray-900 dark:text-white mb-1.5 group-hover:text-accent">The Godfather</h5>
-                  <div class="text-gray-500">Crime / Drama</div>
-                </div>
-              </a>
-            </div>
-            <div class="swiper-slide">
-              <a class="flex flex-col gap-y-5 group" href="{{ route('movies') }}">
-                <figure class="relative overflow-hidden">
-                  <img class="w-full object-cover aspect-[17/22] transition-transform duration-300 group-hover:scale-110"
-                    src="{{ asset('assets/img/str1/samples/game-5-170x220.jpg') }}" alt="Parasite">
-                  <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all bg-accent/80 duration-300">
-                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-7.5 aspect-square bg-gray-900 grid place-items-center text-white scale-90 group-hover:scale-100 transition-all duration-300">
-                      <svg class="h-2.5 aspect-square" fill="currentColor">
-                        <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#plus-thinest"></use>
-                      </svg>
-                    </div>
-                  </div>
-                </figure>
-                <div class="leading-tight">
-                  <h5 class="font-bold text-gray-900 dark:text-white mb-1.5 group-hover:text-accent">Parasite</h5>
-                  <div class="text-gray-500">Thriller / Drama</div>
-                </div>
-              </a>
-            </div>
-            <div class="swiper-slide">
-              <a class="flex flex-col gap-y-5 group" href="{{ route('movies') }}">
-                <figure class="relative overflow-hidden">
-                  <img class="w-full object-cover aspect-[17/22] transition-transform duration-300 group-hover:scale-110"
-                    src="{{ asset('assets/img/str1/samples/game-6-170x220.jpg') }}" alt="1917">
-                  <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all bg-accent/80 duration-300">
-                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-7.5 aspect-square bg-gray-900 grid place-items-center text-white scale-90 group-hover:scale-100 transition-all duration-300">
-                      <svg class="h-2.5 aspect-square" fill="currentColor">
-                        <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#plus-thinest"></use>
-                      </svg>
-                    </div>
-                  </div>
-                </figure>
-                <div class="leading-tight">
-                  <h5 class="font-bold text-gray-900 dark:text-white mb-1.5 group-hover:text-accent">1917</h5>
-                  <div class="text-gray-500">War / Drama</div>
-                </div>
-              </a>
-            </div>
-            <div class="swiper-slide">
-              <a class="flex flex-col gap-y-5 group" href="{{ route('movies') }}">
-                <figure class="relative overflow-hidden">
-                  <img class="w-full object-cover aspect-[17/22] transition-transform duration-300 group-hover:scale-110"
-                    src="{{ asset('assets/img/str1/samples/game-7-170x220.jpg') }}" alt="Arrival">
-                  <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all bg-accent/80 duration-300">
-                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-7.5 aspect-square bg-gray-900 grid place-items-center text-white scale-90 group-hover:scale-100 transition-all duration-300">
-                      <svg class="h-2.5 aspect-square" fill="currentColor">
-                        <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#plus-thinest"></use>
-                      </svg>
-                    </div>
-                  </div>
-                </figure>
-                <div class="leading-tight">
-                  <h5 class="font-bold text-gray-900 dark:text-white mb-1.5 group-hover:text-accent">Arrival</h5>
-                  <div class="text-gray-500">Sci-Fi / Mystery</div>
-                </div>
-              </a>
-            </div>
+            @endforelse
           </div>
 
           <div class="flex justify-center gap-x-3.5 pt-8 sm:pt-10 md:pt-12 lg:pt-16">
@@ -440,7 +333,7 @@
               <img class="absolute -z-10 right-0 top-0 bottom-0 object-cover object-left max-w-[39%]"
                 src="{{ asset('assets/img/str1/samples/stream-banner-1.png') }}" alt="">
 
-              <a href="{{ route('movies') }}" class="block absolute inset-0"></a>
+              <a href="{{ route('browse') }}" class="block absolute inset-0"></a>
             </div>
           </div>
 

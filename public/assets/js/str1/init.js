@@ -131,7 +131,6 @@ const swiperTwitterFeed = new Swiper('.js-vv-twitter-feed-swiper', {
 const swiperGamesTop = new Swiper('.js-vv-games-swiper', {
   slidesPerView: 2,
   spaceBetween: 30,
-  loop: true,
 
   breakpoints: {
     576: {

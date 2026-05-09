@@ -17,5 +17,15 @@
     <a href="{{ route('account.personal-info') }}">edit your password and account details</a>.
   </p>
 
+  @if (auth()->user()->isAdmin())
+    <div class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-600">
+      <p class="text-xs font-bold uppercase text-gray-500 tracking-widest mb-4">Admin</p>
+      <a href="{{ route('admin.dashboard') }}"
+        class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-4 px-8 text-sm text-gray-900 bg-accent hover:bg-accent/90 !text-gray-900">
+        Go to Admin Panel
+      </a>
+    </div>
+  @endif
+
 </div>
 @endsection

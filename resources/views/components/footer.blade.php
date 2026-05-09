@@ -60,7 +60,7 @@
                         </li>
                         <li>
                             <a class="text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-                                href="{{ route('movies') }}">Browse Films</a>
+                                href="{{ route('browse') }}">Browse Films</a>
                         </li>
                         <li>
                             <a class="text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
@@ -85,27 +85,27 @@
                     <ul class="flex flex-col gap-y-3 text-sm font-bold">
                         <li>
                             <a class="text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-                                href="{{ route('movies') }}">Action &amp; Adventure</a>
+                                href="{{ route('browse', ['genre' => 'Action']) }}">Action &amp; Adventure</a>
                         </li>
                         <li>
                             <a class="text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-                                href="{{ route('movies') }}">Drama</a>
+                                href="{{ route('browse', ['genre' => 'Drama']) }}">Drama</a>
                         </li>
                         <li>
                             <a class="text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-                                href="{{ route('movies') }}">Science Fiction</a>
+                                href="{{ route('browse', ['genre' => 'Science Fiction']) }}">Science Fiction</a>
                         </li>
                         <li>
                             <a class="text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-                                href="{{ route('movies') }}">Horror &amp; Thriller</a>
+                                href="{{ route('browse', ['genre' => 'Horror']) }}">Horror &amp; Thriller</a>
                         </li>
                         <li>
                             <a class="text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-                                href="{{ route('movies') }}">International Cinema</a>
+                                href="{{ route('browse', ['genre' => 'International Cinema']) }}">International Cinema</a>
                         </li>
                         <li>
                             <a class="text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-                                href="{{ route('movies') }}">Documentaries</a>
+                                href="{{ route('browse', ['genre' => 'Documentary']) }}">Documentaries</a>
                         </li>
                     </ul>
                 </nav>
@@ -114,56 +114,37 @@
             {{-- Latest Releases --}}
             <div class="col-span-full sm:col-span-4 lg:col-span-3">
                 <h6 class="text-xs font-bold uppercase text-gray-500 mb-5 tracking-widest">Latest Releases</h6>
+                @if ($latestReleases->isEmpty())
+                <p class="text-sm text-gray-500">No releases yet.</p>
+                @else
                 <ul class="flex flex-col gap-y-4">
+                    @foreach ($latestReleases as $entry)
+                    @php $item = $entry['item']; $isMovie = $entry['type'] === 'movie'; @endphp
                     <li>
-                        <a class="group flex gap-x-3 items-start" href="{{ route('movies') }}">
+                        <a class="group flex gap-x-3 items-start"
+                            href="{{ $isMovie ? route('movies.show', $item) : route('series.show', $item) }}">
                             <div class="shrink-0 w-10 h-14 bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                                <img class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                                    src="{{ asset('assets/img/str1/samples/game-1-270x340.jpg') }}" alt="Dune: Messiah">
+                                @if ($item->thumbnail)
+                                    <img class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                        src="{{ $item->thumbnailUrl() }}" alt="{{ $item->title }}">
+                                @else
+                                    <div class="w-full h-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                                        <svg class="h-4 w-4 fill-gray-400" viewBox="0 0 24 24"><path d="M4 2h16v18H4z"/></svg>
+                                    </div>
+                                @endif
                             </div>
-                            <div>
-                                <h6 class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-accent dark:group-hover:text-accent transition-colors leading-tight mb-1">Dune: Messiah</h6>
-                                <span class="text-xs text-gray-500 dark:text-gray">Sci-Fi &middot; 2026</span>
+                            <div class="min-w-0">
+                                <h6 class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-accent dark:group-hover:text-accent transition-colors leading-tight mb-1 truncate">{{ $item->title }}</h6>
+                                <span class="text-xs text-gray-500 dark:text-gray">
+                                    @php $meta = array_filter([$item->genre, $item->year]); @endphp
+                                    {{ implode(' · ', $meta) ?: ($isMovie ? 'Movie' : 'Series') }}
+                                </span>
                             </div>
                         </a>
                     </li>
-                    <li>
-                        <a class="group flex gap-x-3 items-start" href="{{ route('movies') }}">
-                            <div class="shrink-0 w-10 h-14 bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                                <img class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                                    src="{{ asset('assets/img/str1/samples/game-2-270x340.jpg') }}" alt="The Brutalist">
-                            </div>
-                            <div>
-                                <h6 class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-accent dark:group-hover:text-accent transition-colors leading-tight mb-1">The Brutalist</h6>
-                                <span class="text-xs text-gray-500 dark:text-gray">Drama &middot; 2025</span>
-                            </div>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="group flex gap-x-3 items-start" href="{{ route('movies') }}">
-                            <div class="shrink-0 w-10 h-14 bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                                <img class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                                    src="{{ asset('assets/img/str1/samples/game-3-270x340.jpg') }}" alt="Warfare">
-                            </div>
-                            <div>
-                                <h6 class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-accent dark:group-hover:text-accent transition-colors leading-tight mb-1">Warfare</h6>
-                                <span class="text-xs text-gray-500 dark:text-gray">Action &middot; 2025</span>
-                            </div>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="group flex gap-x-3 items-start" href="{{ route('movies') }}">
-                            <div class="shrink-0 w-10 h-14 bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                                <img class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                                    src="{{ asset('assets/img/str1/samples/game-4-270x340.jpg') }}" alt="Sinners">
-                            </div>
-                            <div>
-                                <h6 class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-accent dark:group-hover:text-accent transition-colors leading-tight mb-1">Sinners</h6>
-                                <span class="text-xs text-gray-500 dark:text-gray">Thriller &middot; 2025</span>
-                            </div>
-                        </a>
-                    </li>
+                    @endforeach
                 </ul>
+                @endif
             </div>
 
         </div>
