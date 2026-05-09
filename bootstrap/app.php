@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\CheckBanned;
 use App\Http\Middleware\RequireAuthModal;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -18,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin'      => AdminMiddleware::class,
             'auth.modal' => RequireAuthModal::class,
         ]);
+        $middleware->appendToGroup('web', CheckBanned::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

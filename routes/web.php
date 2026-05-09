@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\SeriesController as AdminSeriesController;
 use App\Http\Controllers\Admin\SeasonController as AdminSeasonController;
 use App\Http\Controllers\Admin\EpisodeController as AdminEpisodeController;
 use App\Http\Controllers\Admin\PosterController as AdminPosterController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
@@ -84,6 +85,10 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::delete('episodes/{episode}', [AdminEpisodeController::class, 'destroy'])->name('episodes.destroy');
 
     Route::delete('posters/{poster}', [AdminPosterController::class, 'destroy'])->name('posters.destroy');
+
+    Route::get('users', [AdminUserController::class, 'index'])->name('users.index');
+    Route::patch('users/{user}/ban', [AdminUserController::class, 'ban'])->name('users.ban');
+    Route::patch('users/{user}/unban', [AdminUserController::class, 'unban'])->name('users.unban');
 });
 
 require __DIR__.'/settings.php';

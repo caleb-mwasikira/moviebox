@@ -10,7 +10,7 @@
   <p class="mt-2 text-gray-500 dark:text-gray">Welcome back, {{ auth()->user()->name }}.</p>
 </div>
 
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
+<div class="grid grid-cols-2 lg:grid-cols-3 gap-5 mb-6">
   <div class="border border-gray-200 dark:border-gray-600 p-6">
     <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">{{ $movieCount }}</div>
     <div class="text-xs font-bold uppercase text-gray-500 tracking-widest">Movies</div>
@@ -23,10 +23,20 @@
     <div class="text-3xl font-bold text-accent mb-1">{{ $published }}</div>
     <div class="text-xs font-bold uppercase text-gray-500 tracking-widest">Published</div>
   </div>
+</div>
+<div class="grid grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
   <div class="border border-gray-200 dark:border-gray-600 p-6">
     <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">{{ $hidden }}</div>
     <div class="text-xs font-bold uppercase text-gray-500 tracking-widest">Hidden</div>
   </div>
+  <a href="{{ route('admin.users.index') }}" class="border border-gray-200 dark:border-gray-600 p-6 hover:border-accent transition-colors">
+    <div class="text-3xl font-bold text-gray-900 dark:text-white mb-1">{{ $userCount }}</div>
+    <div class="text-xs font-bold uppercase text-gray-500 tracking-widest">Users</div>
+  </a>
+  <a href="{{ route('admin.users.index') }}?search=" class="border border-gray-200 dark:border-gray-600 p-6 hover:border-accent transition-colors">
+    <div class="text-3xl font-bold text-red-500 mb-1">{{ $bannedCount }}</div>
+    <div class="text-xs font-bold uppercase text-gray-500 tracking-widest">Banned</div>
+  </a>
 </div>
 
 <div class="flex flex-wrap gap-4">

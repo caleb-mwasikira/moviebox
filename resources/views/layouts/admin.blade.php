@@ -58,6 +58,10 @@
               <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.series.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.series.index') }}">Series</a>
             </li>
+            <li>
+              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.users.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.users.index') }}">Users</a>
+            </li>
             <li class="lg:mt-4 lg:pt-4 lg:border-t lg:border-gray-200 lg:dark:border-gray-600">
               <a class="block py-1.5 transition-all text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent"
                 href="{{ route('account') }}">My Account</a>
