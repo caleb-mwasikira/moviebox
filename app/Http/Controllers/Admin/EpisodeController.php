@@ -19,7 +19,7 @@ class EpisodeController extends Controller
             'title'          => ['required', 'string', 'max:255'],
             'description'    => ['nullable', 'string'],
             'duration'       => ['nullable', 'integer', 'min:1'],
-            'video'          => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg', 'max:2097152'],
+            'video'          => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
         ]);
 
         $ext         = $request->file('video')->getClientOriginalExtension();
@@ -37,8 +37,8 @@ class EpisodeController extends Controller
             'video_path'     => $stagingPath,
         ]);
 
-        $seriesId = $season->series_id;
-        $label    = "S{$season->season_number}E{$episode->episode_number} — {$episode->title}";
+        $series = $season->series;
+        $label  = "S{$season->season_number}E{$episode->episode_number} — {$episode->title}";
 
         ProcessVideoUpload::dispatch(
             Episode::class,
@@ -47,22 +47,22 @@ class EpisodeController extends Controller
             $finalPath,
             auth()->id(),
             $label,
-            route('admin.series.edit', $seriesId),
+            route('admin.series.edit', $series),
         );
 
         return redirect()
-            ->route('admin.series.edit', $seriesId)
+            ->route('admin.series.edit', $series)
             ->with('status', 'episode-processing');
     }
 
     public function destroy(Episode $episode)
     {
-        $seriesId = $episode->season->series_id;
+        $series = $episode->season->series;
         Storage::disk('public')->delete($episode->video_path);
         $episode->delete();
 
         return redirect()
-            ->route('admin.series.edit', $seriesId)
+            ->route('admin.series.edit', $series)
             ->with('status', 'episode-deleted');
     }
 }

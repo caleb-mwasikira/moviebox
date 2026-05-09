@@ -65,8 +65,9 @@
       <img src="{{ $movie->thumbnailUrl() }}" class="w-20 h-28 object-cover mb-3" alt="">
     @endif
     <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer"
-      type="file" name="thumbnail" accept="image/*">
+      type="file" name="thumbnail" id="edit-thumbnail" accept="image/*">
     <p class="mt-1 text-xs text-gray-500">Leave blank to keep current thumbnail</p>
+    <div id="edit-thumbnail-preview" class="flex flex-wrap gap-2 mt-3"></div>
   </div>
 
   <div>
@@ -89,8 +90,9 @@
       </div>
     @endif
     <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer"
-      type="file" name="posters[]" accept="image/*" multiple>
+      type="file" name="posters[]" id="edit-posters-input" accept="image/*" multiple>
     <p class="mt-1 text-xs text-gray-500">Select multiple to add more posters</p>
+    <div id="edit-posters-preview" class="flex flex-wrap gap-2 mt-3"></div>
     @error('posters.*')<p class="mt-1.5 text-xs text-danger">{{ $message }}</p>@enderror
   </div>
 
@@ -98,7 +100,7 @@
     <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Video File</label>
     <p class="text-xs text-gray-500 mb-2">Current: <span class="font-bold text-gray-900 dark:text-white">{{ basename($movie->video_path) }}</span></p>
     <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer"
-      type="file" name="video" accept="video/mp4,video/webm,video/ogg">
+      type="file" name="video" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv">
     <p class="mt-1 text-xs text-gray-500">Leave blank to keep current video</p>
   </div>
 
@@ -130,6 +132,38 @@
 @push('scripts')
 <script>
 (function () {
+  // ── Image previews ────────────────────────────────────────────
+  function attachPreview(inputId, containerId) {
+    var input = document.getElementById(inputId);
+    var container = document.getElementById(containerId);
+    if (!input || !container) return;
+    input.addEventListener('change', function () {
+      container.innerHTML = '';
+      Array.from(input.files).forEach(function (file) {
+        if (!file.type.startsWith('image/')) return;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          var wrap = document.createElement('div');
+          wrap.className = 'relative';
+          var img = document.createElement('img');
+          img.src = e.target.result;
+          img.className = 'h-24 w-auto object-cover border border-gray-200 dark:border-gray-600';
+          var name = document.createElement('p');
+          name.className = 'text-[10px] text-gray-400 mt-1 truncate max-w-[96px]';
+          name.textContent = file.name;
+          wrap.appendChild(img);
+          wrap.appendChild(name);
+          container.appendChild(wrap);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+  }
+
+  attachPreview('edit-thumbnail', 'edit-thumbnail-preview');
+  attachPreview('edit-posters-input', 'edit-posters-preview');
+
+  // ── Upload progress via XHR ───────────────────────────────────
   var form = document.getElementById('upload-form');
   var progressWrap = document.getElementById('upload-progress-wrap');
   var progressBar = document.getElementById('upload-progress-bar');

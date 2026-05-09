@@ -59,7 +59,8 @@
         <img src="{{ $series->thumbnailUrl() }}" class="w-20 h-28 object-cover mb-3" alt="">
       @endif
       <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer"
-        type="file" name="thumbnail" accept="image/*">
+        type="file" name="thumbnail" id="series-thumbnail" accept="image/*">
+      <div id="series-thumbnail-preview" class="flex flex-wrap gap-2 mt-3"></div>
     </div>
     <div>
       <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Posters</label>
@@ -81,8 +82,9 @@
         </div>
       @endif
       <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer"
-        type="file" name="posters[]" accept="image/*" multiple>
+        type="file" name="posters[]" id="series-posters-input" accept="image/*" multiple>
       <p class="mt-1 text-xs text-gray-500">Select multiple to add more posters</p>
+      <div id="series-posters-preview" class="flex flex-wrap gap-2 mt-3"></div>
     </div>
     <div>
       <button type="submit"
@@ -156,11 +158,6 @@
               <input class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 focus:border-accent focus:bg-white focus:outline-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white w-full"
                 type="number" name="episode_number" min="1" value="{{ $season->episodes->max('episode_number') + 1 }}">
             </div>
-            <div>
-              <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Duration (min)</label>
-              <input class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 focus:border-accent focus:bg-white focus:outline-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white w-full"
-                type="number" name="duration" min="1">
-            </div>
             <div class="col-span-2">
               <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Episode Title</label>
               <input class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 focus:border-accent focus:bg-white focus:outline-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white w-full"
@@ -169,7 +166,7 @@
             <div class="col-span-2">
               <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Video File <span class="text-danger">*</span></label>
               <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer"
-                type="file" name="video" accept="video/mp4,video/webm,video/ogg">
+                type="file" name="video" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv">
             </div>
           </div>
 
@@ -232,6 +229,38 @@
 @push('scripts')
 <script>
 (function () {
+  // ── Image previews ────────────────────────────────────────────
+  function attachPreview(inputId, containerId) {
+    var input = document.getElementById(inputId);
+    var container = document.getElementById(containerId);
+    if (!input || !container) return;
+    input.addEventListener('change', function () {
+      container.innerHTML = '';
+      Array.from(input.files).forEach(function (file) {
+        if (!file.type.startsWith('image/')) return;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          var wrap = document.createElement('div');
+          wrap.className = 'relative';
+          var img = document.createElement('img');
+          img.src = e.target.result;
+          img.className = 'h-24 w-auto object-cover border border-gray-200 dark:border-gray-600';
+          var name = document.createElement('p');
+          name.className = 'text-[10px] text-gray-400 mt-1 truncate max-w-[96px]';
+          name.textContent = file.name;
+          wrap.appendChild(img);
+          wrap.appendChild(name);
+          container.appendChild(wrap);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+  }
+
+  attachPreview('series-thumbnail', 'series-thumbnail-preview');
+  attachPreview('series-posters-input', 'series-posters-preview');
+
+  // ── Episode upload progress ───────────────────────────────────
   document.querySelectorAll('[data-upload-form="episode"]').forEach(function (form) {
     var progressWrap = form.querySelector('[data-progress-wrap]');
     var progressBar  = form.querySelector('[data-progress-bar]');
@@ -266,7 +295,15 @@
       });
 
       xhr.addEventListener('load', function () {
-        window.location.href = xhr.responseURL;
+        if (xhr.status >= 200 && xhr.status < 400) {
+          window.location.href = xhr.responseURL;
+        } else {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Upload Episode';
+          progressLabel.textContent = 'Upload failed (status ' + xhr.status + ') — try again.';
+          progressBar.style.width = '0%';
+          progressWrap.classList.remove('hidden');
+        }
       });
 
       xhr.addEventListener('error', function () {
@@ -277,6 +314,7 @@
       });
 
       xhr.open('POST', form.action);
+      xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
       xhr.send(formData);
     });
   });
