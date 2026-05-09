@@ -39,6 +39,15 @@
   <!-- Template CSS-->
   <link href="{{ asset('assets/css/str1/style.css') }}" rel="stylesheet">
 
+  <style>
+    .auth-banner-fade-r {
+      background: linear-gradient(to right, transparent, #ffffff);
+    }
+    .dark .auth-banner-fade-r {
+      background: linear-gradient(to right, transparent, rgb(17, 24, 39));
+    }
+  </style>
+
 </head>
 
 <body
@@ -168,7 +177,7 @@
                     <form method="POST" action="{{ route('logout') }}">
                       @csrf
                       <button type="submit"
-                        class="flex flex-row-reverse items-center justify-between py-1.5 text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent w-full text-left">
+                        class="flex flex-row-reverse items-center justify-between py-1.5 text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent w-full text-left cursor-pointer">
                         Logout
                       </button>
                     </form>
@@ -257,177 +266,73 @@
   </div>
 
   <dialog id="login-register"
-    class="js-vv-modal mx-auto border-none bg-transparent p-0 m-0 backdrop:bg-gray-900/90 h-dvh inset-0 fixed !max-h-dvh w-[470px] max-w-[90%]">
+    class="js-vv-modal mx-auto border-none bg-transparent p-0 m-0 backdrop:bg-gray-900/90 h-dvh inset-0 fixed !max-h-dvh w-[470px] max-w-[90%]"
+    onclick="if(event.target===this)this.close()">
 
     <div class="h-screen flex items-center justify-center py-6 shrink-0 w-full">
       <div class="bg-white dark:bg-gray-700 shadow-3xl overflow-y-auto w-full">
-        <div
-          class="relative flex h-28 items-center bg-[url('/assets/img/str1/samples/modal-header-bg.jpg')] bg-cover bg-center bg-no-repeat px-6 md:px-10 lg:h-[140px]">
+
+        {{-- Header --}}
+        <div class="relative flex h-28 items-center bg-[url('/assets/img/str1/samples/modal-header-bg.jpg')] bg-cover bg-center bg-no-repeat px-6 md:px-10 lg:h-[140px]">
           <div class="relative z-[4] text-white">
-            <h4 class="text-2xl font-bold lg:mb-0.5 lg:text-3xl xl:text-[32px] xl:leading-none">Login &
-              Register</h4>
-            <div class="font-bold leading-none">I’m glad to see you here!</div>
+            <h4 class="text-2xl font-bold lg:mb-0.5 lg:text-3xl xl:text-[32px] xl:leading-none">Login to your account</h4>
+            <div class="font-bold leading-none z-[6]">An account is required to watch movies</div>
           </div>
 
           <div class="absolute inset-0 z-[1] bg-black mix-blend-color"></div>
           <div class="absolute inset-0 z-[2] bg-primary mix-blend-multiply"></div>
           <div class="absolute inset-0 z-[3] bg-gray-900 mix-blend-lighten"></div>
 
+          <button type="button" onclick="document.getElementById('login-register').close()"
+            class="absolute top-4 right-4 z-[6] text-white/60 hover:text-white transition-colors leading-none text-2xl">&times;</button>
+
           <img class="absolute right-0 bottom-0 z-[5] -mt-[22px] max-w-[41%]"
             src="{{ asset('assets/img/str1/samples/modal-header-hero.png') }}" alt="">
         </div>
 
-        <div>
-          <div class="tabs">
-
-            <nav class="tabs__header overflow-hidden">
-              <ul class="grid grid-cols-2 gap-x-[1px] dark:bg-gray-500/20">
-                <li class="tabs__header-item is-active group">
-                  <a href="#"
-                    class="flex justify-center border-b bg-gray-100 dark:bg-gray-800 group-[.is-active]:bg-white border-gray-500/20 py-4 text-center font-bold text-gray-500/40 transition-colors hover:text-accent group-[.is-active]:text-accent dark:group-[.is-active]:border-gray-700 group-[.is-active]:border-white dark:group-[.is-active]:bg-gray-700">Login</a>
-                </li>
-                <li class="tabs__header-item group flex-1">
-                  <a href="#"
-                    class="flex justify-center border-b bg-gray-100 dark:bg-gray-800 group-[.is-active]:bg-white border-gray-500/20 py-4 text-center font-bold text-gray-500/40 transition-colors hover:text-accent group-[.is-active]:text-accent dark:group-[.is-active]:border-gray-700 group-[.is-active]:border-white dark:border-gray-500/20 dark:group-[.is-active]:bg-gray-700">Register</a>
-                </li>
-              </ul>
-            </nav>
-
-            <div class="tabs__content py-6 px-6 lg:px-10 lg:py-9">
-
-              <div class="tabs__content-item">
-
-                <form class="flex flex-col gap-y-6 lg:gap-y-8" action="#">
-                  <div>
-                    <label class="block text-sm font-bold uppercase text-gray-500 [&:not(:empty)]:mb-2.5"
-                      for="login-user-email">Your Email
-                    </label>
-                    <input
-                      class="group-[.is-success]:bg-input-success-dark group-[.is-error]:border-danger group-[.is-error]:bg-input-invalid group-[.is-error]:text-danger group-[.is-success]:pr-16 group-[.is-invalid]:pr-16 px-4 py-2 border-base bg-white/40 bg-[length:18px_18px,_38px_38px] bg-[position:right_16px_center,_right_6px_center] bg-no-repeat font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 placeholder:font-normal placeholder:text-gray-500/60 focus:border-accent focus:bg-white focus:text-gray-900 focus:outline-0 focus:ring-0 dark:border-gray-650 dark:group-[.is-success]:bg-input-success dark:bg-gray-900/40 dark:text-white dark:placeholder:text-gray-500/80 dark:focus:border-accent dark:focus:bg-gray-900 w-full"
-                      type="email" name="login-user-email" id="login-user-email" value="" placeholder="">
-                    <p class="group-[.is-error]:block mt-2 hidden text-xs text-danger">
-
-                    </p>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-bold uppercase text-gray-500 [&:not(:empty)]:mb-2.5"
-                      for="login-user-password">Your Password
-                    </label>
-                    <input
-                      class="group-[.is-success]:bg-input-success-dark group-[.is-error]:border-danger group-[.is-error]:bg-input-invalid group-[.is-error]:text-danger group-[.is-success]:pr-16 group-[.is-invalid]:pr-16 px-4 py-2 border-base bg-white/40 bg-[length:18px_18px,_38px_38px] bg-[position:right_16px_center,_right_6px_center] bg-no-repeat font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 placeholder:font-normal placeholder:text-gray-500/60 focus:border-accent focus:bg-white focus:text-gray-900 focus:outline-0 focus:ring-0 dark:border-gray-650 dark:group-[.is-success]:bg-input-success dark:bg-gray-900/40 dark:text-white dark:placeholder:text-gray-500/80 dark:focus:border-accent dark:focus:bg-gray-900 w-full"
-                      type="password" name="login-user-password" id="login-user-password" value="" placeholder="">
-                    <p class="group-[.is-error]:block mt-2 hidden text-xs text-danger">
-
-                    </p>
-                  </div>
-                  <div class="flex justify-between flex-wrap gap-y-4">
-                    <div>
-                      <label class="flex items-center gap-x-3 hover:cursor-pointer" for="remember-me">
-                        <input name="remember-me" id="remember-me" type="checkbox"
-                          class="border-gray-650 dark:border-gray-650 h-4 w-4 bg-white checked:border-accent checked:bg-white checked:text-accent checked:hover:border-accent checked:hover:bg-white dark:bg-gray-900 dark:checked:border-accent dark:checked:hover:border-accent dark:checked:hover:bg-gray-900">
-                        <span class="text-xs font-bold uppercase text-gray-900 dark:text-white">
-                          Remember Me
-                        </span>
-
-                      </label>
-                    </div>
-                    <a href="#"
-                      class="text-xs font-bold uppercase text-primary dark:text-white hover:text-accent dark:hover:text-accent transition-colors">Forgot
-                      Password?</a>
-                  </div>
-                  <div class="mt-2">
-                    <button type="submit"
-                      class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-4 px-4 md:py-[18px] lg:px-8 text-sm text-gray-900 bg-accent hover:bg-accent/90 w-full">
-                      Login to your account
-
-                    </button>
-                  </div>
-                </form>
-
-                <div class="pt-4.5">
-                  <div class="text-center uppercase font-bold text-primary mb-6 text-xs dark:text-white">
-                    or login with
-                    your social account</div>
-                  <div class="flex gap-4">
-                    <a href="#"
-                      class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-4 px-4 md:py-[18px] lg:px-8 text-sm text-white bg-social-facebook hover:bg-social-facebook/90 flex-1">
-                      <svg class="h-[14px] w-[14px]" fill="currentColor">
-                        <use xlink:href="{{ asset('assets/img/social-icons.svg') }}#facebook"></use>
-                      </svg>
-                      Login
-
-                    </a>
-                    <a href="#"
-                      class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-4 px-4 md:py-[18px] lg:px-8 text-sm text-white bg-social-twitter hover:bg-social-twitter/90 flex-1">
-                      <svg class="h-[14px] w-[14px]" fill="currentColor">
-                        <use xlink:href="{{ asset('assets/img/social-icons.svg') }}#twitter"></use>
-                      </svg>
-                      Login
-
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              <div class="tabs__content-item">
-
-                <form class="flex flex-col gap-y-6 lg:gap-y-8" action="#">
-                  <div class="group is-success">
-                    <label class="block text-sm font-bold uppercase text-gray-500 [&:not(:empty)]:mb-2.5"
-                      for="register-user-email">Your Email
-                    </label>
-                    <input
-                      class="group-[.is-success]:bg-input-success-dark group-[.is-error]:border-danger group-[.is-error]:bg-input-invalid group-[.is-error]:text-danger group-[.is-success]:pr-16 group-[.is-invalid]:pr-16 px-4 py-2 border-base bg-white/40 bg-[length:18px_18px,_38px_38px] bg-[position:right_16px_center,_right_6px_center] bg-no-repeat font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 placeholder:font-normal placeholder:text-gray-500/60 focus:border-accent focus:bg-white focus:text-gray-900 focus:outline-0 focus:ring-0 dark:border-gray-650 dark:group-[.is-success]:bg-input-success dark:bg-gray-900/40 dark:text-white dark:placeholder:text-gray-500/80 dark:focus:border-accent dark:focus:bg-gray-900 w-full"
-                      type="email" name="register-user-email" id="register-user-email" value="jspigel@yourmail.com"
-                      placeholder="">
-                    <p class="group-[.is-error]:block mt-2 hidden text-xs text-danger">
-
-                    </p>
-                  </div>
-                  <div class="group is-error">
-                    <label class="block text-sm font-bold uppercase text-gray-500 [&:not(:empty)]:mb-2.5"
-                      for="register-user-password">Your Password
-                    </label>
-                    <input
-                      class="group-[.is-success]:bg-input-success-dark group-[.is-error]:border-danger group-[.is-error]:bg-input-invalid group-[.is-error]:text-danger group-[.is-success]:pr-16 group-[.is-invalid]:pr-16 px-4 py-2 border-base bg-white/40 bg-[length:18px_18px,_38px_38px] bg-[position:right_16px_center,_right_6px_center] bg-no-repeat font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 placeholder:font-normal placeholder:text-gray-500/60 focus:border-accent focus:bg-white focus:text-gray-900 focus:outline-0 focus:ring-0 dark:border-gray-650 dark:group-[.is-success]:bg-input-success dark:bg-gray-900/40 dark:text-white dark:placeholder:text-gray-500/80 dark:focus:border-accent dark:focus:bg-gray-900 w-full"
-                      type="password" name="register-user-password" id="register-user-password" value="qwertyqw"
-                      placeholder="">
-                    <p class="group-[.is-error]:block mt-2 hidden text-xs text-danger">
-                      Password need to have at least one number
-                    </p>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-bold uppercase text-gray-500 [&:not(:empty)]:mb-2.5"
-                      for="user-password-repeat">Repeat Password
-                    </label>
-                    <input
-                      class="group-[.is-success]:bg-input-success-dark group-[.is-error]:border-danger group-[.is-error]:bg-input-invalid group-[.is-error]:text-danger group-[.is-success]:pr-16 group-[.is-invalid]:pr-16 px-4 py-2 border-base bg-white/40 bg-[length:18px_18px,_38px_38px] bg-[position:right_16px_center,_right_6px_center] bg-no-repeat font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 placeholder:font-normal placeholder:text-gray-500/60 focus:border-accent focus:bg-white focus:text-gray-900 focus:outline-0 focus:ring-0 dark:border-gray-650 dark:group-[.is-success]:bg-input-success dark:bg-gray-900/40 dark:text-white dark:placeholder:text-gray-500/80 dark:focus:border-accent dark:focus:bg-gray-900 w-full"
-                      type="password" name="user-password-repeat" id="user-password-repeat" value="" placeholder="">
-                    <p class="group-[.is-error]:block mt-2 hidden text-xs text-danger">
-
-                    </p>
-                  </div>
-                  <div class="mt-2">
-                    <button type="submit"
-                      class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-4 px-4 md:py-[18px] lg:px-8 text-sm text-white bg-primary hover:bg-primary/90 w-full">
-                      Create your account
-
-                    </button>
-                  </div>
-                  <div class="text-sm leading-loose text-gray text-center">
-                    <p>You’ll receive a confirmation email in your inbox with a link so you can
-                      activate your account.
-                      If you have any problems, <a
-                        class="text-accent hover:text-primary dark:hover:text-white transition-colors"
-                        href="_str1-contact.html">contact us</a>!</p>
-                  </div>
-                </form>
-
-              </div>
-
+        {{-- Login form --}}
+        <div class="py-6 px-6 lg:px-10 lg:py-9">
+          <form class="flex flex-col gap-y-5 lg:gap-y-6" method="POST" action="{{ url('/login') }}">
+            @csrf
+            <div>
+              <label class="block text-sm font-bold uppercase text-gray-500 [&:not(:empty)]:mb-2.5" for="modal-login-email">Email</label>
+              <input
+                class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 placeholder:font-normal placeholder:text-gray-500/60 focus:border-accent focus:bg-white focus:text-gray-900 focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:placeholder:text-gray-500/80 dark:focus:border-accent dark:focus:bg-gray-900 w-full"
+                type="email" name="email" id="modal-login-email" value="{{ old('email') }}" autocomplete="email" required>
+              @error('email')
+              <p class="mt-1.5 text-xs text-danger">{{ $message }}</p>
+              @enderror
             </div>
-          </div>
+            <div>
+              <label class="block text-sm font-bold uppercase text-gray-500 [&:not(:empty)]:mb-2.5" for="modal-login-password">Password</label>
+              <input
+                class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 placeholder:font-normal placeholder:text-gray-500/60 focus:border-accent focus:bg-white focus:text-gray-900 focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:placeholder:text-gray-500/80 dark:focus:border-accent dark:focus:bg-gray-900 w-full"
+                type="password" name="password" id="modal-login-password" autocomplete="current-password" required>
+              @error('password')
+              <p class="mt-1.5 text-xs text-danger">{{ $message }}</p>
+              @enderror
+            </div>
+            <div class="flex justify-between flex-wrap gap-y-3">
+              <label class="flex items-center gap-x-3 hover:cursor-pointer" for="modal-remember-me">
+                <input name="remember" id="modal-remember-me" type="checkbox"
+                  class="border-gray-650 dark:border-gray-650 h-4 w-4 bg-white checked:border-accent checked:bg-white checked:text-accent checked:hover:border-accent checked:hover:bg-white dark:bg-gray-900 dark:checked:border-accent dark:checked:hover:border-accent dark:checked:hover:bg-gray-900">
+                <span class="text-xs font-bold uppercase text-gray-900 dark:text-white">Remember Me</span>
+              </label>
+              @if(Route::has('password.request'))
+              <a href="{{ route('password.request') }}" class="text-xs font-bold uppercase text-primary dark:text-white hover:text-accent dark:hover:text-accent transition-colors">Forgot Password?</a>
+              @endif
+            </div>
+            <button type="submit" class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-4 px-4 md:py-[18px] lg:px-8 text-sm text-gray-900 bg-accent hover:bg-accent/90 w-full">
+              Login to your account
+            </button>
+          </form>
+
+          <p class="mt-5 text-sm text-center text-gray-500 dark:text-gray">
+            Don't have an account?
+            <a href="{{ route('register') }}" class="font-bold text-accent hover:underline">Register</a>
+          </p>
         </div>
+
       </div>
     </div>
 
@@ -442,6 +347,36 @@
   <!-- Template JS -->
   <script src="{{ asset('assets/js/common.js') }}"></script>
   <script src="{{ asset('assets/js/str1/init.js') }}"></script>
+
+  <script>
+  window.APP_AUTH = {!! json_encode(auth()->check()) !!};
+  window.OPEN_AUTH_MODAL = {!! json_encode($errors->any() || session('show_auth_modal')) !!};
+
+  function watchOrLogin(url) {
+    if (window.APP_AUTH) {
+      window.location.href = url;
+    } else {
+      localStorage.setItem('moviebox_watch_intended', url);
+      var modal = document.getElementById('login-register');
+      if (modal && modal.showModal) modal.showModal();
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    if (window.APP_AUTH) {
+      var intended = localStorage.getItem('moviebox_watch_intended');
+      if (intended) {
+        localStorage.removeItem('moviebox_watch_intended');
+        window.location.replace(intended);
+        return;
+      }
+    }
+    if (window.OPEN_AUTH_MODAL) {
+      var modal = document.getElementById('login-register');
+      if (modal && modal.showModal) modal.showModal();
+    }
+  });
+  </script>
 
   @stack('scripts')
 

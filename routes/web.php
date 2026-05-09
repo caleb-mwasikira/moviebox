@@ -11,8 +11,30 @@ use App\Http\Controllers\Admin\SeriesController as AdminSeriesController;
 use App\Http\Controllers\Admin\SeasonController as AdminSeasonController;
 use App\Http\Controllers\Admin\EpisodeController as AdminEpisodeController;
 use App\Http\Controllers\Admin\PosterController as AdminPosterController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\Auth\VerifyOtpController;
 use App\Http\Controllers\ContactController;
 use Illuminate\Support\Facades\Route;
+
+// Auth routes
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [LoginController::class, 'show'])->name('login');
+    Route::post('/login', [LoginController::class, 'store']);
+    Route::get('/register', [RegisterController::class, 'show'])->name('register');
+    Route::post('/register', [RegisterController::class, 'store']);
+
+    Route::get('/forgot-password', [ForgotPasswordController::class, 'show'])->name('password.request');
+    Route::post('/forgot-password', [ForgotPasswordController::class, 'store'])->name('password.email');
+    Route::get('/verify-otp', [VerifyOtpController::class, 'show'])->name('password.verify-otp');
+    Route::post('/verify-otp', [VerifyOtpController::class, 'store'])->name('password.verify-otp.store');
+    Route::get('/reset-password', [ResetPasswordController::class, 'show'])->name('password.reset');
+    Route::post('/reset-password', [ResetPasswordController::class, 'store'])->name('password.update');
+});
+Route::post('/logout', [LogoutController::class, 'destroy'])->name('logout')->middleware('auth');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::view('/about', 'pages.about')->name('about');
@@ -23,10 +45,13 @@ Route::view('/shop', 'pages.shop')->name('shop');
 Route::get('/browse', [BrowseController::class, 'index'])->name('browse');
 Route::get('/movies', [MovieController::class, 'index'])->name('movies');
 Route::get('/movies/{movie}', [MovieController::class, 'show'])->name('movies.show');
-Route::get('/movies/{movie}/watch', [MovieController::class, 'watch'])->name('movies.watch');
 Route::get('/series', [SeriesController::class, 'index'])->name('series');
 Route::get('/series/{series}', [SeriesController::class, 'show'])->name('series.show');
-Route::get('/series/{series}/watch/{episode}', [SeriesController::class, 'watch'])->name('series.watch');
+
+Route::middleware('auth.modal')->group(function () {
+    Route::get('/movies/{movie}/watch', [MovieController::class, 'watch'])->name('movies.watch');
+    Route::get('/series/{series}/watch/{episode}', [SeriesController::class, 'watch'])->name('series.watch');
+});
 Route::view('/single-product', 'pages.single-product')->name('single-product');
 Route::view('/trailers', 'pages.view-trailers')->name('trailers');
 Route::view('/watch', 'pages.watch')->name('watch');

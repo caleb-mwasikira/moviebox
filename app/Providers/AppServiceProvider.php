@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Movie;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +26,10 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         view()->addNamespace('pages', resource_path('views/pages'));
+        view()->composer('auth.*', function ($view) {
+            $movie = Movie::whereNotNull('thumbnail')->inRandomOrder()->first();
+            $view->with('banner', $movie?->thumbnailUrl());
+        });
     }
 
     /**

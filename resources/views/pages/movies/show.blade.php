@@ -84,6 +84,7 @@
               <div class="flex flex-wrap gap-3 mb-10">
                 @if ($movie->videoIsReady())
                   <a href="{{ route('movies.watch', $movie) }}"
+                    onclick="event.preventDefault(); watchOrLogin(this.href)"
                     class="inline-flex items-center gap-x-3 font-bold leading-none uppercase py-4 px-8 text-sm text-gray-900 bg-accent hover:bg-accent/90 transition-colors">
                     <svg class="h-4 w-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                     Watch Full Movie

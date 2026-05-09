@@ -106,6 +106,7 @@
                         @endif
                         @if ($episode->videoIsReady())
                           <a href="{{ route('series.watch', [$series, $episode]) }}"
+                            onclick="event.preventDefault(); watchOrLogin(this.href)"
                             class="inline-flex items-center justify-center w-8 h-8 bg-accent text-gray-900 hover:bg-accent/90 transition-colors"
                             title="Watch">
                             <svg class="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>

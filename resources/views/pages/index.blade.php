@@ -70,6 +70,7 @@
                   @if ($isMovie)
                     @if ($f->videoIsReady())
                     <a href="{{ route('movies.watch', $f) }}"
+                      onclick="event.preventDefault(); watchOrLogin(this.href)"
                       style="display:inline-flex; align-items:center; gap:10px; padding:14px 28px; background:var(--color-accent, #f5c518); color:#fff; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; text-decoration:none;">
                       <svg style="width:14px; height:14px; fill:currentColor;" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                       Watch Now
