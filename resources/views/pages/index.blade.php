@@ -4,43 +4,6 @@
 
 @section('content')
   <main id="main-content" class="grow lg:pt-0">
-
-    {{-- Latest Series strip --}}
-    @if ($series->isNotEmpty())
-    <section class="py-10 lg:py-14">
-      <div class="container">
-        <div class="mb-6">
-          <h2 class="text-lg font-bold tracking-tighter text-gray-900 before:text-accent before:content-['.'] dark:text-white sm:text-xl md:text-2xl">
-            New Series
-          </h2>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-5 gap-y-6 md:gap-x-6 lg:gap-x-7.5">
-          @foreach ($series as $show)
-            <a href="{{ route('series.show', $show) }}" class="group flex flex-col gap-y-3">
-              <figure class="relative overflow-hidden bg-gray-100 dark:bg-gray-700">
-                @if ($show->thumbnail)
-                  <img class="aspect-[2/3] w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                    src="{{ $show->thumbnailUrl() }}" alt="{{ $show->title }}">
-                @else
-                  <div class="aspect-[2/3] w-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                    <svg class="h-10 w-10 fill-gray-400" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>
-                  </div>
-                @endif
-                <div class="absolute top-2 left-2">
-                  <span class="bg-primary text-white text-[10px] font-bold uppercase px-2 py-0.5">Series</span>
-                </div>
-              </figure>
-              <div class="leading-tight">
-                <h5 class="font-bold text-gray-900 dark:text-white group-hover:text-accent transition-colors text-sm truncate">{{ $show->title }}</h5>
-                <div class="text-xs text-gray-500">{{ $show->genre }}@if($show->genre && $show->year) &middot; @endif{{ $show->year }}</div>
-              </div>
-            </a>
-          @endforeach
-        </div>
-      </div>
-    </section>
-    @endif
-
     <div class="mx-auto max-w-[1360px] px-5 pb-20 md:pb-24 lg:pb-[150px]">
 
       <div class="relative min-h-[220px] bg-[url('../../../assets/img/str1/countdown-bg.jpg')] bg-cover bg-no-repeat">
@@ -102,6 +65,68 @@
       </div>
 
     </div>
+
+    {{-- Latest Series strip --}}
+    @if ($series->isNotEmpty())
+    <div class="pb-20 md:pb-24 lg:pb-[120px]">
+      <div class="container">
+
+        <div class="mb-10 md:mb-12 lg:mb-16 xl:mb-20">
+          <h2
+            class="text-2.5xl font-bold tracking-tighter text-gray-900 before:text-accent before:content-['.'] dark:text-white sm:text-3.5xl md:text-4xl lg:text-[62px] lg:leading-none">
+            New Series
+          </h2>
+        </div>
+
+        <div class="swiper js-vv-series-swiper">
+
+          <div class="swiper-wrapper">
+            @foreach ($series as $show)
+            <div class="swiper-slide">
+              <a class="flex flex-col gap-y-5 group" href="{{ route('series.show', $show) }}">
+                <figure class="relative overflow-hidden bg-gray-100 dark:bg-gray-700">
+                  @if ($show->thumbnail)
+                    <img class="w-full object-cover aspect-[17/22] transition-transform duration-300 group-hover:scale-110"
+                      src="{{ $show->thumbnailUrl() }}" alt="{{ $show->title }}">
+                  @else
+                    <div class="w-full aspect-[17/22] bg-gray-200 dark:bg-gray-600"></div>
+                  @endif
+                  <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all bg-accent/80 duration-300">
+                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-7.5 aspect-square bg-gray-900 grid place-items-center text-white scale-90 group-hover:scale-100 transition-all duration-300">
+                      <svg class="h-2.5 aspect-square" fill="currentColor">
+                        <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#plus-thinest"></use>
+                      </svg>
+                    </div>
+                  </div>
+                </figure>
+                <div class="leading-tight">
+                  <h5 class="font-bold text-gray-900 dark:text-white mb-1.5 group-hover:text-accent">{{ $show->title }}</h5>
+                  <div class="text-gray-500">{{ $show->genre ?? 'Series' }}</div>
+                </div>
+              </a>
+            </div>
+            @endforeach
+          </div>
+
+          <div class="flex justify-center gap-x-3.5 pt-8 sm:pt-10 md:pt-12 lg:pt-16">
+            <button
+              class="js-vv-series-swiper-btn-prev flex w-8 aspect-square items-center justify-center text-white hover:cursor-pointer hover:text-accent">
+              <svg class="h-2.5 w-1.5" fill="currentColor">
+                <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#arrow-left-pixel-alt"></use>
+              </svg>
+            </button>
+            <button
+              class="js-vv-series-swiper-btn-next flex w-8 aspect-square items-center justify-center text-white hover:cursor-pointer hover:text-accent">
+              <svg class="h-2.5 w-1.5" fill="currentColor">
+                <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#arrow-right-pixel-alt"></use>
+              </svg>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    @endif
 
     <section class="pb-20 pt-4 md:pb-24 lg:pb-[130px] lg:pt-6">
       <div class="container">
@@ -700,3 +725,23 @@
 
   </main>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+  var seriesSwiper = new Swiper('.js-vv-series-swiper', {
+    slidesPerView: 2,
+    spaceBetween: 20,
+    navigation: {
+      prevEl: '.js-vv-series-swiper-btn-prev',
+      nextEl: '.js-vv-series-swiper-btn-next',
+    },
+    breakpoints: {
+      640:  { slidesPerView: 3, spaceBetween: 20 },
+      768:  { slidesPerView: 4, spaceBetween: 24 },
+      1024: { slidesPerView: 5, spaceBetween: 30 },
+    },
+  });
+})();
+</script>
+@endpush

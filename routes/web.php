@@ -23,8 +23,10 @@ Route::view('/shop', 'pages.shop')->name('shop');
 Route::get('/browse', [BrowseController::class, 'index'])->name('browse');
 Route::get('/movies', [MovieController::class, 'index'])->name('movies');
 Route::get('/movies/{movie}', [MovieController::class, 'show'])->name('movies.show');
+Route::get('/movies/{movie}/watch', [MovieController::class, 'watch'])->name('movies.watch');
 Route::get('/series', [SeriesController::class, 'index'])->name('series');
 Route::get('/series/{series}', [SeriesController::class, 'show'])->name('series.show');
+Route::get('/series/{series}/watch/{episode}', [SeriesController::class, 'watch'])->name('series.watch');
 Route::view('/single-product', 'pages.single-product')->name('single-product');
 Route::view('/trailers', 'pages.view-trailers')->name('trailers');
 Route::view('/watch', 'pages.watch')->name('watch');
@@ -42,9 +44,11 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
 
     Route::resource('movies', AdminMovieController::class)->except(['show']);
     Route::patch('movies/{movie}/status', [AdminMovieController::class, 'toggleStatus'])->name('movies.toggle-status');
+    Route::post('movies/{movie}/trailer', [AdminMovieController::class, 'uploadTrailer'])->name('movies.trailer');
 
     Route::resource('series', AdminSeriesController::class)->except(['show']);
     Route::patch('series/{series}/status', [AdminSeriesController::class, 'toggleStatus'])->name('series.toggle-status');
+    Route::post('series/{series}/trailer', [AdminSeriesController::class, 'uploadTrailer'])->name('series.trailer');
 
     Route::post('series/{series}/seasons', [AdminSeasonController::class, 'store'])->name('seasons.store');
     Route::delete('seasons/{season}', [AdminSeasonController::class, 'destroy'])->name('seasons.destroy');

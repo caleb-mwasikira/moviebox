@@ -15,7 +15,7 @@
   </h3>
 
   <form method="POST" action="{{ route('admin.series.update', $series) }}" enctype="multipart/form-data"
-    class="flex flex-col gap-y-6 max-w-2xl">
+    id="series-meta-form" class="flex flex-col gap-y-6 max-w-2xl">
     @csrf @method('PUT')
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -90,6 +90,60 @@
       <button type="submit"
         class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-4 px-8 text-sm text-gray-900 bg-accent hover:bg-accent/90">
         Save Metadata
+      </button>
+    </div>
+  </form>
+</section>
+
+{{-- Trailer --}}
+<section class="mb-14">
+  <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6 pb-3 border-b border-gray-200 dark:border-gray-600">
+    Trailer
+  </h3>
+
+  @if ($series->trailerIsReady())
+    <div class="mb-5">
+      <video class="w-full max-w-xl bg-black" style="aspect-ratio:16/9;" controls preload="metadata"
+        src="{{ $series->trailerUrl() }}"></video>
+      <p class="mt-2 text-xs text-gray-500">{{ basename($series->trailer_path) }}</p>
+    </div>
+  @elseif ($series->trailer_path)
+    <div class="mb-5 flex items-center gap-x-3 py-3 px-4 bg-gray-50 dark:bg-gray-800 max-w-xl">
+      <svg class="h-4 w-4 fill-gray-400 shrink-0" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+      <span class="text-xs font-bold uppercase text-gray-400 tracking-widest">Trailer processing…</span>
+    </div>
+  @endif
+
+  <form method="POST" action="{{ route('admin.series.trailer', $series) }}" enctype="multipart/form-data"
+    id="trailer-upload-form" class="flex flex-col gap-y-4 max-w-xl">
+    @csrf
+
+    <div>
+      <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="trailer">
+        {{ $series->trailer_path ? 'Replace Trailer' : 'Upload Trailer' }}
+      </label>
+      <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer"
+        type="file" name="trailer" id="series-trailer" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv">
+      <p class="mt-1 text-xs text-gray-500">MP4, WebM, OGG or MKV — will be transcoded to MP4</p>
+      @error('trailer')<p class="mt-1.5 text-xs text-danger">{{ $message }}</p>@enderror
+    </div>
+
+    {{-- Upload progress --}}
+    <div id="trailer-progress-wrap" class="hidden flex flex-col gap-y-2">
+      <div class="flex justify-between text-xs font-bold uppercase text-gray-500">
+        <span>Uploading trailer…</span>
+        <span id="trailer-progress-label">0%</span>
+      </div>
+      <div class="w-full h-2 bg-gray-200 dark:bg-gray-700">
+        <div id="trailer-progress-bar" class="h-2 bg-accent transition-all duration-150" style="width:0%"></div>
+      </div>
+      <p class="text-xs text-gray-500">Large files may take a few minutes. Do not close this tab.</p>
+    </div>
+
+    <div>
+      <button type="submit" id="trailer-submit"
+        class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-4 px-8 text-sm text-gray-900 bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed">
+        Upload Trailer
       </button>
     </div>
   </form>
@@ -259,6 +313,58 @@
 
   attachPreview('series-thumbnail', 'series-thumbnail-preview');
   attachPreview('series-posters-input', 'series-posters-preview');
+
+  // ── Trailer upload form ───────────────────────────────────────
+  var trailerForm  = document.getElementById('trailer-upload-form');
+  var trailerWrap  = document.getElementById('trailer-progress-wrap');
+  var trailerBar   = document.getElementById('trailer-progress-bar');
+  var trailerLabel = document.getElementById('trailer-progress-label');
+  var trailerBtn   = document.getElementById('trailer-submit');
+
+  if (trailerForm) {
+    trailerForm.addEventListener('submit', function (e) {
+      var input = document.getElementById('series-trailer');
+      if (!input || !input.files.length) return; // nothing selected — let browser show validation
+
+      e.preventDefault();
+      var formData = new FormData(trailerForm);
+      var xhr = new XMLHttpRequest();
+
+      trailerWrap.classList.remove('hidden');
+      trailerBtn.disabled = true;
+      trailerBtn.textContent = 'Uploading…';
+
+      xhr.upload.addEventListener('progress', function (ev) {
+        if (!ev.lengthComputable) return;
+        var pct = Math.round((ev.loaded / ev.total) * 100);
+        trailerBar.style.width = pct + '%';
+        trailerLabel.textContent = pct + '%';
+        if (pct === 100) { trailerLabel.textContent = 'Saving…'; trailerBtn.textContent = 'Saving…'; }
+      });
+
+      xhr.addEventListener('load', function () {
+        if (xhr.status >= 200 && xhr.status < 400) {
+          window.location.href = xhr.responseURL;
+        } else {
+          trailerBtn.disabled = false;
+          trailerBtn.textContent = 'Upload Trailer';
+          trailerLabel.textContent = 'Upload failed (' + xhr.status + ') — try again.';
+          trailerBar.style.width = '0%';
+        }
+      });
+
+      xhr.addEventListener('error', function () {
+        trailerBtn.disabled = false;
+        trailerBtn.textContent = 'Upload Trailer';
+        trailerLabel.textContent = 'Upload failed — try again.';
+        trailerBar.style.width = '0%';
+      });
+
+      xhr.open('POST', trailerForm.action);
+      xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
+      xhr.send(formData);
+    });
+  }
 
   // ── Episode upload progress ───────────────────────────────────
   document.querySelectorAll('[data-upload-form="episode"]').forEach(function (form) {

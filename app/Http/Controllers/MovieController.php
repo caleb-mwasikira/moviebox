@@ -32,4 +32,10 @@ class MovieController extends Controller
         $movie->load('posters');
         return view('pages.movies.show', compact('movie'));
     }
+
+    public function watch(Movie $movie)
+    {
+        abort_unless($movie->isPublished() && $movie->videoIsReady(), 404);
+        return view('pages.movies.watch', compact('movie'));
+    }
 }

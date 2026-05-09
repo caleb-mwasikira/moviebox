@@ -10,7 +10,7 @@ class Movie extends Model
 {
     protected $fillable = [
         'title', 'description', 'genre', 'year', 'duration',
-        'thumbnail', 'video_path', 'status',
+        'thumbnail', 'video_path', 'trailer_path', 'status',
     ];
 
     protected static function booted(): void
@@ -48,5 +48,15 @@ class Movie extends Model
     public function videoUrl(): string
     {
         return asset('storage/' . $this->video_path);
+    }
+
+    public function trailerIsReady(): bool
+    {
+        return (bool) $this->trailer_path && !str_starts_with($this->trailer_path, 'videos/staging/');
+    }
+
+    public function trailerUrl(): string
+    {
+        return asset('storage/' . $this->trailer_path);
     }
 }

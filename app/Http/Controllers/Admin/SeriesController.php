@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ProcessVideoUpload;
 use App\Models\Series;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class SeriesController extends Controller
 {
@@ -28,6 +30,7 @@ class SeriesController extends Controller
             'genre'       => ['nullable', 'string', 'max:100'],
             'year'        => ['nullable', 'integer', 'min:1888', 'max:2100'],
             'thumbnail'   => ['nullable', 'image', 'max:2048'],
+            'trailer'     => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
             'status'      => ['required', 'in:published,hidden'],
             'posters'     => ['nullable', 'array'],
             'posters.*'   => ['image', 'max:4096'],
@@ -54,6 +57,25 @@ class SeriesController extends Controller
             ]);
         }
 
+        if ($request->hasFile('trailer')) {
+            $tExt         = $request->file('trailer')->getClientOriginalExtension();
+            $tUuid        = Str::uuid();
+            $tStagingPath = "videos/staging/{$tUuid}.{$tExt}";
+            $tFinalPath   = "videos/trailers/series/{$tUuid}.{$tExt}";
+            $request->file('trailer')->storeAs('videos/staging', "{$tUuid}.{$tExt}", 'public');
+            $series->update(['trailer_path' => $tStagingPath]);
+            ProcessVideoUpload::dispatch(
+                Series::class,
+                $series->id,
+                $tStagingPath,
+                $tFinalPath,
+                auth()->id(),
+                $series->title . ' (trailer)',
+                route('admin.series.edit', $series),
+                'trailer_path',
+            );
+        }
+
         return redirect()->route('admin.series.edit', $series)->with('status', 'series-created');
     }
 
@@ -72,6 +94,7 @@ class SeriesController extends Controller
             'genre'       => ['nullable', 'string', 'max:100'],
             'year'        => ['nullable', 'integer', 'min:1888', 'max:2100'],
             'thumbnail'   => ['nullable', 'image', 'max:2048'],
+            'trailer'     => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
             'status'      => ['required', 'in:published,hidden'],
             'posters'     => ['nullable', 'array'],
             'posters.*'   => ['image', 'max:4096'],
@@ -93,6 +116,28 @@ class SeriesController extends Controller
         }
 
         $series->update($data);
+
+        if ($request->hasFile('trailer')) {
+            if ($series->trailer_path) {
+                Storage::disk('public')->delete($series->trailer_path);
+            }
+            $tExt         = $request->file('trailer')->getClientOriginalExtension();
+            $tUuid        = Str::uuid();
+            $tStagingPath = "videos/staging/{$tUuid}.{$tExt}";
+            $tFinalPath   = "videos/trailers/series/{$tUuid}.{$tExt}";
+            $request->file('trailer')->storeAs('videos/staging', "{$tUuid}.{$tExt}", 'public');
+            $series->update(['trailer_path' => $tStagingPath]);
+            ProcessVideoUpload::dispatch(
+                Series::class,
+                $series->id,
+                $tStagingPath,
+                $tFinalPath,
+                auth()->id(),
+                $series->title . ' (trailer)',
+                route('admin.series.edit', $series),
+                'trailer_path',
+            );
+        }
 
         $offset = $series->posters()->max('sort_order') ?? -1;
         foreach ($request->file('posters', []) as $i => $file) {
@@ -116,6 +161,38 @@ class SeriesController extends Controller
         $series->delete();
 
         return redirect()->route('admin.series.index')->with('status', 'series-deleted');
+    }
+
+    public function uploadTrailer(Request $request, Series $series)
+    {
+        $request->validate([
+            'trailer' => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska,video/mkv,video/matroska'],
+        ]);
+
+        if ($series->trailer_path) {
+            Storage::disk('public')->delete($series->trailer_path);
+        }
+
+        $ext         = $request->file('trailer')->getClientOriginalExtension();
+        $uuid        = Str::uuid();
+        $stagingPath = "videos/staging/{$uuid}.{$ext}";
+        $finalPath   = "videos/trailers/series/{$uuid}.{$ext}";
+
+        $request->file('trailer')->storeAs('videos/staging', "{$uuid}.{$ext}", 'public');
+        $series->update(['trailer_path' => $stagingPath]);
+
+        ProcessVideoUpload::dispatch(
+            Series::class,
+            $series->id,
+            $stagingPath,
+            $finalPath,
+            auth()->id(),
+            $series->title . ' (trailer)',
+            route('admin.series.edit', $series),
+            'trailer_path',
+        );
+
+        return redirect()->route('admin.series.edit', $series)->with('status', 'trailer-processing');
     }
 
     public function toggleStatus(Series $series)

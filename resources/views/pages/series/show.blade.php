@@ -49,8 +49,16 @@
             </div>
 
             @if ($series->description)
-            <div class="text-gray-500 dark:text-gray leading-relaxed">
+            <div class="text-gray-500 dark:text-gray leading-relaxed mb-6">
               {{ $series->description }}
+            </div>
+            @endif
+
+            @if ($series->trailerIsReady())
+            <div>
+              <p class="text-xs font-bold uppercase text-gray-500 tracking-widest mb-3">Trailer</p>
+              <video style="display:block; width:100%; aspect-ratio:16/9; background:#000;"
+                controls preload="metadata" src="{{ $series->trailerUrl() }}"></video>
             </div>
             @endif
           </div>
@@ -82,41 +90,30 @@
                 @else
                   <div class="divide-y divide-gray-100 dark:divide-gray-700">
                     @foreach ($season->episodes as $episode)
-                    <details class="group/ep px-5 py-4">
-                      <summary class="flex w-full items-start justify-between gap-x-4 cursor-pointer list-none">
-                        <div class="flex-1 min-w-0">
-                          <div class="font-bold text-gray-900 dark:text-white text-sm leading-tight mb-0.5 group-open/ep:text-accent transition-colors">
-                            {{ $episode->label() }}
-                          </div>
-                          @if ($episode->description)
-                          <div class="text-xs text-gray-500 leading-snug line-clamp-2">{{ $episode->description }}</div>
-                          @endif
+                    <div class="flex w-full items-start justify-between gap-x-4 px-5 py-4">
+                      <div class="flex-1 min-w-0">
+                        <div class="font-bold text-gray-900 dark:text-white text-sm leading-tight mb-0.5">
+                          {{ $episode->label() }}
                         </div>
-                        <div class="shrink-0 flex items-center gap-x-3">
-                          @if ($episode->duration)
-                            <span class="text-xs text-gray-500 font-bold">{{ $episode->duration }} min</span>
-                          @endif
-                          @if ($episode->videoIsReady())
-                            <span class="inline-flex items-center justify-center w-8 h-8 bg-accent text-gray-900">
-                              <svg class="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                            </span>
-                          @else
-                            <span class="text-xs text-gray-400 font-bold uppercase">Processing</span>
-                          @endif
-                        </div>
-                      </summary>
-
-                      @if ($episode->videoIsReady())
-                      <div class="mt-4">
-                        <video
-                          class="w-full aspect-video bg-black"
-                          controls
-                          preload="none"
-                          src="{{ $episode->videoUrl() }}"
-                        ></video>
+                        @if ($episode->description)
+                        <div class="text-xs text-gray-500 leading-snug line-clamp-2">{{ $episode->description }}</div>
+                        @endif
                       </div>
-                      @endif
-                    </details>
+                      <div class="shrink-0 flex items-center gap-x-3">
+                        @if ($episode->duration)
+                          <span class="text-xs text-gray-500 font-bold">{{ $episode->duration }} min</span>
+                        @endif
+                        @if ($episode->videoIsReady())
+                          <a href="{{ route('series.watch', [$series, $episode]) }}"
+                            class="inline-flex items-center justify-center w-8 h-8 bg-accent text-gray-900 hover:bg-accent/90 transition-colors"
+                            title="Watch">
+                            <svg class="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                          </a>
+                        @else
+                          <span class="text-xs text-gray-400 font-bold uppercase">Processing</span>
+                        @endif
+                      </div>
+                    </div>
                     @endforeach
                   </div>
                 @endif
@@ -131,3 +128,4 @@
 
   </main>
 @endsection
+

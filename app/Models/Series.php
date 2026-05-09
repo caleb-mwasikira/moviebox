@@ -11,7 +11,7 @@ class Series extends Model
 {
     protected $fillable = [
         'title', 'description', 'genre', 'year',
-        'thumbnail', 'status',
+        'thumbnail', 'trailer_path', 'status',
     ];
 
     protected static function booted(): void
@@ -44,5 +44,15 @@ class Series extends Model
     public function thumbnailUrl(): ?string
     {
         return $this->thumbnail ? asset('storage/' . $this->thumbnail) : null;
+    }
+
+    public function trailerIsReady(): bool
+    {
+        return (bool) $this->trailer_path && !str_starts_with($this->trailer_path, 'videos/staging/');
+    }
+
+    public function trailerUrl(): string
+    {
+        return asset('storage/' . $this->trailer_path);
     }
 }

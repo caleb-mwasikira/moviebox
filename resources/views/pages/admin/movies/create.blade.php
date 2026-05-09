@@ -73,8 +73,16 @@
     <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="video">Video File <span class="text-danger">*</span></label>
     <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer @error('video') border-danger @enderror"
       type="file" name="video" id="video" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv">
-    <p class="mt-1 text-xs text-gray-500">MP4, WebM or OGG — max 2 GB</p>
+    <p class="mt-1 text-xs text-gray-500">MP4, WebM, OGG or MKV</p>
     @error('video')<p class="mt-1.5 text-xs text-danger">{{ $message }}</p>@enderror
+  </div>
+
+  <div>
+    <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="trailer">Trailer <span class="normal-case font-normal text-gray-400">(optional)</span></label>
+    <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer"
+      type="file" name="trailer" id="trailer" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv">
+    <p class="mt-1 text-xs text-gray-500">Short preview clip shown on the movie page</p>
+    @error('trailer')<p class="mt-1.5 text-xs text-danger">{{ $message }}</p>@enderror
   </div>
 
   {{-- Upload progress --}}

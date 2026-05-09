@@ -54,7 +54,7 @@
             </div>
           </div>
 
-          {{-- Right: metadata + video --}}
+          {{-- Right: metadata + trailer + watch --}}
           <div class="col-span-full md:col-span-7 lg:col-span-8">
 
             <div class="mb-10 md:mb-14">
@@ -80,21 +80,29 @@
               </div>
               @endif
 
-              {{-- Video player --}}
-              @if ($movie->videoIsReady())
-                <div class="w-full bg-black aspect-video">
-                  <video
-                    class="w-full h-full"
-                    controls
-                    preload="metadata"
-                    src="{{ $movie->videoUrl() }}"
-                  ></video>
-                </div>
-              @else
-                <div class="w-full aspect-video bg-gray-100 dark:bg-gray-700 flex flex-col items-center justify-center gap-y-3">
-                  <svg class="h-10 w-10 fill-gray-400" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-                  <span class="text-xs font-bold uppercase text-gray-400 tracking-widest">Video processing...</span>
-                </div>
+              {{-- Watch button --}}
+              <div class="flex flex-wrap gap-3 mb-10">
+                @if ($movie->videoIsReady())
+                  <a href="{{ route('movies.watch', $movie) }}"
+                    class="inline-flex items-center gap-x-3 font-bold leading-none uppercase py-4 px-8 text-sm text-gray-900 bg-accent hover:bg-accent/90 transition-colors">
+                    <svg class="h-4 w-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    Watch Full Movie
+                  </a>
+                @else
+                  <div class="inline-flex items-center gap-x-3 py-3 px-5 bg-gray-100 dark:bg-gray-700">
+                    <svg class="h-4 w-4 fill-gray-400 animate-spin" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" opacity=".3"/><path d="M12 2v4a8 8 0 0 1 8 8h4A12 12 0 0 0 12 2z"/></svg>
+                    <span class="text-xs font-bold uppercase text-gray-400 tracking-widest">Video processing…</span>
+                  </div>
+                @endif
+              </div>
+
+              {{-- Inline trailer --}}
+              @if ($movie->trailerIsReady())
+              <div>
+                <p class="text-xs font-bold uppercase text-gray-500 tracking-widest mb-3">Trailer</p>
+                <video style="display:block; width:100%; aspect-ratio:16/9; background:#000;"
+                  controls preload="metadata" src="{{ $movie->trailerUrl() }}"></video>
+              </div>
               @endif
             </div>
 

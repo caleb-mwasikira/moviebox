@@ -32,10 +32,11 @@ class MovieController extends Controller
             'year'        => ['nullable', 'integer', 'min:1888', 'max:2100'],
             'duration'    => ['nullable', 'integer', 'min:1'],
             'thumbnail'   => ['nullable', 'image', 'max:2048'],
-            'video'       => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
-            'status'      => ['required', 'in:published,hidden'],
-            'posters'     => ['nullable', 'array'],
-            'posters.*'   => ['image', 'max:4096'],
+            'video'        => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
+            'trailer'      => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
+            'status'       => ['required', 'in:published,hidden'],
+            'posters'      => ['nullable', 'array'],
+            'posters.*'    => ['image', 'max:4096'],
         ]);
 
         $ext         = $request->file('video')->getClientOriginalExtension();
@@ -77,6 +78,25 @@ class MovieController extends Controller
             $movie->title,
             route('admin.movies.edit', $movie),
         );
+
+        if ($request->hasFile('trailer')) {
+            $tExt          = $request->file('trailer')->getClientOriginalExtension();
+            $tUuid         = Str::uuid();
+            $tStagingPath  = "videos/staging/{$tUuid}.{$tExt}";
+            $tFinalPath    = "videos/trailers/movies/{$tUuid}.{$tExt}";
+            $request->file('trailer')->storeAs('videos/staging', "{$tUuid}.{$tExt}", 'public');
+            $movie->update(['trailer_path' => $tStagingPath]);
+            ProcessVideoUpload::dispatch(
+                Movie::class,
+                $movie->id,
+                $tStagingPath,
+                $tFinalPath,
+                auth()->id(),
+                $movie->title . ' (trailer)',
+                route('admin.movies.edit', $movie),
+                'trailer_path',
+            );
+        }
 
         return redirect()->route('admin.movies.index')->with('status', 'movie-processing');
     }
@@ -167,6 +187,38 @@ class MovieController extends Controller
         $movie->delete();
 
         return redirect()->route('admin.movies.index')->with('status', 'movie-deleted');
+    }
+
+    public function uploadTrailer(Request $request, Movie $movie)
+    {
+        $request->validate([
+            'trailer' => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska,video/mkv,video/matroska'],
+        ]);
+
+        if ($movie->trailer_path) {
+            Storage::disk('public')->delete($movie->trailer_path);
+        }
+
+        $ext         = $request->file('trailer')->getClientOriginalExtension();
+        $uuid        = Str::uuid();
+        $stagingPath = "videos/staging/{$uuid}.{$ext}";
+        $finalPath   = "videos/trailers/movies/{$uuid}.{$ext}";
+
+        $request->file('trailer')->storeAs('videos/staging', "{$uuid}.{$ext}", 'public');
+        $movie->update(['trailer_path' => $stagingPath]);
+
+        ProcessVideoUpload::dispatch(
+            Movie::class,
+            $movie->id,
+            $stagingPath,
+            $finalPath,
+            auth()->id(),
+            $movie->title . ' (trailer)',
+            route('admin.movies.edit', $movie),
+            'trailer_path',
+        );
+
+        return redirect()->route('admin.movies.edit', $movie)->with('status', 'trailer-processing');
     }
 
     public function toggleStatus(Movie $movie)

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class Episode extends Model
 {
@@ -11,6 +12,18 @@ class Episode extends Model
         'season_id', 'episode_number', 'title',
         'description', 'video_path', 'duration',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Episode $episode) {
+            $episode->uuid = (string) Str::uuid();
+        });
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
+    }
 
     public function season(): BelongsTo
     {

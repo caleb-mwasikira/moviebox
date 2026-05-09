@@ -69,8 +69,28 @@
     <div id="posters-preview" class="flex flex-wrap gap-2 mt-3"></div>
   </div>
 
-  {{-- Series has no video on create, but show a note about episode uploads --}}
-  <p class="text-xs text-gray-500 -mt-2">Videos are uploaded per episode after creating the series.</p>
+  <div>
+    <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="trailer">Trailer <span class="normal-case font-normal text-gray-400">(optional)</span></label>
+    <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer"
+      type="file" name="trailer" id="trailer" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv">
+    <p class="mt-1 text-xs text-gray-500">Short preview clip shown on the series page</p>
+    @error('trailer')<p class="mt-1.5 text-xs text-danger">{{ $message }}</p>@enderror
+  </div>
+
+  {{-- Series has no episode video on create, show a note --}}
+  <p class="text-xs text-gray-500 -mt-2">Episode videos are uploaded per episode after creating the series.</p>
+
+  {{-- Upload progress (visible when a trailer is uploading) --}}
+  <div id="upload-progress-wrap" class="hidden flex flex-col gap-y-2">
+    <div class="flex justify-between text-xs font-bold uppercase text-gray-500">
+      <span>Uploading trailer…</span>
+      <span id="upload-progress-label">0%</span>
+    </div>
+    <div class="w-full h-2 bg-gray-200 dark:bg-gray-700">
+      <div id="upload-progress-bar" class="h-2 bg-accent transition-all duration-150" style="width:0%"></div>
+    </div>
+    <p class="text-xs text-gray-500">Large files may take a few minutes. Do not close this tab.</p>
+  </div>
 
   <div class="flex gap-x-4 pt-2">
     <button type="submit" id="upload-submit"
@@ -118,6 +138,58 @@
 
   attachPreview('thumbnail', 'thumbnail-preview');
   attachPreview('posters-input', 'posters-preview');
+
+  // ── XHR upload for trailer ────────────────────────────────────
+  var form         = document.getElementById('upload-form');
+  var progressWrap = document.getElementById('upload-progress-wrap');
+  var progressBar  = document.getElementById('upload-progress-bar');
+  var progressLabel= document.getElementById('upload-progress-label');
+  var submitBtn    = document.getElementById('upload-submit');
+
+  if (form) {
+    form.addEventListener('submit', function (e) {
+      var trailerInput = document.getElementById('trailer');
+      if (!trailerInput || !trailerInput.files.length) return; // no trailer — regular submit
+
+      e.preventDefault();
+      var formData = new FormData(form);
+      var xhr = new XMLHttpRequest();
+
+      progressWrap.classList.remove('hidden');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Uploading…';
+
+      xhr.upload.addEventListener('progress', function (ev) {
+        if (!ev.lengthComputable) return;
+        var pct = Math.round((ev.loaded / ev.total) * 100);
+        progressBar.style.width = pct + '%';
+        progressLabel.textContent = pct + '%';
+        if (pct === 100) { progressLabel.textContent = 'Saving…'; submitBtn.textContent = 'Saving…'; }
+      });
+
+      xhr.addEventListener('load', function () {
+        if (xhr.status >= 200 && xhr.status < 400) {
+          window.location.href = xhr.responseURL;
+        } else {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Create Series';
+          progressLabel.textContent = 'Upload failed (' + xhr.status + ') — try again.';
+          progressBar.style.width = '0%';
+        }
+      });
+
+      xhr.addEventListener('error', function () {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Series';
+        progressLabel.textContent = 'Upload failed — try again.';
+        progressBar.style.width = '0%';
+      });
+
+      xhr.open('POST', form.action);
+      xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
+      xhr.send(formData);
+    });
+  }
 })();
 </script>
 @endpush
