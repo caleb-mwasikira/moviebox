@@ -2,56 +2,179 @@
 
 @section('title', $movie->title)
 
+@push('head')
+  <style>
+    .watch-wrap {
+      display: block;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Video Container Logic */
+    .watch-video-col {
+      background: #000;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .watch-video-col video {
+      display: block;
+      width: 100%;
+      /* Adjust 120px based on your site's header height */
+      max-height: calc(100vh - 120px);
+      background: #000;
+    }
+
+    .watch-meta-bar {
+      width: 100%;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #111;
+      border-top: 1px solid #222;
+    }
+
+    /* Sliding Sidebar Base */
+    .watch-sidebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 320px;
+      height: 100%;
+      z-index: 9999;
+      background: var(--watch-sidebar-bg, #fff);
+      box-shadow: -5px 0 25px rgba(0,0,0,0.5);
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .watch-sidebar.open {
+      transform: translateX(0);
+    }
+
+    .watch-sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 9998;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s;
+    }
+
+    .watch-sidebar-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .dark .watch-sidebar { --watch-sidebar-bg: #111827; }
+
+    @media (min-width: 1024px) {
+        .watch-sidebar { width: 400px; }
+    }
+  </style>
+@endpush
+
 @section('content')
   <main id="main-content" class="grow">
 
-    <div class="bg-black">
-      <div class="max-w-[1360px] mx-auto">
-        <video
-          class="w-full aspect-video"
-          controls
-          autoplay
-          preload="auto"
-          src="{{ $movie->videoUrl() }}"
-        ></video>
-      </div>
-    </div>
+    <div class="watch-wrap">
+      <div class="watch-sidebar-overlay"></div>
 
-    <div class="pt-6 pb-16">
-      <div class="container">
+      {{-- ── Video Column ── --}}
+      <div class="watch-video-col">
+        <video id="movie-player" controls autoplay preload="auto"></video>
 
-        <div class="flex items-start justify-between gap-x-6 flex-wrap gap-y-4">
-          <div>
-            <h1 class="text-xl font-bold text-gray-900 dark:text-white md:text-2xl mb-2">
-              {{ $movie->title }}
-            </h1>
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-bold uppercase text-gray-500">
-              @if ($movie->genre)
-                <span class="text-accent">{{ $movie->genre }}</span>
-              @endif
-              @if ($movie->year)
-                <span>{{ $movie->year }}</span>
-              @endif
-              @if ($movie->duration)
-                <span>{{ $movie->duration }} min</span>
-              @endif
-            </div>
+        <div class="watch-meta-bar">
+          <div class="flex flex-col">
+            <span class="text-white font-bold text-sm">{{ $movie->title }}</span>
+            <span class="text-gray-500 text-xs uppercase">{{ $movie->genre }} • {{ $movie->year }}</span>
           </div>
-          <a href="{{ route('movies.show', $movie) }}"
-            class="shrink-0 inline-flex items-center gap-x-2 text-sm font-bold uppercase text-gray-500 hover:text-accent transition-colors">
-            <svg class="h-2 w-1.5 rotate-180 fill-current" viewBox="0 0 6 10"><path d="M1 1l4 4-4 4"/></svg>
-            Back
-          </a>
+
+          <div class="flex items-center gap-x-3">
+            {{-- Toggle Button --}}
+            <button id="toggle-sidebar" class="flex items-center justify-center w-9 h-9 bg-accent/20 text-accent border border-accent/50 hover:bg-accent hover:text-black transition-colors">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+            </button>
+            <a href="{{ route('movies.show', $movie) }}" class="flex items-center justify-center w-9 h-9 bg-white/10 text-white hover:bg-white/20 transition-colors">
+              <svg class="h-3 w-3 rotate-180 fill-current" viewBox="0 0 6 10"><path d="M1 1l4 4-4 4"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {{-- ── Sliding Sidebar ── --}}
+      <div class="watch-sidebar">
+        <div class="p-4 border-bottom border-gray-100 dark:border-gray-800 flex items-center justify-between">
+          <h2 class="font-bold uppercase text-xs tracking-widest text-gray-500">Movie Info</h2>
+          <button id="close-sidebar" class="text-gray-400 hover:text-white">
+            <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          </button>
         </div>
 
-        @if ($movie->description)
-        <div class="mt-5 text-gray-500 dark:text-gray leading-relaxed max-w-3xl">
-          {{ $movie->description }}
-        </div>
-        @endif
+        <div class="p-6 overflow-y-auto flex-1">
+          <h1 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ $movie->title }}</h1>
+          <div class="flex flex-wrap gap-4 text-xs font-bold uppercase text-gray-500 mb-6">
+            <span class="text-accent">{{ $movie->genre }}</span>
+            <span>{{ $movie->year }}</span>
+            <span>{{ $movie->duration }} min</span>
+          </div>
 
+          @if ($movie->description)
+            <p class="text-gray-500 dark:text-gray-400 text-sm leading-relaxed">
+              {{ $movie->description }}
+            </p>
+          @endif
+
+          {{-- You can add "Related Movies" or "Cast" here --}}
+        </div>
       </div>
     </div>
 
   </main>
 @endsection
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script>
+  (function () {
+    // ── Sidebar Controls ──
+    const sidebar = document.querySelector('.watch-sidebar');
+    const overlay = document.querySelector('.watch-sidebar-overlay');
+    const openBtn = document.getElementById('toggle-sidebar');
+    const closeBtn = document.getElementById('close-sidebar');
+
+    openBtn.addEventListener('click', () => { sidebar.classList.add('open'); overlay.classList.add('show'); });
+    const hideMenu = () => { sidebar.classList.remove('open'); overlay.classList.remove('show'); };
+    closeBtn.addEventListener('click', hideMenu);
+    overlay.addEventListener('click', hideMenu);
+
+    // ── HLS Player ──
+    const video = document.getElementById('movie-player');
+    const movieId = @json($movie->id);
+    let hlsInst = null;
+
+    function loadHls(src) {
+      if (Hls.isSupported()) {
+        if (hlsInst) hlsInst.destroy();
+        hlsInst = new Hls();
+        hlsInst.loadSource(src);
+        hlsInst.attachMedia(video);
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = src;
+      }
+    }
+
+    @if ($movie->streaming_path)
+      loadHls(@json($movie->streamingUrl()));
+    @else
+      video.src = @json($movie->videoUrl());
+    @endif
+  })();
+</script>
+@endpush

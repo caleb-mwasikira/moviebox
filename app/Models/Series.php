@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Episode;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Str;
 
@@ -36,6 +38,11 @@ class Series extends Model
         return $this->hasMany(Season::class)->orderBy('season_number');
     }
 
+    public function episodes(): HasManyThrough
+    {
+        return $this->hasManyThrough(Episode::class, Season::class);
+    }
+
     public function isPublished(): bool
     {
         return $this->status === 'published';
@@ -58,6 +65,9 @@ class Series extends Model
 
     public function trailerUrl(): string
     {
+        if (str_starts_with($this->trailer_path, 'http')) {
+            return $this->trailer_path;
+        }
         return asset('storage/' . $this->trailer_path);
     }
 }

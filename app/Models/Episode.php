@@ -10,7 +10,7 @@ class Episode extends Model
 {
     protected $fillable = [
         'season_id', 'episode_number', 'title',
-        'description', 'video_path', 'duration',
+        'description', 'video_path', 'streaming_path', 'duration',
     ];
 
     protected static function booted(): void
@@ -35,8 +35,16 @@ class Episode extends Model
         return asset('storage/' . $this->video_path);
     }
 
+    public function streamingUrl(): ?string
+    {
+        if (!$this->streaming_path) return null;
+        $base = rtrim(env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090'), '/');
+        return $base . $this->streaming_path;
+    }
+
     public function videoIsReady(): bool
     {
+        if ($this->streaming_path) return true;
         return (bool) $this->video_path && !str_starts_with($this->video_path, 'videos/staging/');
     }
 

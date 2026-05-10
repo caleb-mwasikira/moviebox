@@ -3,15 +3,16 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\ProcessVideoUpload;
+use App\Http\Traits\TriggersHlsEncoding;
 use App\Models\Movie;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-
 class MovieController extends Controller
 {
+    use TriggersHlsEncoding;
+
     public function index()
     {
         $movies = Movie::latest()->paginate(20);
@@ -32,19 +33,18 @@ class MovieController extends Controller
             'year'        => ['nullable', 'integer', 'min:1888', 'max:2100'],
             'duration'    => ['nullable', 'integer', 'min:1'],
             'thumbnail'   => ['nullable', 'image', 'max:2048'],
-            'video'        => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
-            'trailer'      => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
-            'status'       => ['required', 'in:published,hidden'],
-            'posters'      => ['nullable', 'array'],
-            'posters.*'    => ['image', 'max:4096'],
+            'video'       => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
+            'trailer'     => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
+            'status'      => ['required', 'in:published,hidden'],
+            'posters'     => ['nullable', 'array'],
+            'posters.*'   => ['image', 'max:4096'],
         ]);
 
-        $ext         = $request->file('video')->getClientOriginalExtension();
-        $uuid        = Str::uuid();
-        $stagingPath = "videos/staging/{$uuid}.{$ext}";
-        $finalPath   = "videos/movies/{$uuid}.{$ext}";
+        $ext       = $request->file('video')->getClientOriginalExtension();
+        $uuid      = Str::uuid();
+        $finalPath = "videos/movies/{$uuid}.{$ext}";
 
-        $request->file('video')->storeAs('videos/staging', "{$uuid}.{$ext}", 'public');
+        $request->file('video')->storeAs('videos/movies', "{$uuid}.{$ext}", 'public');
 
         $data = [
             'title'       => $validated['title'],
@@ -53,7 +53,7 @@ class MovieController extends Controller
             'year'        => $validated['year'] ?? null,
             'duration'    => $validated['duration'] ?? null,
             'status'      => $validated['status'],
-            'video_path'  => $stagingPath,
+            'video_path'  => $finalPath,
         ];
 
         if ($request->hasFile('thumbnail')) {
@@ -69,32 +69,25 @@ class MovieController extends Controller
             ]);
         }
 
-        ProcessVideoUpload::dispatch(
-            Movie::class,
+        $this->triggerHlsEncoding(
             $movie->id,
-            $stagingPath,
-            $finalPath,
-            auth()->id(),
-            $movie->title,
+            'movies',
+            storage_path('app/public/' . $finalPath),
             route('admin.movies.edit', $movie),
+            $movie->title,
         );
 
         if ($request->hasFile('trailer')) {
-            $tExt          = $request->file('trailer')->getClientOriginalExtension();
-            $tUuid         = Str::uuid();
-            $tStagingPath  = "videos/staging/{$tUuid}.{$tExt}";
-            $tFinalPath    = "videos/trailers/movies/{$tUuid}.{$tExt}";
+            $tExt         = $request->file('trailer')->getClientOriginalExtension();
+            $tUuid        = Str::uuid();
+            $tStagingPath = "videos/staging/{$tUuid}.{$tExt}";
             $request->file('trailer')->storeAs('videos/staging', "{$tUuid}.{$tExt}", 'public');
             $movie->update(['trailer_path' => $tStagingPath]);
-            ProcessVideoUpload::dispatch(
-                Movie::class,
-                $movie->id,
-                $tStagingPath,
-                $tFinalPath,
-                auth()->id(),
-                $movie->title . ' (trailer)',
+            $this->triggerConversion(
+                $movie->id, 'movies',
+                storage_path('app/public/' . $tStagingPath),
                 route('admin.movies.edit', $movie),
-                'trailer_path',
+                $movie->title . ' (trailer)',
             );
         }
 
@@ -138,29 +131,28 @@ class MovieController extends Controller
             $data['thumbnail'] = $request->file('thumbnail')->store('thumbnails/movies', 'public');
         }
 
+        $newVideoPath = null;
         if ($request->hasFile('video')) {
             Storage::disk('public')->delete($movie->video_path);
 
-            $ext         = $request->file('video')->getClientOriginalExtension();
-            $uuid        = Str::uuid();
-            $stagingPath = "videos/staging/{$uuid}.{$ext}";
-            $finalPath   = "videos/movies/{$uuid}.{$ext}";
+            $ext          = $request->file('video')->getClientOriginalExtension();
+            $uuid         = Str::uuid();
+            $newVideoPath = "videos/movies/{$uuid}.{$ext}";
 
-            $request->file('video')->storeAs('videos/staging', "{$uuid}.{$ext}", 'public');
-            $data['video_path'] = $stagingPath;
+            $request->file('video')->storeAs('videos/movies', "{$uuid}.{$ext}", 'public');
+            $data['video_path']      = $newVideoPath;
+            $data['streaming_path']  = null; // clear old HLS since video is replaced
         }
 
         $movie->update($data);
 
-        if (isset($stagingPath, $finalPath)) {
-            ProcessVideoUpload::dispatch(
-                Movie::class,
+        if ($newVideoPath) {
+            $this->triggerHlsEncoding(
                 $movie->id,
-                $stagingPath,
-                $finalPath,
-                auth()->id(),
-                $movie->title,
+                'movies',
+                storage_path('app/public/' . $newVideoPath),
                 route('admin.movies.edit', $movie),
+                $movie->title,
             );
         }
 
@@ -173,6 +165,23 @@ class MovieController extends Controller
         }
 
         return redirect()->route('admin.movies.edit', $movie)->with('status', 'movie-updated');
+    }
+
+    public function reprocess(Movie $movie)
+    {
+        $ok = $this->triggerHlsEncoding(
+            $movie->id,
+            'movies',
+            storage_path('app/public/' . $movie->video_path),
+            route('admin.movies.edit', $movie),
+            $movie->title,
+        );
+
+        if (!$ok) {
+            return back()->with('error', 'Streaming service is unavailable. Make sure it is running on ' . env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090') . '.');
+        }
+
+        return back()->with('status', 'movie-reprocessing');
     }
 
     public function destroy(Movie $movie)
@@ -195,27 +204,22 @@ class MovieController extends Controller
             'trailer' => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska,video/mkv,video/matroska'],
         ]);
 
-        if ($movie->trailer_path) {
+        if ($movie->trailer_path && !str_starts_with($movie->trailer_path, 'http')) {
             Storage::disk('public')->delete($movie->trailer_path);
         }
 
         $ext         = $request->file('trailer')->getClientOriginalExtension();
         $uuid        = Str::uuid();
         $stagingPath = "videos/staging/{$uuid}.{$ext}";
-        $finalPath   = "videos/trailers/movies/{$uuid}.{$ext}";
 
         $request->file('trailer')->storeAs('videos/staging', "{$uuid}.{$ext}", 'public');
         $movie->update(['trailer_path' => $stagingPath]);
 
-        ProcessVideoUpload::dispatch(
-            Movie::class,
-            $movie->id,
-            $stagingPath,
-            $finalPath,
-            auth()->id(),
-            $movie->title . ' (trailer)',
+        $this->triggerConversion(
+            $movie->id, 'movies',
+            storage_path('app/public/' . $stagingPath),
             route('admin.movies.edit', $movie),
-            'trailer_path',
+            $movie->title . ' (trailer)',
         );
 
         return redirect()->route('admin.movies.edit', $movie)->with('status', 'trailer-processing');

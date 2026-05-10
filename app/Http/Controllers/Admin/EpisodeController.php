@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\ProcessVideoUpload;
+use App\Http\Traits\TriggersHlsEncoding;
 use App\Models\Episode;
 use App\Models\Season;
 use Illuminate\Http\Request;
@@ -12,6 +12,8 @@ use Illuminate\Support\Str;
 
 class EpisodeController extends Controller
 {
+    use TriggersHlsEncoding;
+
     public function store(Request $request, Season $season)
     {
         $validated = $request->validate([
@@ -22,32 +24,28 @@ class EpisodeController extends Controller
             'video'          => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
         ]);
 
-        $ext         = $request->file('video')->getClientOriginalExtension();
-        $uuid        = Str::uuid();
-        $stagingPath = "videos/staging/{$uuid}.{$ext}";
-        $finalPath   = "videos/series/{$uuid}.{$ext}";
+        $ext       = $request->file('video')->getClientOriginalExtension();
+        $uuid      = Str::uuid();
+        $finalPath = "videos/series/{$uuid}.{$ext}";
 
-        $request->file('video')->storeAs('videos/staging', "{$uuid}.{$ext}", 'public');
+        $request->file('video')->storeAs('videos/series', "{$uuid}.{$ext}", 'public');
 
         $episode = $season->episodes()->create([
             'episode_number' => $validated['episode_number'],
             'title'          => $validated['title'],
             'description'    => $validated['description'] ?? null,
             'duration'       => $validated['duration'] ?? null,
-            'video_path'     => $stagingPath,
+            'video_path'     => $finalPath,
         ]);
 
         $series = $season->series;
-        $label  = "S{$season->season_number}E{$episode->episode_number} — {$episode->title}";
 
-        ProcessVideoUpload::dispatch(
-            Episode::class,
+        $this->triggerHlsEncoding(
             $episode->id,
-            $stagingPath,
-            $finalPath,
-            auth()->id(),
-            $label,
+            'episodes',
+            storage_path('app/public/' . $finalPath),
             route('admin.series.edit', $series),
+            $series->title . ' - ep. ' . $validated['episode_number'],
         );
 
         return redirect()

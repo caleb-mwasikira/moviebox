@@ -20,6 +20,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.modal' => RequireAuthModal::class,
         ]);
         $middleware->appendToGroup('web', CheckBanned::class);
+        $middleware->validateCsrfTokens(except: [
+            '/callbacks/*',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

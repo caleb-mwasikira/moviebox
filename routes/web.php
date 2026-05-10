@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\SeriesController as AdminSeriesController;
 use App\Http\Controllers\Admin\SeasonController as AdminSeasonController;
 use App\Http\Controllers\Admin\EpisodeController as AdminEpisodeController;
 use App\Http\Controllers\Admin\PosterController as AdminPosterController;
+use App\Http\Controllers\Admin\StreamingStatusController as AdminStreamingStatusController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\VerifyOtpController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\VideoCallbackController;
 use Illuminate\Support\Facades\Route;
 
 // Auth routes
@@ -36,6 +38,11 @@ Route::middleware('guest')->group(function () {
     Route::post('/reset-password', [ResetPasswordController::class, 'store'])->name('password.update');
 });
 Route::post('/logout', [LogoutController::class, 'destroy'])->name('logout')->middleware('auth');
+
+// Internal callbacks from Go streaming service — no auth, CSRF-exempt via bootstrap/app.php
+Route::post('/callbacks/streaming-ready', [VideoCallbackController::class, 'streamingReady'])->name('callbacks.streaming-ready');
+Route::post('/callbacks/encoding-progress', [VideoCallbackController::class, 'encodingProgress'])->name('callbacks.encoding-progress');
+Route::post('/callbacks/conversion-ready', [VideoCallbackController::class, 'conversionReady'])->name('callbacks.conversion-ready');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::view('/about', 'pages.about')->name('about');
@@ -72,11 +79,13 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::patch('movies/{movie}/status', [AdminMovieController::class, 'toggleStatus'])->name('movies.toggle-status');
     Route::patch('movies/{movie}/featured', [AdminMovieController::class, 'toggleFeatured'])->name('movies.toggle-featured');
     Route::post('movies/{movie}/trailer', [AdminMovieController::class, 'uploadTrailer'])->name('movies.trailer');
+    Route::post('movies/{movie}/reprocess', [AdminMovieController::class, 'reprocess'])->name('movies.reprocess');
 
     Route::resource('series', AdminSeriesController::class)->except(['show']);
     Route::patch('series/{series}/status', [AdminSeriesController::class, 'toggleStatus'])->name('series.toggle-status');
     Route::patch('series/{series}/featured', [AdminSeriesController::class, 'toggleFeatured'])->name('series.toggle-featured');
     Route::post('series/{series}/trailer', [AdminSeriesController::class, 'uploadTrailer'])->name('series.trailer');
+    Route::post('series/{series}/reprocess', [AdminSeriesController::class, 'reprocess'])->name('series.reprocess');
 
     Route::post('series/{series}/seasons', [AdminSeasonController::class, 'store'])->name('seasons.store');
     Route::delete('seasons/{season}', [AdminSeasonController::class, 'destroy'])->name('seasons.destroy');
@@ -85,6 +94,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::delete('episodes/{episode}', [AdminEpisodeController::class, 'destroy'])->name('episodes.destroy');
 
     Route::delete('posters/{poster}', [AdminPosterController::class, 'destroy'])->name('posters.destroy');
+
+    Route::get('encoding-status', [AdminStreamingStatusController::class, 'index'])->name('encoding-status');
 
     Route::get('users', [AdminUserController::class, 'index'])->name('users.index');
     Route::patch('users/{user}/ban', [AdminUserController::class, 'ban'])->name('users.ban');

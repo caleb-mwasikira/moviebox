@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\ProcessVideoUpload;
+use App\Http\Traits\TriggersHlsEncoding;
 use App\Models\Series;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -11,9 +11,14 @@ use Illuminate\Support\Str;
 
 class SeriesController extends Controller
 {
+    use TriggersHlsEncoding;
+
     public function index()
     {
-        $series = Series::withCount('seasons')->latest()->paginate(20);
+        $series = Series::withCount('seasons')
+            ->withCount(['episodes as unprocessed_count' => fn ($q) => $q->whereNull('streaming_path')])
+            ->latest()
+            ->paginate(20);
         return view('pages.admin.series.index', compact('series'));
     }
 
@@ -61,18 +66,13 @@ class SeriesController extends Controller
             $tExt         = $request->file('trailer')->getClientOriginalExtension();
             $tUuid        = Str::uuid();
             $tStagingPath = "videos/staging/{$tUuid}.{$tExt}";
-            $tFinalPath   = "videos/trailers/series/{$tUuid}.{$tExt}";
             $request->file('trailer')->storeAs('videos/staging', "{$tUuid}.{$tExt}", 'public');
             $series->update(['trailer_path' => $tStagingPath]);
-            ProcessVideoUpload::dispatch(
-                Series::class,
-                $series->id,
-                $tStagingPath,
-                $tFinalPath,
-                auth()->id(),
-                $series->title . ' (trailer)',
+            $this->triggerConversion(
+                $series->id, 'series',
+                storage_path('app/public/' . $tStagingPath),
                 route('admin.series.edit', $series),
-                'trailer_path',
+                $series->title . ' (trailer)',
             );
         }
 
@@ -118,24 +118,19 @@ class SeriesController extends Controller
         $series->update($data);
 
         if ($request->hasFile('trailer')) {
-            if ($series->trailer_path) {
+            if ($series->trailer_path && !str_starts_with($series->trailer_path, 'http')) {
                 Storage::disk('public')->delete($series->trailer_path);
             }
             $tExt         = $request->file('trailer')->getClientOriginalExtension();
             $tUuid        = Str::uuid();
             $tStagingPath = "videos/staging/{$tUuid}.{$tExt}";
-            $tFinalPath   = "videos/trailers/series/{$tUuid}.{$tExt}";
             $request->file('trailer')->storeAs('videos/staging', "{$tUuid}.{$tExt}", 'public');
             $series->update(['trailer_path' => $tStagingPath]);
-            ProcessVideoUpload::dispatch(
-                Series::class,
-                $series->id,
-                $tStagingPath,
-                $tFinalPath,
-                auth()->id(),
-                $series->title . ' (trailer)',
+            $this->triggerConversion(
+                $series->id, 'series',
+                storage_path('app/public/' . $tStagingPath),
                 route('admin.series.edit', $series),
-                'trailer_path',
+                $series->title . ' (trailer)',
             );
         }
 
@@ -169,30 +164,49 @@ class SeriesController extends Controller
             'trailer' => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska,video/mkv,video/matroska'],
         ]);
 
-        if ($series->trailer_path) {
+        if ($series->trailer_path && !str_starts_with($series->trailer_path, 'http')) {
             Storage::disk('public')->delete($series->trailer_path);
         }
 
         $ext         = $request->file('trailer')->getClientOriginalExtension();
         $uuid        = Str::uuid();
         $stagingPath = "videos/staging/{$uuid}.{$ext}";
-        $finalPath   = "videos/trailers/series/{$uuid}.{$ext}";
 
         $request->file('trailer')->storeAs('videos/staging', "{$uuid}.{$ext}", 'public');
         $series->update(['trailer_path' => $stagingPath]);
 
-        ProcessVideoUpload::dispatch(
-            Series::class,
-            $series->id,
-            $stagingPath,
-            $finalPath,
-            auth()->id(),
-            $series->title . ' (trailer)',
+        $this->triggerConversion(
+            $series->id, 'series',
+            storage_path('app/public/' . $stagingPath),
             route('admin.series.edit', $series),
-            'trailer_path',
+            $series->title . ' (trailer)',
         );
 
         return redirect()->route('admin.series.edit', $series)->with('status', 'trailer-processing');
+    }
+
+    public function reprocess(Series $series)
+    {
+        $series->load('seasons.episodes');
+        $callbackUrl = route('admin.series.edit', $series);
+
+        foreach ($series->seasons as $season) {
+            foreach ($season->episodes as $episode) {
+                if ($episode->streaming_path) {
+                    continue;
+                }
+                $absPath = storage_path('app/public/' . $episode->video_path);
+                $ok = $this->triggerHlsEncoding(
+                    $episode->id, 'episodes', $absPath, $callbackUrl,
+                    $series->title . ' – ep. ' . $episode->episode_number,
+                );
+                if (!$ok) {
+                    return back()->with('error', 'Streaming service is unavailable. Make sure it is running on ' . env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090') . '.');
+                }
+            }
+        }
+
+        return back()->with('status', 'series-reprocessing');
     }
 
     public function toggleStatus(Series $series)

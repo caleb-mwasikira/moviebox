@@ -8,29 +8,40 @@
 
 @push('scripts')
 <script type="module">
+  function showToast(text, href, bg, color) {
+    const container = document.getElementById('vt-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.style.cssText = `display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 16px;background:${bg};color:${color};font-size:0.8125rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.25);min-width:280px;max-width:340px;`;
+
+    const link = document.createElement('a');
+    link.href = href;
+    link.style.cssText = 'color:inherit;text-decoration:none;flex:1;';
+    link.textContent = text;
+
+    const btn = document.createElement('button');
+    btn.textContent = '✕';
+    btn.style.cssText = 'background:none;border:none;cursor:pointer;color:inherit;font-size:1rem;line-height:1;flex-shrink:0;';
+    btn.onclick = () => toast.remove();
+
+    toast.appendChild(link);
+    toast.appendChild(btn);
+    container.appendChild(toast);
+
+    setTimeout(() => toast.remove(), 8000);
+  }
+
   window.Echo.private('admin-notifications.{{ auth()->id() }}')
     .listen('VideoReady', (e) => {
-      const container = document.getElementById('vt-container');
-      if (!container) return;
-
-      const toast = document.createElement('div');
-      toast.style.cssText = 'display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 16px;background:#eab308;color:#111827;font-size:0.8125rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.25);min-width:280px;max-width:340px;';
-
-      const link = document.createElement('a');
-      link.href = e.editUrl;
-      link.style.cssText = 'color:inherit;text-decoration:none;flex:1;';
-      link.textContent = `✓ "${e.label}" video ready`;
-
-      const btn = document.createElement('button');
-      btn.textContent = '✕';
-      btn.style.cssText = 'background:none;border:none;cursor:pointer;color:inherit;font-size:1rem;line-height:1;flex-shrink:0;';
-      btn.onclick = () => toast.remove();
-
-      toast.appendChild(link);
-      toast.appendChild(btn);
-      container.appendChild(toast);
-
-      setTimeout(() => toast.remove(), 8000);
+      showToast(`✓ "${e.label}" video ready`, e.editUrl, '#eab308', '#111827');
+    })
+    .listen('VideoStreamingReady', (e) => {
+      showToast(`▶ "${e.label}" HLS stream ready`, e.editUrl, 'rgb(101,76,255)', '#fff');
+      document.dispatchEvent(new CustomEvent('streaming-ready', { detail: e }));
+    })
+    .listen('VideoEncodingProgress', (e) => {
+      document.dispatchEvent(new CustomEvent('encoding-progress', { detail: e }));
     });
 </script>
 @endpush
@@ -71,6 +82,12 @@
       </aside>
 
       <div class="flex-1 min-w-0">
+        @if (session('error'))
+          <div class="mb-6 border border-red-400 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-400 font-medium">
+            {{ session('error') }}
+          </div>
+        @endif
+
         @if (session('status'))
           @php
             $messages = [
@@ -83,7 +100,9 @@
               'series-deleted'    => 'Series deleted.',
               'season-added'      => 'Season added successfully.',
               'season-deleted'    => 'Season deleted.',
-              'episode-processing'=> 'Episode saved — video is being processed in the background.',
+              'episode-processing'    => 'Episode saved — video is being processed in the background.',
+              'movie-reprocessing'    => 'HLS encoding triggered for this movie.',
+              'series-reprocessing'   => 'HLS encoding triggered for unprocessed episodes.',
               'episode-added'     => 'Episode uploaded successfully.',
               'episode-deleted'   => 'Episode deleted.',
               'poster-deleted'    => 'Poster removed.',
