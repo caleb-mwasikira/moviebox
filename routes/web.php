@@ -40,9 +40,7 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [LogoutController::class, 'destroy'])->name('logout')->middleware('auth');
 
 // Internal callbacks from Go streaming service — no auth, CSRF-exempt via bootstrap/app.php
-Route::post('/callbacks/streaming-ready', [VideoCallbackController::class, 'streamingReady'])->name('callbacks.streaming-ready');
-Route::post('/callbacks/encoding-progress', [VideoCallbackController::class, 'encodingProgress'])->name('callbacks.encoding-progress');
-Route::post('/callbacks/conversion-ready', [VideoCallbackController::class, 'conversionReady'])->name('callbacks.conversion-ready');
+Route::post('/callbacks/video-ready', [VideoCallbackController::class, 'videoReady'])->name('callbacks.video-ready');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::view('/about', 'pages.about')->name('about');
@@ -85,7 +83,6 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::patch('series/{series}/status', [AdminSeriesController::class, 'toggleStatus'])->name('series.toggle-status');
     Route::patch('series/{series}/featured', [AdminSeriesController::class, 'toggleFeatured'])->name('series.toggle-featured');
     Route::post('series/{series}/trailer', [AdminSeriesController::class, 'uploadTrailer'])->name('series.trailer');
-    Route::post('series/{series}/reprocess', [AdminSeriesController::class, 'reprocess'])->name('series.reprocess');
 
     Route::post('series/{series}/seasons', [AdminSeasonController::class, 'store'])->name('seasons.store');
     Route::delete('seasons/{season}', [AdminSeasonController::class, 'destroy'])->name('seasons.destroy');

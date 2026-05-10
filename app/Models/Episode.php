@@ -37,9 +37,14 @@ class Episode extends Model
 
     public function streamingUrl(): ?string
     {
-        if (!$this->streaming_path) return null;
-        $base = rtrim(env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090'), '/');
-        return $base . $this->streaming_path;
+        if (!$this->streaming_path) {
+            return null;
+        }
+        // Use the env variable as the base, defaulting to local if not set
+        $baseUrl = rtrim(env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090'), '/');
+        // Ensure we don't have double slashes when joining
+        $path = ltrim($this->streaming_path, '/');
+        return "{$baseUrl}/{$path}";
     }
 
     public function videoIsReady(): bool

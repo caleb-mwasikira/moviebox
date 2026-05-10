@@ -68,11 +68,12 @@ class SeriesController extends Controller
             $tStagingPath = "videos/staging/{$tUuid}.{$tExt}";
             $request->file('trailer')->storeAs('videos/staging', "{$tUuid}.{$tExt}", 'public');
             $series->update(['trailer_path' => $tStagingPath]);
-            $this->triggerConversion(
-                $series->id, 'series',
-                storage_path('app/public/' . $tStagingPath),
-                route('admin.series.edit', $series),
+
+            $this->convertVideo(
+                $series->uuid,
+                'series_trailer',
                 $series->title . ' (trailer)',
+                storage_path('app/public/' . $tStagingPath),
             );
         }
 
@@ -126,11 +127,12 @@ class SeriesController extends Controller
             $tStagingPath = "videos/staging/{$tUuid}.{$tExt}";
             $request->file('trailer')->storeAs('videos/staging', "{$tUuid}.{$tExt}", 'public');
             $series->update(['trailer_path' => $tStagingPath]);
-            $this->triggerConversion(
-                $series->id, 'series',
-                storage_path('app/public/' . $tStagingPath),
-                route('admin.series.edit', $series),
+
+            $this->convertVideo(
+                $series->uuid,
+                'series_trailer',
                 $series->title . ' (trailer)',
+                storage_path('app/public/' . $tStagingPath),
             );
         }
 
@@ -175,38 +177,14 @@ class SeriesController extends Controller
         $request->file('trailer')->storeAs('videos/staging', "{$uuid}.{$ext}", 'public');
         $series->update(['trailer_path' => $stagingPath]);
 
-        $this->triggerConversion(
-            $series->id, 'series',
-            storage_path('app/public/' . $stagingPath),
-            route('admin.series.edit', $series),
+        $this->convertVideo(
+            $series->uuid,
+            'series_trailer',
             $series->title . ' (trailer)',
+            storage_path('app/public/' . $stagingPath),
         );
 
         return redirect()->route('admin.series.edit', $series)->with('status', 'trailer-processing');
-    }
-
-    public function reprocess(Series $series)
-    {
-        $series->load('seasons.episodes');
-        $callbackUrl = route('admin.series.edit', $series);
-
-        foreach ($series->seasons as $season) {
-            foreach ($season->episodes as $episode) {
-                if ($episode->streaming_path) {
-                    continue;
-                }
-                $absPath = storage_path('app/public/' . $episode->video_path);
-                $ok = $this->triggerHlsEncoding(
-                    $episode->id, 'episodes', $absPath, $callbackUrl,
-                    $series->title . ' – ep. ' . $episode->episode_number,
-                );
-                if (!$ok) {
-                    return back()->with('error', 'Streaming service is unavailable. Make sure it is running on ' . env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090') . '.');
-                }
-            }
-        }
-
-        return back()->with('status', 'series-reprocessing');
     }
 
     public function toggleStatus(Series $series)

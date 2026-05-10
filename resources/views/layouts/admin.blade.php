@@ -38,7 +38,7 @@
     })
     .listen('VideoStreamingReady', (e) => {
       showToast(`▶ "${e.label}" HLS stream ready`, e.editUrl, 'rgb(101,76,255)', '#fff');
-      document.dispatchEvent(new CustomEvent('streaming-ready', { detail: e }));
+      document.dispatchEvent(new CustomEvent('video-ready', { detail: e }));
     })
     .listen('VideoEncodingProgress', (e) => {
       document.dispatchEvent(new CustomEvent('encoding-progress', { detail: e }));

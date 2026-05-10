@@ -2,71 +2,80 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\VideoEncodingProgress;
 use App\Events\VideoReady;
-use App\Events\VideoStreamingReady;
 use App\Models\Episode;
 use App\Models\Movie;
+use App\Models\Series;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class VideoCallbackController extends Controller
 {
-    public function streamingReady(Request $request)
+    public function videoReady(Request $request)
     {
-        $adminId  = (int) $request->query('admin_id');
-        $label    = $request->query('label', 'Video');
-        $editUrl  = $request->query('edit_url', '/admin');
-        $filmType = $request->query('film_type', '');
-        $modelId  = (int) $request->query('model_id', 0);
+        $validated = $request->validate([
+            'success'   => ['required', 'boolean'],
+            'model_uuid'  => ['required', 'string'],
+            'film_type' => ['required', 'string', 'in:movies,series,movies_trailer,series_trailer'],
+            'path'      => ['required_if:success,true', 'string'],
+            'message'   => ['nullable', 'string'],
+        ]);
 
-        $seriesId      = null;
-        $streamingPath = '';
+        $isSuccess = $request->boolean('success');
+        $modelUUID   = $validated['model_uuid'];
+        $filmType  = $validated['film_type'];
+        $path      = $validated['path'] ?? null;
+        $message = $validated['message'] ?? ($isSuccess ? 'Encoding Complete' : 'Encoding Failed');
 
-        if ($filmType === 'episodes' && $modelId > 0) {
-            $episode       = Episode::with('season:id,series_id')->find($modelId, ['id', 'season_id', 'streaming_path']);
-            $seriesId      = $episode?->season?->series_id;
-            $streamingPath = $episode?->streamingUrl() ?? '';
-        } elseif ($filmType === 'movies' && $modelId > 0) {
-            $streamingPath = Movie::find($modelId, ['id', 'streaming_path'])?->streamingUrl() ?? '';
+        Log::info('HLS video processing complete', [
+            'success' => $isSuccess,
+            'model_uuid' => $modelUUID,
+            'film_type' => $filmType,
+            'path' => $path,
+            'message' => $message,
+        ]);
+
+        if ($isSuccess) {
+            $this->updateRecordPath($filmType, $modelUUID, $path);
         }
 
+        // Broadcast to admin for real-time UI update
+        $adminId = (int) $request->query('user_id');
         if ($adminId > 0) {
-            broadcast(new VideoStreamingReady($adminId, $label, $editUrl, $filmType, $modelId, $seriesId, $streamingPath));
+            broadcast(new VideoReady($adminId, $message, $isSuccess));
         }
 
         return response()->json(['ok' => true]);
     }
 
-    public function encodingProgress(Request $request)
+    /**
+     * Logic to update the correct table and column.
+     */
+    protected function updateRecordPath(string $type, string $uuid, string $path): void
     {
-        $adminId    = (int) $request->query('admin_id');
-        $filmType   = $request->input('film_type', '');
-        $modelId    = (int) $request->input('model_id', 0);
-        $percentage = (int) $request->input('percentage', 0);
+        switch ($type) {
+            case 'movies':
+                Movie::where('uuid', $uuid)->update(['streaming_path' => $path]);
+                break;
 
-        $seriesId = null;
-        if ($filmType === 'episodes' && $modelId > 0) {
-            $episode  = Episode::with('season:id,series_id')->find($modelId, ['id', 'season_id']);
-            $seriesId = $episode?->season?->series_id;
+            case 'series':
+                // Based on your migration, episodes have the streaming_path
+                Episode::where('uuid', $uuid)->update(['streaming_path' => $path]);
+                break;
+
+            case 'movies_trailer':
+                // Trailers update the trailer_path column in the movies table
+                Movie::where('uuid', $uuid)->update(['trailer_path' => $path]);
+                break;
+
+            case 'series_trailer':
+                // Trailers update the trailer_path column in the series table
+                Series::where('uuid', $uuid)->update(['trailer_path' => $path]);
+                break;
+
+            default:
+                Log::error("Unknown filmType received in callback: {$type}");
+                break;
         }
-
-        if ($adminId > 0 && $filmType && $modelId > 0) {
-            broadcast(new VideoEncodingProgress($adminId, $filmType, $modelId, $percentage, $seriesId));
-        }
-
-        return response()->json(['ok' => true]);
-    }
-
-    public function conversionReady(Request $request)
-    {
-        $adminId = (int) $request->query('admin_id');
-        $label   = $request->query('label', 'Video');
-        $editUrl = $request->query('edit_url', '/admin');
-
-        if ($adminId > 0) {
-            broadcast(new VideoReady($adminId, $label, $editUrl));
-        }
-
-        return response()->json(['ok' => true]);
     }
 }

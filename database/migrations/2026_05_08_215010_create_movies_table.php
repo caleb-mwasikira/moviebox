@@ -18,6 +18,7 @@ return new class extends Migration
             $table->unsignedSmallInteger('duration')->nullable();
             $table->string('thumbnail')->nullable();
             $table->string('video_path');
+            $table->string('streaming_path')->nullable();
             $table->string('trailer_path')->nullable();
             $table->enum('status', ['published', 'hidden'])->default('hidden');
             $table->boolean('featured')->default(false);

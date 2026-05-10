@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (d.filmType === 'movies') showProgress(d.modelId, d.percentage);
   });
 
-  document.addEventListener('streaming-ready', function (e) {
+  document.addEventListener('video-ready', function (e) {
     const d = e.detail;
     if (d.filmType === 'movies') markDone(d.modelId);
   });

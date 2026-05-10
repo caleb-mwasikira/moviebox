@@ -63,17 +63,6 @@
             </td>
             <td class="py-4 text-right">
               <div class="flex items-center justify-end gap-x-4">
-                @if ($show->unprocessed_count > 0)
-                  <form data-reprocess-series="{{ $show->id }}"
-                    method="POST" action="{{ route('admin.series.reprocess', $show) }}"
-                    onsubmit="return confirm('Re-encode {{ $show->unprocessed_count }} unprocessed episode(s) of {{ addslashes($show->title) }} for HLS streaming? This is CPU-intensive and may take several minutes.')">
-                    @csrf
-                    <button type="submit"
-                      class="font-bold text-accent hover:text-accent/70 transition-colors text-xs uppercase cursor-pointer">
-                      ↺ Stream
-                    </button>
-                  </form>
-                @endif
                 <a href="{{ route('admin.series.edit', $show) }}"
                   class="font-bold text-gray-900 dark:text-white hover:text-accent dark:hover:text-accent transition-colors text-xs uppercase">Manage</a>
                 <form method="POST" action="{{ route('admin.series.destroy', $show) }}"
@@ -187,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  document.addEventListener('streaming-ready', function (e) {
+  document.addEventListener('video-ready', function (e) {
     const d = e.detail;
     if (d.filmType === 'episodes' && d.seriesId) episodeDone(d.seriesId, d.modelId);
   });

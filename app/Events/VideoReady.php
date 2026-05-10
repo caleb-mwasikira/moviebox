@@ -14,8 +14,8 @@ class VideoReady implements ShouldBroadcast
 
     public function __construct(
         public readonly int $userId,
-        public readonly string $label,
-        public readonly string $editUrl,
+        public readonly string $message,
+        public readonly bool $success,
     ) {}
 
     public function broadcastOn(): array
@@ -26,8 +26,8 @@ class VideoReady implements ShouldBroadcast
     public function broadcastWith(): array
     {
         return [
-            'label'   => $this->label,
-            'editUrl' => $this->editUrl,
+            'success'   => $this->success,
+            'message'   => $this->message,
         ];
     }
 }

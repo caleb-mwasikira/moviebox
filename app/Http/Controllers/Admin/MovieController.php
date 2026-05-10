@@ -69,12 +69,11 @@ class MovieController extends Controller
             ]);
         }
 
-        $this->triggerHlsEncoding(
-            $movie->id,
+        $this->convertVideo(
+            $movie->uuid,
             'movies',
-            storage_path('app/public/' . $finalPath),
-            route('admin.movies.edit', $movie),
             $movie->title,
+            storage_path('app/public/' . $finalPath),
         );
 
         if ($request->hasFile('trailer')) {
@@ -83,11 +82,12 @@ class MovieController extends Controller
             $tStagingPath = "videos/staging/{$tUuid}.{$tExt}";
             $request->file('trailer')->storeAs('videos/staging', "{$tUuid}.{$tExt}", 'public');
             $movie->update(['trailer_path' => $tStagingPath]);
-            $this->triggerConversion(
-                $movie->id, 'movies',
-                storage_path('app/public/' . $tStagingPath),
-                route('admin.movies.edit', $movie),
+
+            $this->convertVideo(
+                $movie->uuid,
+                'movies_trailer',
                 $movie->title . ' (trailer)',
+                storage_path('app/public/' . $tStagingPath),
             );
         }
 
@@ -147,12 +147,11 @@ class MovieController extends Controller
         $movie->update($data);
 
         if ($newVideoPath) {
-            $this->triggerHlsEncoding(
-                $movie->id,
+            $this->convertVideo(
+                $movie->uuid,
                 'movies',
-                storage_path('app/public/' . $newVideoPath),
-                route('admin.movies.edit', $movie),
                 $movie->title,
+                storage_path('app/public/' . $newVideoPath),
             );
         }
 
@@ -169,12 +168,11 @@ class MovieController extends Controller
 
     public function reprocess(Movie $movie)
     {
-        $ok = $this->triggerHlsEncoding(
-            $movie->id,
+        $ok = $this->convertVideo(
+            $movie->uuid,
             'movies',
-            storage_path('app/public/' . $movie->video_path),
-            route('admin.movies.edit', $movie),
             $movie->title,
+            storage_path('app/public/' . $movie->video_path),
         );
 
         if (!$ok) {
@@ -215,11 +213,11 @@ class MovieController extends Controller
         $request->file('trailer')->storeAs('videos/staging', "{$uuid}.{$ext}", 'public');
         $movie->update(['trailer_path' => $stagingPath]);
 
-        $this->triggerConversion(
-            $movie->id, 'movies',
-            storage_path('app/public/' . $stagingPath),
-            route('admin.movies.edit', $movie),
-            $movie->title . ' (trailer)',
+        $this->convertVideo(
+            $movie->uuid,
+            'movies_trailer',
+            $movie->title,
+            storage_path('app/public/' . $stagingPath)
         );
 
         return redirect()->route('admin.movies.edit', $movie)->with('status', 'trailer-processing');

@@ -40,12 +40,11 @@ class EpisodeController extends Controller
 
         $series = $season->series;
 
-        $this->triggerHlsEncoding(
-            $episode->id,
-            'episodes',
-            storage_path('app/public/' . $finalPath),
-            route('admin.series.edit', $series),
+        $this->convertVideo(
+            $episode->uuid,
+            'series',
             $series->title . ' - ep. ' . $validated['episode_number'],
+            storage_path('app/public/' . $finalPath),
         );
 
         return redirect()

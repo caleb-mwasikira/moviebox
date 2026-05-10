@@ -65,9 +65,13 @@ class Series extends Model
 
     public function trailerUrl(): string
     {
+        if (!$this->trailer_path) {
+            return '';
+        }
         if (str_starts_with($this->trailer_path, 'http')) {
             return $this->trailer_path;
         }
-        return asset('storage/' . $this->trailer_path);
+        $baseUrl = rtrim(env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090'), '/');
+        return $baseUrl . '/' . ltrim($this->trailer_path, '/');
     }
 }
