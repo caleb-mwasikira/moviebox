@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Movie;
+use App\Models\WatchProgress;
 use Illuminate\Http\Request;
 
 class MovieController extends Controller
@@ -36,6 +37,15 @@ class MovieController extends Controller
     public function watch(Movie $movie)
     {
         abort_unless($movie->isPublished() && $movie->videoIsReady(), 404);
-        return view('pages.movies.watch', compact('movie'));
+
+        $savedPosition = auth()->check()
+            ? WatchProgress::where([
+                'user_id'        => auth()->id(),
+                'watchable_type' => 'movie',
+                'watchable_id'   => $movie->id,
+            ])->value('position')
+            : null;
+
+        return view('pages.movies.watch', compact('movie', 'savedPosition'));
     }
 }

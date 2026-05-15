@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Episode;
 use App\Models\Movie;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -24,6 +26,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Relation::morphMap([
+            'movie'   => Movie::class,
+            'episode' => Episode::class,
+        ]);
+
         $this->configureDefaults();
         view()->addNamespace('pages', resource_path('views/pages'));
         view()->composer('auth.*', function ($view) {

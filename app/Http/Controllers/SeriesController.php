@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Episode;
 use App\Models\Series;
+use App\Models\WatchProgress;
 use Illuminate\Http\Request;
 
 class SeriesController extends Controller
@@ -47,6 +48,14 @@ class SeriesController extends Controller
         $prev         = $currentIndex > 0 ? $allEpisodes[$currentIndex - 1] : null;
         $next         = $currentIndex < $allEpisodes->count() - 1 ? $allEpisodes[$currentIndex + 1] : null;
 
-        return view('pages.series.watch', compact('series', 'episode', 'allEpisodes', 'prev', 'next'));
+        $savedPosition = auth()->check()
+            ? WatchProgress::where([
+                'user_id'        => auth()->id(),
+                'watchable_type' => 'episode',
+                'watchable_id'   => $episode->id,
+            ])->value('position')
+            : null;
+
+        return view('pages.series.watch', compact('series', 'episode', 'allEpisodes', 'prev', 'next', 'savedPosition'));
     }
 }

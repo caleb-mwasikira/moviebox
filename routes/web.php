@@ -22,6 +22,7 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\VerifyOtpController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\VideoCallbackController;
+use App\Http\Controllers\WatchProgressController;
 use Illuminate\Support\Facades\Route;
 
 // Auth routes
@@ -64,6 +65,8 @@ Route::view('/single-product', 'pages.single-product')->name('single-product');
 Route::view('/trailers', 'pages.view-trailers')->name('trailers');
 Route::view('/watch', 'pages.watch')->name('watch');
 
+Route::middleware('auth')->post('/watch/progress', [WatchProgressController::class, 'upsert'])->name('watch.progress');
+
 Route::middleware(['auth', 'verified'])->prefix('account')->name('account.')->group(function () {
     Route::view('/', 'pages.account.index')->name('dashboard');
     Route::get('personal-info', [AccountController::class, 'personalInfo'])->name('personal-info');
@@ -71,6 +74,7 @@ Route::middleware(['auth', 'verified'])->prefix('account')->name('account.')->gr
     Route::put('password', [AccountController::class, 'updatePassword'])->name('password.update');
     Route::get('billing', [AccountController::class, 'billingDetails'])->name('billing');
     Route::post('update-subscription-plan/{newPackage}', [AccountController::class, 'updateSubscriptionPlan'])->name('update-plan');
+    Route::get('watching', [WatchProgressController::class, 'index'])->name('watching');
 });
 
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {

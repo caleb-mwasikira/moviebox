@@ -25,6 +25,12 @@
                 </a>
               </li>
               <li>
+                <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.watching') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                  href="{{ route('account.watching') }}">
+                  Continue Watching
+                </a>
+              </li>
+              <li>
                 <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.billing') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                   href="{{ route('account.billing') }}">
                   Billing Details

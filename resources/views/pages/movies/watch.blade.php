@@ -177,13 +177,31 @@
     @endif
 
     // ── Resume playback ──
-    const _key = 'mvbox_pos_' + @json($movie->uuid);
-    let _saveTimer = null;
+    const _key       = 'mvbox_pos_' + @json($movie->uuid);
+    const _uuid      = @json($movie->uuid);
+    const _isAuth    = @json(auth()->check());
+    const _csrf      = @json(csrf_token());
+    const _serverPos = @json($savedPosition ?? null);
+    let _saveTimer   = null;
+
+    function _syncServer(position, duration) {
+      fetch('/watch/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': _csrf },
+        body: JSON.stringify({ type: 'movie', uuid: _uuid, position: position, duration: duration }),
+        keepalive: true,
+      }).catch(function () {});
+    }
 
     function _save() {
       const t = video.currentTime, d = video.duration;
       if (!t || !d || t < 5) return;
-      (d - t < 30) ? localStorage.removeItem(_key) : localStorage.setItem(_key, t.toFixed(1));
+      if (d - t < 30) {
+        localStorage.removeItem(_key);
+      } else {
+        localStorage.setItem(_key, t.toFixed(1));
+        if (_isAuth) _syncServer(t, d);
+      }
     }
 
     video.addEventListener('timeupdate', function () {
@@ -193,9 +211,10 @@
     video.addEventListener('pause', _save);
     video.addEventListener('ended', function () { localStorage.removeItem(_key); });
     video.addEventListener('loadedmetadata', function () {
-      const saved = parseFloat(localStorage.getItem(_key) || '0');
-      if (saved > 5 && video.duration && saved < video.duration - 30) {
-        video.currentTime = saved;
+      const localPos  = parseFloat(localStorage.getItem(_key) || '0');
+      const resumePos = (_serverPos && _serverPos > localPos) ? _serverPos : localPos;
+      if (resumePos > 5 && video.duration && resumePos < video.duration - 30) {
+        video.currentTime = resumePos;
       }
     });
   })();
