@@ -331,6 +331,33 @@
           video.currentTime = resumePos;
         }
       });
+
+      // ── Picture-in-Picture ──
+      const pipBtn       = document.getElementById('pip-btn');
+      const pipIconEnter = document.getElementById('pip-icon-enter');
+      const pipIconExit  = document.getElementById('pip-icon-exit');
+
+      if (document.pictureInPictureEnabled) {
+        pipBtn.style.removeProperty('display');
+
+        pipBtn.addEventListener('click', function () {
+          if (document.pictureInPictureElement) {
+            document.exitPictureInPicture();
+          } else {
+            video.requestPictureInPicture();
+          }
+        });
+
+        video.addEventListener('enterpictureinpicture', function () {
+          pipIconEnter.style.display = 'none';
+          pipIconExit.style.display  = '';
+        });
+
+        video.addEventListener('leavepictureinpicture', function () {
+          pipIconEnter.style.display = '';
+          pipIconExit.style.display  = 'none';
+        });
+      }
     })();
   </script>
 @endpush
@@ -349,6 +376,16 @@
             <a href="{{ route('series.show', $series) }}" class="watch-meta-series">{{ $series->title }}</a>
           </div>
           <div class="watch-nav-btns">
+            {{-- Picture-in-Picture --}}
+            <button id="pip-btn" title="Picture in Picture" class="watch-nav-btn" style="display:none!important">
+              <svg id="pip-icon-enter" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3C1.9 3 1 3.88 1 4.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V5h18v14.02z"/>
+              </svg>
+              <svg id="pip-icon-exit" width="18" height="18" fill="currentColor" viewBox="0 0 24 24" style="display:none">
+                <path d="M21 3H3C1.9 3 1 3.88 1 4.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V4.98C23 3.88 22.1 3 21 3zm-2 16.02H5V5h14v14.02zM11 11H7v4h4v-4z"/>
+              </svg>
+            </button>
+
             {{-- Toggle Button for all screen sizes --}}
             <button id="toggle-episodes" class="watch-menu-toggle">
               <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
