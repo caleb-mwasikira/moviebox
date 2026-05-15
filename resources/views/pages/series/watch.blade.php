@@ -22,44 +22,25 @@
     .watch-video-col video {
       display: block;
       width: 100%;
-      /* Key change: Ensure video fits in the visible window */
-      max-height: calc(100vh - 100px);
       background: #000;
+      max-height: calc(100svh - 64px);
+    }
+
+    @media (min-width: 768px) {
+      .watch-video-col video {
+        aspect-ratio: 16/9;
+        max-height: calc(100vh - 100px);
+      }
     }
 
     .watch-meta {
-      width: 100%; /* Ensure meta spans full width under video */
+      width: 100%;
       padding: 12px 16px;
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
       box-sizing: border-box;
-    }
-
-    .watch-wrap {
-      display: block;
-      position: relative;
-      overflow-x: hidden;
-    }
-
-    .watch-video-col {
-      background: #000;
-      width: 100%;
-    }
-
-    .watch-video-col video {
-      display: block;
-      width: 100%;
-      aspect-ratio: 16/9;
-    }
-
-    .watch-meta {
-      padding: 12px 16px;
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
     }
 
     .watch-meta-title {

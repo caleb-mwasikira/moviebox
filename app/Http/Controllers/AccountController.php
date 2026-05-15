@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\SubscriptionUpdated;
 use App\Models\SubscriptionPackage;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 class AccountController extends Controller
 {
@@ -90,7 +92,7 @@ class AccountController extends Controller
             };
 
             // Create the new subscription record
-            $user->userSubscriptions()->create([
+            $newSub = $user->userSubscriptions()->create([
                 'subscription_package_id' => $newPackage->id,
                 'starts_at' => now(),
                 'expires_at' => $expiresAt,
@@ -98,6 +100,10 @@ class AccountController extends Controller
             ]);
 
             DB::commit();
+
+            $newSub->load('package');
+            Mail::to($user->email, $user->name)
+                ->queue(new SubscriptionUpdated($user, $newSub, 'renewed'));
 
             return redirect()->back()->with('success', "Plan updated to {$newPackage->name} successfully!");
         } catch (\Exception $e) {

@@ -27,6 +27,14 @@ class LoginController extends Controller
             ])->errorBag('login');
         }
 
+        if (Auth::user()->isBanned()) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return back()->with('banned', 'Your account has been suspended. Please contact support.');
+        }
+
         $request->session()->regenerate();
 
         return redirect()->route('account.dashboard');

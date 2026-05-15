@@ -21,6 +21,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\VerifyOtpController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\VideoCallbackController;
 use App\Http\Controllers\WatchProgressController;
 use Illuminate\Support\Facades\Route;
@@ -57,7 +58,9 @@ Route::get('/movies/{movie}', [MovieController::class, 'show'])->name('movies.sh
 Route::get('/series', [SeriesController::class, 'index'])->name('series');
 Route::get('/series/{series}', [SeriesController::class, 'show'])->name('series.show');
 
-Route::middleware('auth.modal')->group(function () {
+Route::middleware(['auth', 'verified'])->get('/subscription/expired', [SubscriptionController::class, 'expired'])->name('subscription.expired');
+
+Route::middleware(['auth.modal', 'subscription'])->group(function () {
     Route::get('/movies/{movie}/watch', [MovieController::class, 'watch'])->name('movies.watch');
     Route::get('/series/{series}/watch/{episode}', [SeriesController::class, 'watch'])->name('series.watch');
 });
@@ -106,6 +109,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('users', [AdminUserController::class, 'index'])->name('users.index');
     Route::patch('users/{user}/ban', [AdminUserController::class, 'ban'])->name('users.ban');
     Route::patch('users/{user}/unban', [AdminUserController::class, 'unban'])->name('users.unban');
+    Route::patch('users/{user}/extend-subscription', [AdminUserController::class, 'extendSubscription'])->name('users.extend-subscription');
 
     Route::resource('packages', AdminSubscriptionController::class);
 });

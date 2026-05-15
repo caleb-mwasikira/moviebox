@@ -22,9 +22,14 @@
     .watch-video-col video {
       display: block;
       width: 100%;
-      /* Adjust 120px based on your site's header height */
-      max-height: calc(100vh - 120px);
+      max-height: calc(100svh - 64px);
       background: #000;
+    }
+
+    @media (min-width: 768px) {
+      .watch-video-col video {
+        max-height: calc(100vh - 120px);
+      }
     }
 
     .watch-meta-bar {

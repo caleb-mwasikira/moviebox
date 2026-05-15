@@ -39,6 +39,24 @@
         <p class="text-sm text-gray-500">Login to continue watching.</p>
       </div>
 
+      @if (session('banned'))
+        <div id="banned-toast"
+             class="mb-6 flex items-start justify-between gap-x-3 border border-red-500 bg-red-500/10 px-4 py-3">
+          <div class="flex items-start gap-x-3">
+            <svg class="mt-0.5 w-4 h-4 shrink-0 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+            <p class="text-sm font-bold text-gray-900 dark:text-white">{{ session('banned') }}</p>
+          </div>
+          <button type="button" onclick="document.getElementById('banned-toast').remove()"
+                  class="shrink-0 text-gray-400 hover:text-red-500 transition-colors">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+          </button>
+        </div>
+      @endif
+
       <form method="POST" action="{{ route('login') }}" class="flex flex-col gap-y-5">
         @csrf
 

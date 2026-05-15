@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CheckBanned;
+use App\Http\Middleware\RequireActiveSubscription;
 use App\Http\Middleware\RequireAuthModal;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -16,8 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'admin'      => AdminMiddleware::class,
-            'auth.modal' => RequireAuthModal::class,
+            'admin'        => AdminMiddleware::class,
+            'auth.modal'   => RequireAuthModal::class,
+            'subscription' => RequireActiveSubscription::class,
         ]);
         $middleware->appendToGroup('web', CheckBanned::class);
         $middleware->preventRequestForgery([

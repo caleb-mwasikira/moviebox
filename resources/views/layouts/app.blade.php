@@ -22,6 +22,8 @@
   ================================================== -->
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0">
   <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)"  content="#111827">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
   @vite('resources/js/app.js')
   @stack('head')
 
@@ -258,6 +260,46 @@
       </div>
     </div>
     <!-- Mobile Menu / End -->
+
+    @php
+      $__sub = auth()->check() ? auth()->user()->currentSubscription : null;
+      $__daysLeft = $__sub?->expires_at ? (int) now()->diffInDays($__sub->expires_at, false) : null;
+      $__showExpiry = $__daysLeft !== null && $__daysLeft >= 0 && $__daysLeft <= 10
+                      && !auth()->user()->isAdmin();
+      $__bannerKey  = $__sub ? 'mvbox_sub_warn_' . $__sub->expires_at?->timestamp : null;
+    @endphp
+
+    @if ($__showExpiry)
+      <div id="sub-expiry-banner"
+           data-key="{{ $__bannerKey }}"
+           class="relative z-50 border border-yellow-500 bg-yellow-500/10 px-4 py-2.5 flex items-center justify-between gap-x-4 text-sm font-medium text-yellow-700 dark:text-yellow-400">
+        <div class="flex items-center gap-x-2">
+          <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+          </svg>
+          @if ($__daysLeft === 0)
+            Your subscription expires <strong>today</strong>.
+          @else
+            Your subscription expires in <strong>{{ $__daysLeft }} day{{ $__daysLeft !== 1 ? 's' : '' }}</strong>.
+          @endif
+          <a href="{{ route('account.billing') }}" class="underline hover:no-underline ml-1">Renew now</a>
+        </div>
+        <button onclick="
+          localStorage.setItem(this.closest('[data-key]').dataset.key, '1');
+          this.closest('#sub-expiry-banner').remove();
+        " class="shrink-0 p-1 hover:opacity-70 transition-opacity" aria-label="Dismiss">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
+      <script>
+        (function () {
+          var b = document.getElementById('sub-expiry-banner');
+          if (b && localStorage.getItem(b.dataset.key)) b.remove();
+        })();
+      </script>
+    @endif
 
     <main id="main-content" class="grow lg:pt-0">
       @yield('content')
