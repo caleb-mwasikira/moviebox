@@ -70,6 +70,10 @@
                 href="{{ route('admin.series.index') }}">Series</a>
             </li>
             <li>
+              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.coming-soon.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.coming-soon.index') }}">Coming Soon</a>
+            </li>
+            <li>
               <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.users.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.users.index') }}">Users</a>
             </li>
@@ -110,7 +114,11 @@
               'episode-added'     => 'Episode uploaded successfully.',
               'episode-deleted'   => 'Episode deleted.',
               'poster-deleted'    => 'Poster removed.',
-              'streaming-url-saved' => 'Streaming URL saved successfully.',
+              'streaming-url-saved'   => 'Streaming URL saved successfully.',
+              'coming-soon-created'   => 'Film added to Coming Soon.',
+              'coming-soon-updated'   => 'Film details updated.',
+              'coming-soon-deleted'   => 'Film removed from Coming Soon.',
+              'trailer-processing'    => 'Trailer uploaded and is being processed for streaming.',
             ];
             $msg = $messages[session('status')] ?? null;
           @endphp

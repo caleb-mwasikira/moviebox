@@ -20,6 +20,7 @@ class Movie extends Model
         'trailer_path',
         'status',
         'featured',
+        'coming_soon',
     ];
 
     protected static function booted(): void
@@ -42,6 +43,11 @@ class Movie extends Model
     public function isPublished(): bool
     {
         return $this->status === 'published';
+    }
+
+    public function isComingSoon(): bool
+    {
+        return (bool) $this->coming_soon;
     }
 
     public function isFeatured(): bool

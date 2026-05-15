@@ -64,7 +64,7 @@
                         </li>
                         <li>
                             <a class="text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-                                href="{{ route('events') }}">Events</a>
+                                href="{{ route('coming-soon') }}">Coming Soon</a>
                         </li>
                         <li>
                             <a class="text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"

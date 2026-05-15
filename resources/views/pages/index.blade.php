@@ -15,7 +15,7 @@
             $bgUrl = $f->posters->isNotEmpty()
               ? $f->posters->first()->url()
               : ($f->thumbnail ? $f->thumbnailUrl() : null);
-            $isMovie = $f->content_type === 'movie';
+            $fType = $f->content_type; // 'movie' | 'series' | 'coming_soon'
           @endphp
           <div class="swiper-slide">
             <div style="position:relative; min-height:520px; background:#0d0d0d; overflow:hidden;">
@@ -34,7 +34,10 @@
 
                 <div style="margin-bottom:12px;">
                   <span style="display:inline-block; background:var(--color-accent, #f5c518); color:#fff; font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; padding:3px 10px;">
-                    {{ $isMovie ? 'Movie' : 'Series' }}
+                    @if ($fType === 'coming_soon') Coming Soon
+                    @elseif ($fType === 'series') Series
+                    @else Movie
+                    @endif
                   </span>
                 </div>
 
@@ -45,8 +48,8 @@
                 <div style="display:flex; flex-wrap:wrap; gap:12px; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:rgba(255,255,255,.55); margin-bottom:16px;">
                   @if ($f->genre)<span style="color:var(--color-accent, #f5c518);">{{ $f->genre }}</span>@endif
                   @if ($f->year)<span>{{ $f->year }}</span>@endif
-                  @if ($isMovie && $f->duration)<span>{{ $f->duration }} min</span>@endif
-                  @if (!$isMovie)<span>{{ $f->seasons->count() }} {{ Str::plural('Season', $f->seasons->count()) }}</span>@endif
+                  @if ($fType === 'movie' && $f->duration)<span>{{ $f->duration }} min</span>@endif
+                  @if ($fType === 'series')<span>{{ $f->seasons->count() }} {{ Str::plural('Season', $f->seasons->count()) }}</span>@endif
                 </div>
 
                 @if ($f->description)
@@ -67,7 +70,7 @@
                   </button>
                   @endif
 
-                  @if ($isMovie)
+                  @if ($fType === 'movie')
                     @if ($f->videoIsReady())
                     <a href="{{ route('movies.watch', $f) }}"
                       onclick="event.preventDefault(); watchOrLogin(this.href)"
@@ -76,7 +79,7 @@
                       Watch Now
                     </a>
                     @endif
-                  @else
+                  @elseif ($fType === 'series')
                   <a href="{{ route('series.show', $f) }}"
                     style="display:inline-flex; align-items:center; gap:10px; padding:14px 28px; background:var(--color-accent, #f5c518); color:#fff; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; text-decoration:none;">
                     <svg style="width:14px; height:14px; fill:currentColor;" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -291,6 +294,103 @@
       </div>
     </div>
 
+    {{-- Coming Soon strip --}}
+    @if ($comingSoon->isNotEmpty())
+    <div class="pb-20 md:pb-24 lg:pb-[120px]">
+      <div class="container">
+
+        <div class="mb-10 md:mb-12 lg:mb-16 xl:mb-20 flex items-end justify-between gap-x-6">
+          <h2 class="text-2.5xl font-bold tracking-tighter text-gray-900 before:text-accent before:content-['.'] dark:text-white sm:text-3.5xl md:text-4xl lg:text-[62px] lg:leading-none">
+            Coming Soon
+          </h2>
+          <a href="{{ route('coming-soon') }}"
+            class="shrink-0 text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-accent dark:hover:text-accent transition-colors mb-2 lg:mb-4">
+            View All →
+          </a>
+        </div>
+
+        <div class="swiper js-coming-soon-swiper">
+          <div class="swiper-wrapper">
+            @foreach ($comingSoon as $cs)
+            @php $csThumb = $cs->posters->first()?->url() ?? $cs->thumbnailUrl(); @endphp
+            <div class="swiper-slide">
+              <div class="flex flex-col gap-y-4 group">
+
+                {{-- Poster --}}
+                <figure class="relative overflow-hidden bg-gray-800 cursor-pointer"
+                  @if ($cs->trailerIsReady()) onclick="openTrailerModal('{{ $cs->trailerUrl() }}')" @endif>
+
+                  @if ($csThumb)
+                    <img class="w-full object-cover aspect-[17/22] transition-transform duration-300 group-hover:scale-105"
+                      src="{{ $csThumb }}" alt="{{ $cs->title }}">
+                  @else
+                    <div class="w-full aspect-[17/22] bg-gray-700 flex items-center justify-center">
+                      <svg class="w-8 h-8 text-gray-500 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                  @endif
+
+                  {{-- Dark overlay --}}
+                  <div class="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-300"></div>
+
+                  {{-- Coming Soon badge --}}
+                  <div class="absolute top-2.5 left-2.5">
+                    <span style="background:var(--color-accent,#facc15); color:#111; font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:2px 7px;">
+                      Coming Soon
+                    </span>
+                  </div>
+
+                  {{-- Trailer play icon --}}
+                  @if ($cs->trailerIsReady())
+                  <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <span class="w-11 h-11 rounded-full bg-black/40 border border-white/60 flex items-center justify-center backdrop-blur-sm group-hover:bg-accent/80 group-hover:border-accent transition-all duration-200">
+                      <svg class="w-4 h-4 fill-white ml-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </span>
+                  </div>
+                  @endif
+                </figure>
+
+                {{-- Info --}}
+                <div class="leading-tight">
+                  <h5 class="font-bold text-gray-900 dark:text-white mb-1 group-hover:text-accent transition-colors">
+                    {{ $cs->title }}
+                  </h5>
+                  <div class="text-gray-500 text-sm">
+                    {{ $cs->genre ?? 'Film' }}
+                    @if ($cs->year)<span class="text-gray-400"> · {{ $cs->year }}</span>@endif
+                  </div>
+                  @if ($cs->trailerIsReady())
+                    <button type="button" onclick="openTrailerModal('{{ $cs->trailerUrl() }}')"
+                      class="mt-2 inline-flex items-center gap-x-1.5 text-[10px] font-bold uppercase tracking-wide text-accent hover:underline">
+                      <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                      Watch Trailer
+                    </button>
+                  @endif
+                </div>
+
+              </div>
+            </div>
+            @endforeach
+          </div>
+
+          <div class="flex justify-center gap-x-3.5 pt-8 sm:pt-10 md:pt-12 lg:pt-16">
+            <button class="js-coming-soon-prev flex w-8 aspect-square items-center justify-center text-white hover:cursor-pointer hover:text-accent">
+              <svg class="h-2.5 w-1.5" fill="currentColor">
+                <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#arrow-left-pixel-alt"></use>
+              </svg>
+            </button>
+            <button class="js-coming-soon-next flex w-8 aspect-square items-center justify-center text-white hover:cursor-pointer hover:text-accent">
+              <svg class="h-2.5 w-1.5" fill="currentColor">
+                <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#arrow-right-pixel-alt"></use>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    @endif
+    {{-- End Coming Soon strip --}}
+
     <div class="pb-20 md:pb-24 lg:pb-[130px]">
       <div class="container">
 
@@ -301,95 +401,102 @@
           </h2>
         </div>
 
+        @if ($featured->isNotEmpty())
         <div class="grid grid-cols-12 gap-5 md:gap-6 lg:gap-7.5 mb-7.5">
 
-          <figure class="col-span-full md:row-start-1 md:row-end-2 lg:col-span-8 lg:row-start-1 lg:row-end-3">
-            <a class="group relative block h-full overflow-hidden bg-gray-900 glightbox"
-              href="{{ route('watch') }}">
-              <img
-                class="aspect-[77/46] w-full object-cover transition-all duration-300 group-hover:scale-110 group-hover:opacity-75"
-                src="{{ asset('assets/img/str1/samples/video-2-770x460.jpg') }}" alt="Oppenheimer — Official Trailer">
+          @foreach ($featured->take(3) as $i => $fm)
+            @php
+              $thumb   = $fm->posters->first()?->url() ?? $fm->thumbnailUrl();
+              $isFirst = $i === 0;
+              $fmType  = $fm->content_type; // 'movie' | 'series' | 'coming_soon'
+              $aspect  = $isFirst ? 'aspect-[77/46]' : 'aspect-[370/215]';
+            @endphp
+            <figure class="{{ $isFirst
+              ? 'col-span-full md:row-start-1 md:row-end-2 lg:col-span-8 lg:row-start-1 lg:row-end-3'
+              : ($i === 1
+                  ? 'col-span-full md:row-start-2 md:row-end-2 md:col-span-6 lg:col-span-4 lg:row-start-1 lg:row-end-2'
+                  : 'col-span-full md:row-start-2 md:row-end-2 md:col-span-6 lg:col-span-4 lg:row-start-2 lg:row-end-3'
+                ) }}">
 
-              <div class="absolute inset-0 bg-black/60"></div>
-
-              <span
-                class="absolute top-1/2 left-1/2 flex aspect-square -translate-x-2/4 -translate-y-2/4 items-center justify-center w-10">
-                <svg role="img" class="fill-white aspect-[18/22] ml-[2px] w-6">
-                  <use xlink:href="{{ asset('assets/img/yt1/sprite.svg') }}#play"></use>
-                </svg>
-              </span>
-
-              <div class="absolute flex inset-x-5 xl:inset-x-6 top-5 xl:top-6 gap-x-3">
-                <figure class="shrink-0">
-                  <img class="w-10 object-cover aspect-square" src="{{ asset('assets/img/str1/samples/stream-avatar-40x40.jpg') }}" alt="">
-                </figure>
-                <div class="flex-1 leading-tight min-w-0">
-                  <h6 class="font-bold text-white truncate w-full">Oppenheimer — Now Streaming in 4K</h6>
-                  <time class="text-gray text-sm" datetime="2025-03-01 21:30">Added March 1st, 2026</time>
+              @if ($fmType === 'coming_soon')
+              {{-- Coming Soon card — no watch link, trailer play if available --}}
+              <div class="group relative block h-full overflow-hidden bg-gray-900">
+                @if ($thumb)
+                  <img class="{{ $aspect }} w-full object-cover transition-all duration-300 group-hover:scale-110 group-hover:opacity-75"
+                    src="{{ $thumb }}" alt="{{ $fm->title }}">
+                @else
+                  <div class="{{ $aspect }} w-full bg-gray-800"></div>
+                @endif
+                <div class="absolute inset-0 bg-black/50"></div>
+                {{-- Coming Soon badge --}}
+                <div class="absolute top-3 left-3">
+                  <span style="background:var(--color-accent,#facc15); color:#111; font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:2px 7px;">Coming Soon</span>
+                </div>
+                @if ($fm->trailerIsReady())
+                <div class="absolute inset-0 flex items-center justify-center cursor-pointer" onclick="openTrailerModal('{{ $fm->trailerUrl() }}')">
+                  <span class="w-10 h-10 rounded-full bg-black/40 border border-white/60 flex items-center justify-center backdrop-blur-sm group-hover:bg-accent/80 group-hover:border-accent transition-all duration-200">
+                    <svg class="w-4 h-4 fill-white ml-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  </span>
+                </div>
+                @endif
+                <div class="absolute flex inset-x-5 xl:inset-x-6 bottom-5 xl:bottom-6 gap-x-3 items-end">
+                  <div class="flex-1 leading-tight min-w-0">
+                    <h6 class="font-bold text-white truncate w-full">{{ $fm->title }}</h6>
+                    <span class="text-gray-400 text-xs">{{ $fm->genre }}{{ $fm->year ? ' · ' . $fm->year : '' }}</span>
+                  </div>
                 </div>
               </div>
-            </a>
-          </figure>
 
-          <figure
-            class="col-span-full md:row-start-2 md:row-end-2 md:col-span-6 lg:col-span-4 lg:row-start-1 lg:row-end-2">
-            <a class="group relative block h-full overflow-hidden bg-gray-900 glightbox"
-              href="{{ route('watch') }}">
-              <img
-                class="aspect-[370/215] w-full object-cover transition-all duration-300 group-hover:scale-110 group-hover:opacity-75"
-                src="{{ asset('assets/img/str1/samples/video-4-370x215.jpg') }}" alt="Dune: Part Two">
-
-              <div class="absolute inset-0 bg-black/60"></div>
-
-              <span
-                class="absolute top-1/2 left-1/2 flex aspect-square -translate-x-2/4 -translate-y-2/4 items-center justify-center w-10">
-                <svg role="img" class="fill-white aspect-[18/22] ml-[2px] w-6">
-                  <use xlink:href="{{ asset('assets/img/yt1/sprite.svg') }}#play"></use>
-                </svg>
-              </span>
-
-              <div class="absolute flex inset-x-5 xl:inset-x-6 top-5 xl:top-6 gap-x-3">
-                <figure class="shrink-0">
-                  <img class="w-10 object-cover aspect-square" src="{{ asset('assets/img/str1/samples/stream-avatar-40x40.jpg') }}" alt="">
-                </figure>
-                <div class="flex-1 leading-tight min-w-0">
-                  <h6 class="font-bold text-white truncate w-full">Dune: Part Two</h6>
-                  <time class="text-gray text-sm" datetime="2025-12-17 21:30">Added December 17th, 2025</time>
+              @elseif ($fmType === 'series')
+              <a class="group relative block h-full overflow-hidden bg-gray-900"
+                href="{{ route('series.show', $fm) }}">
+                @if ($thumb)
+                  <img class="{{ $aspect }} w-full object-cover transition-all duration-300 group-hover:scale-110 group-hover:opacity-75"
+                    src="{{ $thumb }}" alt="{{ $fm->title }}">
+                @else
+                  <div class="{{ $aspect }} w-full bg-gray-800"></div>
+                @endif
+                <div class="absolute inset-0 bg-black/50"></div>
+                <span class="absolute top-1/2 left-1/2 flex aspect-square -translate-x-2/4 -translate-y-2/4 items-center justify-center w-10">
+                  <svg class="fill-white w-6 ml-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </span>
+                <div class="absolute flex inset-x-5 xl:inset-x-6 bottom-5 xl:bottom-6 gap-x-3 items-end">
+                  <div class="flex-1 leading-tight min-w-0">
+                    <h6 class="font-bold text-white truncate w-full">{{ $fm->title }}</h6>
+                    <span class="text-gray-400 text-xs">{{ $fm->genre }}{{ $fm->year ? ' · ' . $fm->year : '' }}</span>
+                  </div>
                 </div>
-              </div>
-            </a>
-          </figure>
+              </a>
 
-          <figure
-            class="col-span-full md:row-start-2 md:row-end-2 md:col-span-6 lg:col-span-4 lg:row-start-2 lg:row-end-3">
-            <a class="group relative block h-full overflow-hidden bg-gray-900 glightbox"
-              href="{{ route('watch') }}">
-              <img
-                class="aspect-[370/215] w-full object-cover transition-all duration-300 group-hover:scale-110 group-hover:opacity-75"
-                src="{{ asset('assets/img/str1/samples/video-8-370x215.jpg') }}" alt="Interstellar — Director's Commentary">
-
-              <div class="absolute inset-0 bg-black/60"></div>
-
-              <span
-                class="absolute top-1/2 left-1/2 flex aspect-square -translate-x-2/4 -translate-y-2/4 items-center justify-center w-10">
-                <svg role="img" class="fill-white aspect-[18/22] ml-[2px] w-6">
-                  <use xlink:href="{{ asset('assets/img/yt1/sprite.svg') }}#play"></use>
-                </svg>
-              </span>
-
-              <div class="absolute flex inset-x-5 xl:inset-x-6 top-5 xl:top-6 gap-x-3">
-                <figure class="shrink-0">
-                  <img class="w-10 object-cover aspect-square" src="{{ asset('assets/img/str1/samples/stream-avatar-40x40.jpg') }}" alt="">
-                </figure>
-                <div class="flex-1 leading-tight min-w-0">
-                  <h6 class="font-bold text-white truncate w-full">Interstellar — Director's Commentary</h6>
-                  <time class="text-gray text-sm" datetime="2025-10-22 21:30">Added October 22nd, 2025</time>
+              @else
+              {{-- Movie --}}
+              <a class="group relative block h-full overflow-hidden bg-gray-900"
+                href="{{ route('movies.watch', $fm) }}"
+                onclick="event.preventDefault(); watchOrLogin(this.href)">
+                @if ($thumb)
+                  <img class="{{ $aspect }} w-full object-cover transition-all duration-300 group-hover:scale-110 group-hover:opacity-75"
+                    src="{{ $thumb }}" alt="{{ $fm->title }}">
+                @else
+                  <div class="{{ $aspect }} w-full bg-gray-800"></div>
+                @endif
+                <div class="absolute inset-0 bg-black/50"></div>
+                <span class="absolute top-1/2 left-1/2 flex aspect-square -translate-x-2/4 -translate-y-2/4 items-center justify-center w-10">
+                  <svg class="fill-white w-6 ml-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </span>
+                <div class="absolute flex inset-x-5 xl:inset-x-6 bottom-5 xl:bottom-6 gap-x-3 items-end">
+                  <div class="flex-1 leading-tight min-w-0">
+                    <h6 class="font-bold text-white truncate w-full">{{ $fm->title }}</h6>
+                    <span class="text-gray-400 text-xs">{{ $fm->genre }}{{ $fm->year ? ' · ' . $fm->year : '' }}</span>
+                  </div>
                 </div>
-              </div>
-            </a>
-          </figure>
+              </a>
+              @endif
+
+            </figure>
+          @endforeach
 
         </div>
+        @endif
 
         <div class="grid grid-cols-12 gap-5 md:gap-6 lg:gap-7.5">
           <div class="col-span-full md:col-span-6">
@@ -427,232 +534,6 @@
               @else
                 <a href="{{ route('register') }}" class="block absolute inset-0"></a>
               @endauth
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="pb-20 md:pb-24 lg:pb-[120px]">
-      <div class="container">
-        <div class="mb-10 md:mb-12 lg:mb-16 xl:mb-20">
-          <h2
-            class="text-2.5xl font-bold tracking-tighter text-gray-900 before:text-accent before:content-['.'] dark:text-white sm:text-3.5xl md:text-4xl lg:text-[62px] lg:leading-none">
-            Upcoming Premieres
-          </h2>
-        </div>
-
-        <div class="divide-y divide-gray-500/20">
-          <div class="grid grid-cols-12 gap-x-4 md:gap-x-6 lg:gap-x-7.5 py-11 first:pt-0 last:pb-0">
-            <div class="col-span-2 md:col-span-1 lg:col-span-1">
-              <time class="flex flex-col text-center text-xs font-bold md:text-base text-white bg-primary"
-                datetime="2026-04-08 20:00">
-                <span class="text-2xl lg:text-[32px] md:leading-none h-11 lg:h-[62px] flex items-center justify-center">08</span>
-                <span class="text-white leading-[28px] bg-primary-500">Apr</span>
-              </time>
-            </div>
-            <div class="col-span-10 md:col-span-6 lg:col-span-6">
-              <h4 class="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-2 lg:mb-2.5">
-                <a class="text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent"
-                  href="{{ route('events') }}">Opening Night: The Last Horizon</a>
-              </h4>
-              <div class="lg:leading-[26px]">Join us for the exclusive opening night screening of this year's most anticipated thriller. Followed by a live Q&amp;A with the director.</div>
-            </div>
-            <div class="col-span-full md:col-span-5 md:col-start-8 lg:col-start-8 lg:col-span-5">
-              <ul class="flex flex-wrap gap-y-5 pt-7 md:pt-3 lg:pt-3">
-                <li class="flex flex-1 flex-col items-center gap-y-3.5 text-center">
-                  <div>
-                    <h5 class="font-bold tracking-tight text-gray-900 dark:text-white lg:text-lg lg:leading-tight">NY, USA</h5>
-                    <span class="text-xs lg:text-sm"></span>
-                  </div>
-                  <div class="lg:pt-1">
-                    <svg role="img" class="h-5 w-5 fill-accent">
-                      <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#pin"></use>
-                    </svg>
-                  </div>
-                </li>
-                <li class="flex flex-1 flex-col items-center gap-y-3.5 text-center">
-                  <div>
-                    <h5 class="font-bold tracking-tight text-gray-900 dark:text-white lg:text-lg lg:leading-tight">8PM EST</h5>
-                    <span class="text-xs lg:text-sm"></span>
-                  </div>
-                  <div class="lg:pt-1">
-                    <svg role="img" class="h-5 w-5 fill-accent">
-                      <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#clock"></use>
-                    </svg>
-                  </div>
-                </li>
-                <li class="flex flex-1 flex-col items-center gap-y-3.5 text-center">
-                  <div>
-                    <h5 class="font-bold tracking-tight text-gray-900 dark:text-white lg:text-lg lg:leading-tight">$35</h5>
-                    <span class="text-xs lg:text-sm"></span>
-                  </div>
-                  <div class="lg:pt-1">
-                    <svg role="img" class="h-5 w-5 fill-accent">
-                      <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#credit-card"></use>
-                    </svg>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div class="grid grid-cols-12 gap-x-4 md:gap-x-6 lg:gap-x-7.5 py-11 first:pt-0 last:pb-0">
-            <div class="col-span-2 md:col-span-1 lg:col-span-1">
-              <time class="flex flex-col text-center text-xs font-bold md:text-base text-white bg-primary"
-                datetime="2026-04-24 19:00">
-                <span class="text-2xl lg:text-[32px] md:leading-none h-11 lg:h-[62px] flex items-center justify-center">24</span>
-                <span class="text-white leading-[28px] bg-primary-500">Apr</span>
-              </time>
-            </div>
-            <div class="col-span-10 md:col-span-6 lg:col-span-6">
-              <h4 class="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-2 lg:mb-2.5">
-                <a class="text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent"
-                  href="{{ route('events') }}">Live Director's Commentary: Dune: Part Two</a>
-              </h4>
-              <div class="lg:leading-[26px]">Denis Villeneuve returns for an exclusive live commentary screening streamed directly on MovieBox. Premium subscribers only.</div>
-            </div>
-            <div class="col-span-full md:col-span-5 md:col-start-8 lg:col-start-8 lg:col-span-5">
-              <ul class="flex flex-wrap gap-y-5 pt-7 md:pt-3 lg:pt-3">
-                <li class="flex flex-1 flex-col items-center gap-y-3.5 text-center">
-                  <div>
-                    <h5 class="font-bold tracking-tight text-gray-900 dark:text-white lg:text-lg lg:leading-tight">Online</h5>
-                    <span class="text-xs lg:text-sm"></span>
-                  </div>
-                  <div class="lg:pt-1">
-                    <svg role="img" class="h-5 w-5 fill-accent">
-                      <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#pin"></use>
-                    </svg>
-                  </div>
-                </li>
-                <li class="flex flex-1 flex-col items-center gap-y-3.5 text-center">
-                  <div>
-                    <h5 class="font-bold tracking-tight text-gray-900 dark:text-white lg:text-lg lg:leading-tight">7PM EST</h5>
-                    <span class="text-xs lg:text-sm"></span>
-                  </div>
-                  <div class="lg:pt-1">
-                    <svg role="img" class="h-5 w-5 fill-accent">
-                      <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#clock"></use>
-                    </svg>
-                  </div>
-                </li>
-                <li class="flex flex-1 flex-col items-center gap-y-3.5 text-center">
-                  <div>
-                    <h5 class="font-bold tracking-tight text-gray-900 dark:text-white lg:text-lg lg:leading-tight">Premium</h5>
-                    <span class="text-xs lg:text-sm"></span>
-                  </div>
-                  <div class="lg:pt-1">
-                    <svg role="img" class="h-5 w-5 fill-accent">
-                      <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#credit-card"></use>
-                    </svg>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div class="grid grid-cols-12 gap-x-4 md:gap-x-6 lg:gap-x-7.5 py-11 first:pt-0 last:pb-0">
-            <div class="col-span-2 md:col-span-1 lg:col-span-1">
-              <time class="flex flex-col text-center text-xs font-bold md:text-base text-white bg-primary"
-                datetime="2026-05-19 18:00">
-                <span class="text-2xl lg:text-[32px] md:leading-none h-11 lg:h-[62px] flex items-center justify-center">19</span>
-                <span class="text-white leading-[28px] bg-primary-500">May</span>
-              </time>
-            </div>
-            <div class="col-span-10 md:col-span-6 lg:col-span-6">
-              <h4 class="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-2 lg:mb-2.5">
-                <a class="text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent"
-                  href="{{ route('events') }}">Summer Cinema Retrospective</a>
-              </h4>
-              <div class="lg:leading-[26px]">A curated evening celebrating fifty years of landmark films. Six screenings across two stages, with panel discussions and live scores.</div>
-            </div>
-            <div class="col-span-full md:col-span-5 md:col-start-8 lg:col-start-8 lg:col-span-5">
-              <ul class="flex flex-wrap gap-y-5 pt-7 md:pt-3 lg:pt-3">
-                <li class="flex flex-1 flex-col items-center gap-y-3.5 text-center">
-                  <div>
-                    <h5 class="font-bold tracking-tight text-gray-900 dark:text-white lg:text-lg lg:leading-tight">LA, USA</h5>
-                    <span class="text-xs lg:text-sm"></span>
-                  </div>
-                  <div class="lg:pt-1">
-                    <svg role="img" class="h-5 w-5 fill-accent">
-                      <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#pin"></use>
-                    </svg>
-                  </div>
-                </li>
-                <li class="flex flex-1 flex-col items-center gap-y-3.5 text-center">
-                  <div>
-                    <h5 class="font-bold tracking-tight text-gray-900 dark:text-white lg:text-lg lg:leading-tight">6PM PST</h5>
-                    <span class="text-xs lg:text-sm"></span>
-                  </div>
-                  <div class="lg:pt-1">
-                    <svg role="img" class="h-5 w-5 fill-accent">
-                      <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#clock"></use>
-                    </svg>
-                  </div>
-                </li>
-                <li class="flex flex-1 flex-col items-center gap-y-3.5 text-center">
-                  <div>
-                    <h5 class="font-bold tracking-tight text-gray-900 dark:text-white lg:text-lg lg:leading-tight">$22</h5>
-                    <span class="text-xs lg:text-sm"></span>
-                  </div>
-                  <div class="lg:pt-1">
-                    <svg role="img" class="h-5 w-5 fill-accent">
-                      <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#credit-card"></use>
-                    </svg>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div class="grid grid-cols-12 gap-x-4 md:gap-x-6 lg:gap-x-7.5 py-11 first:pt-0 last:pb-0">
-            <div class="col-span-2 md:col-span-1 lg:col-span-1">
-              <time class="flex flex-col text-center text-xs font-bold md:text-base text-white bg-primary"
-                datetime="2026-07-10 21:00">
-                <span class="text-2xl lg:text-[32px] md:leading-none h-11 lg:h-[62px] flex items-center justify-center">10</span>
-                <span class="text-white leading-[28px] bg-primary-500">Jul</span>
-              </time>
-            </div>
-            <div class="col-span-10 md:col-span-6 lg:col-span-6">
-              <h4 class="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-2 lg:mb-2.5">
-                <a class="text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent"
-                  href="{{ route('events') }}">Classic Horror Movie Night</a>
-              </h4>
-              <div class="lg:leading-[26px]">Back-to-back iconic horror films streaming live on MovieBox. Chat with fellow fans in real time and vote for the next title.</div>
-            </div>
-            <div class="col-span-full md:col-span-5 md:col-start-8 lg:col-start-8 lg:col-span-5">
-              <ul class="flex flex-wrap gap-y-5 pt-7 md:pt-3 lg:pt-3">
-                <li class="flex flex-1 flex-col items-center gap-y-3.5 text-center">
-                  <div>
-                    <h5 class="font-bold tracking-tight text-gray-900 dark:text-white lg:text-lg lg:leading-tight">Online</h5>
-                    <span class="text-xs lg:text-sm"></span>
-                  </div>
-                  <div class="lg:pt-1">
-                    <svg role="img" class="h-5 w-5 fill-accent">
-                      <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#pin"></use>
-                    </svg>
-                  </div>
-                </li>
-                <li class="flex flex-1 flex-col items-center gap-y-3.5 text-center">
-                  <div>
-                    <h5 class="font-bold tracking-tight text-gray-900 dark:text-white lg:text-lg lg:leading-tight">9PM EST</h5>
-                    <span class="text-xs lg:text-sm"></span>
-                  </div>
-                  <div class="lg:pt-1">
-                    <svg role="img" class="h-5 w-5 fill-accent">
-                      <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#clock"></use>
-                    </svg>
-                  </div>
-                </li>
-                <li class="flex flex-1 flex-col items-center gap-y-3.5 text-center">
-                  <div>
-                    <h5 class="font-bold tracking-tight text-gray-900 dark:text-white lg:text-lg lg:leading-tight">Free</h5>
-                    <span class="text-xs lg:text-sm"></span>
-                  </div>
-                  <div class="lg:pt-1">
-                    <svg role="img" class="h-5 w-5 fill-accent">
-                      <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#credit-card"></use>
-                    </svg>
-                  </div>
-                </li>
-              </ul>
             </div>
           </div>
         </div>
@@ -780,6 +661,7 @@
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>
 (function () {
   // ── Featured hero carousel ────────────────────────────────────
@@ -800,10 +682,28 @@
   }
 
   // ── Trailer modal ─────────────────────────────────────────────
+  @php
+    $uid = Auth::id() ?? 0;
+    $exp = time() + 7200;
+    $sig = hash_hmac('sha256', $uid . ':' . $exp, env('APP_SECRET', ''));
+    $hlsToken = base64_encode($uid . ':' . $exp . ':' . $sig);
+  @endphp
+  var _hlsToken = @json($hlsToken);
+  var _hlsInst  = null;
+
   window.openTrailerModal = function (url) {
     var modal = document.getElementById('trailer-modal');
     var video = document.getElementById('trailer-modal-video');
-    video.src = url;
+
+    if (typeof Hls !== 'undefined' && Hls.isSupported() && url.indexOf('.m3u8') !== -1) {
+      if (_hlsInst) { _hlsInst.destroy(); }
+      _hlsInst = new Hls({ xhrSetup: function (xhr) { xhr.setRequestHeader('Authorization', 'Bearer ' + _hlsToken); } });
+      _hlsInst.loadSource(url);
+      _hlsInst.attachMedia(video);
+    } else {
+      video.src = url;
+    }
+
     modal.style.display = 'flex';
     video.play().catch(function () {});
   };
@@ -817,6 +717,24 @@
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') window.closeTrailerModal();
   });
+
+  // ── Coming Soon swiper ────────────────────────────────────────
+  var csEl = document.querySelector('.js-coming-soon-swiper');
+  if (csEl) {
+    new Swiper(csEl, {
+      slidesPerView: 2,
+      spaceBetween: 20,
+      navigation: {
+        prevEl: '.js-coming-soon-prev',
+        nextEl: '.js-coming-soon-next',
+      },
+      breakpoints: {
+        640:  { slidesPerView: 3, spaceBetween: 20 },
+        768:  { slidesPerView: 4, spaceBetween: 24 },
+        1024: { slidesPerView: 5, spaceBetween: 30 },
+      },
+    });
+  }
 
   // ── New Series swiper ─────────────────────────────────────────
   var seriesEl = document.querySelector('.js-vv-series-swiper');

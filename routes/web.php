@@ -14,6 +14,8 @@ use App\Http\Controllers\Admin\PosterController as AdminPosterController;
 use App\Http\Controllers\Admin\StreamingStatusController as AdminStreamingStatusController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\SubscriptionPackageController as AdminSubscriptionController;
+use App\Http\Controllers\Admin\ComingSoonController as AdminComingSoonController;
+use App\Http\Controllers\ComingSoonController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
@@ -50,7 +52,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::view('/about', 'pages.about')->name('about');
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
-Route::view('/events', 'pages.events')->name('events');
+Route::get('/coming-soon', [ComingSoonController::class, 'index'])->name('coming-soon');
 Route::view('/shop', 'pages.shop')->name('shop');
 Route::get('/browse', [BrowseController::class, 'index'])->name('browse');
 Route::get('/movies', [MovieController::class, 'index'])->name('movies');
@@ -112,6 +114,16 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::patch('users/{user}/extend-subscription', [AdminUserController::class, 'extendSubscription'])->name('users.extend-subscription');
 
     Route::resource('packages', AdminSubscriptionController::class);
+
+    Route::get('coming-soon', [AdminComingSoonController::class, 'index'])->name('coming-soon.index');
+    Route::get('coming-soon/create', [AdminComingSoonController::class, 'create'])->name('coming-soon.create');
+    Route::post('coming-soon', [AdminComingSoonController::class, 'store'])->name('coming-soon.store');
+    Route::get('coming-soon/{comingSoon}/edit', [AdminComingSoonController::class, 'edit'])->name('coming-soon.edit');
+    Route::put('coming-soon/{comingSoon}', [AdminComingSoonController::class, 'update'])->name('coming-soon.update');
+    Route::patch('coming-soon/{comingSoon}/featured', [AdminComingSoonController::class, 'toggleFeatured'])->name('coming-soon.toggle-featured');
+    Route::post('coming-soon/{comingSoon}/trailer', [AdminComingSoonController::class, 'uploadTrailer'])->name('coming-soon.trailer');
+    Route::post('coming-soon/{comingSoon}/video', [AdminComingSoonController::class, 'uploadVideo'])->name('coming-soon.video');
+    Route::delete('coming-soon/{comingSoon}', [AdminComingSoonController::class, 'destroy'])->name('coming-soon.destroy');
 });
 
 require __DIR__.'/settings.php';
