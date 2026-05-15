@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\EpisodeController as AdminEpisodeController;
 use App\Http\Controllers\Admin\PosterController as AdminPosterController;
 use App\Http\Controllers\Admin\StreamingStatusController as AdminStreamingStatusController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\SubscriptionPackageController as AdminSubscriptionController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
@@ -41,6 +42,7 @@ Route::post('/logout', [LogoutController::class, 'destroy'])->name('logout')->mi
 
 // Internal callbacks from Go streaming service — no auth, CSRF-exempt via bootstrap/app.php
 Route::post('/callbacks/video-ready', [VideoCallbackController::class, 'videoReady'])->name('callbacks.video-ready');
+Route::post('/callbacks/mkv-converted', [VideoCallbackController::class, 'mkvConverted'])->name('callbacks.mkv-converted');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::view('/about', 'pages.about')->name('about');
@@ -62,12 +64,13 @@ Route::view('/single-product', 'pages.single-product')->name('single-product');
 Route::view('/trailers', 'pages.view-trailers')->name('trailers');
 Route::view('/watch', 'pages.watch')->name('watch');
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('/account', 'pages.account.index')->name('account');
-    Route::get('/account/personal-info', [AccountController::class, 'personalInfo'])->name('account.personal-info');
-    Route::put('/account/personal-info', [AccountController::class, 'updatePersonalInfo'])->name('account.personal-info.update');
-    Route::put('/account/password', [AccountController::class, 'updatePassword'])->name('account.password.update');
-    Route::get('/account/billing', [AccountController::class, 'billingDetails'])->name('account.billing');
+Route::middleware(['auth', 'verified'])->prefix('account')->name('account.')->group(function () {
+    Route::view('/', 'pages.account.index')->name('dashboard');
+    Route::get('personal-info', [AccountController::class, 'personalInfo'])->name('personal-info');
+    Route::put('personal-info', [AccountController::class, 'updatePersonalInfo'])->name('personal-info.update');
+    Route::put('password', [AccountController::class, 'updatePassword'])->name('password.update');
+    Route::get('billing', [AccountController::class, 'billingDetails'])->name('billing');
+    Route::post('update-subscription-plan/{newPackage}', [AccountController::class, 'updateSubscriptionPlan'])->name('update-plan');
 });
 
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -77,6 +80,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::patch('movies/{movie}/status', [AdminMovieController::class, 'toggleStatus'])->name('movies.toggle-status');
     Route::patch('movies/{movie}/featured', [AdminMovieController::class, 'toggleFeatured'])->name('movies.toggle-featured');
     Route::post('movies/{movie}/trailer', [AdminMovieController::class, 'uploadTrailer'])->name('movies.trailer');
+    Route::post('movies/{movie}/video', [AdminMovieController::class, 'updateVideo'])->name('movies.video');
     Route::post('movies/{movie}/reprocess', [AdminMovieController::class, 'reprocess'])->name('movies.reprocess');
 
     Route::resource('series', AdminSeriesController::class)->except(['show']);
@@ -88,6 +92,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::delete('seasons/{season}', [AdminSeasonController::class, 'destroy'])->name('seasons.destroy');
 
     Route::post('seasons/{season}/episodes', [AdminEpisodeController::class, 'store'])->name('episodes.store');
+    Route::post('episodes/{episode}/video', [AdminEpisodeController::class, 'updateVideo'])->name('episodes.video');
     Route::delete('episodes/{episode}', [AdminEpisodeController::class, 'destroy'])->name('episodes.destroy');
 
     Route::delete('posters/{poster}', [AdminPosterController::class, 'destroy'])->name('posters.destroy');
@@ -97,6 +102,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('users', [AdminUserController::class, 'index'])->name('users.index');
     Route::patch('users/{user}/ban', [AdminUserController::class, 'ban'])->name('users.ban');
     Route::patch('users/{user}/unban', [AdminUserController::class, 'unban'])->name('users.unban');
+
+    Route::resource('packages', AdminSubscriptionController::class);
 });
 
 require __DIR__.'/settings.php';

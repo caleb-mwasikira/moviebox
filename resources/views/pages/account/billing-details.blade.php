@@ -3,133 +3,117 @@
 @section('account-title', 'Billing Details')
 
 @section('account-content')
-<div class="flex flex-col gap-y-8">
+  <div class="flex flex-col gap-y-8">
 
-  {{-- Subscription Status --}}
-  <div class="bg-white shadow-3xl p-8 md:p-10 lg:p-14 xl:p-[60px] dark:bg-gray-700">
-    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-1">Subscription</h2>
-    <p class="text-sm text-gray-500 dark:text-gray mb-8">Your current plan and billing cycle.</p>
+    {{-- Subscription Status --}}
+    @php
+      $userSubscription = auth()->user()->currentSubscription;
+      $selectedPackage = $userSubscription ? $userSubscription->package : null;
+    @endphp
 
-    <div class="flex items-center justify-between flex-wrap gap-4 border border-gray-200 dark:border-gray-600 p-6">
-      <div>
-        <div class="text-xs font-bold uppercase text-gray-500 mb-1">Current Plan</div>
-        <div class="text-lg font-bold text-gray-900 dark:text-white">Premium</div>
-        <div class="text-sm text-gray-500 dark:text-gray mt-1">Renews on July 1, 2026</div>
+    <div class="bg-white shadow-3xl p-8 md:p-10 lg:p-14 xl:p-[60px] dark:bg-gray-700">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-1">Subscription</h2>
+      <p class="text-sm text-gray-500 dark:text-gray mb-8">Your current plan and billing cycle.</p>
+
+      <div class="flex items-center justify-between flex-wrap gap-4 border border-gray-200 dark:border-gray-600 p-6">
+        @if($userSubscription && $selectedPackage)
+          <div>
+            <div class="text-xs font-bold uppercase text-gray-500 mb-1">Current Plan</div>
+            <div class="text-lg font-bold text-gray-900 dark:text-white">{{ $selectedPackage->name }}</div>
+            <div class="text-sm text-gray-500 dark:text-gray mt-1">
+              @if($userSubscription->expires_at)
+                Renews on {{ $userSubscription->expires_at->format('F j, Y') }}
+              @else
+                Lifetime Access
+              @endif
+            </div>
+          </div>
+          <span
+            class="inline-flex items-center px-3 py-1 text-xs font-bold uppercase bg-accent/10 text-accent border border-accent">
+            Active
+          </span>
+        @else
+          <div>
+            <div class="text-xs font-bold uppercase text-gray-500 mb-1">Current Plan</div>
+            <div class="text-lg font-bold text-gray-900 dark:text-white">No current subscription plan</div>
+            <div class="text-sm text-gray-500 dark:text-gray mt-1">Choose a plan below to start streaming.</div>
+          </div>
+          <span
+            class="inline-flex items-center px-3 py-1 text-xs font-bold uppercase bg-gray-100 text-gray-500 border border-gray-200 dark:bg-gray-800 dark:border-gray-600">
+            Inactive
+          </span>
+        @endif
       </div>
-      <span
-        class="inline-flex items-center px-3 py-1 text-xs font-bold uppercase bg-accent/10 text-accent border border-accent">
-        Active
-      </span>
     </div>
+
+    {{-- Change Plan / Pricing Tiers --}}
+    <div class="bg-white shadow-3xl p-8 md:p-10 lg:p-14 xl:p-[60px] dark:bg-gray-700">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-1">Change Plan</h2>
+      <p class="text-sm text-gray-500 dark:text-gray mb-8">Upgrade or downgrade your streaming experience.</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        @foreach($packages as $package)
+          @php
+            $isCurrent = $package->name === $selectedPackage?->name;
+          @endphp
+
+          <div
+            class="flex flex-col border {{ $isCurrent ? 'border-accent' : 'border-gray-200 dark:border-gray-600' }} p-6 transition-all duration-150">
+            <div class="flex justify-between items-start mb-4">
+              <div>
+                <h3 class="text-xs font-bold uppercase text-gray-500 mb-1">{{ $package->name }}</h3>
+                <div class="text-2xl font-bold text-gray-900 dark:text-white">
+                  {{ $package->currency }} {{ number_format($package->price, 2) }}<span
+                    class="text-xs font-medium text-gray-500">/{{ $package->interval }}</span>
+                </div>
+              </div>
+              @if($isCurrent)
+                <span class="text-[10px] font-bold uppercase py-1 px-2 bg-accent text-gray-900">Current</span>
+              @endif
+            </div>
+
+            <ul class="flex-grow space-y-3 mb-8">
+              <li class="flex items-center gap-x-2 text-sm text-gray-900 dark:text-white font-medium">
+                <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                </svg>
+                {{ $package->max_resolution }} Quality
+              </li>
+              <li class="flex items-center gap-x-2 text-sm text-gray-600 dark:text-gray">
+                <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                </svg>
+                {{ $package->max_screens }} {{ Str::plural('Screen', $package->max_screens) }}
+              </li>
+              @if(!$package->has_ads)
+                <li class="flex items-center gap-x-2 text-sm text-gray-600 dark:text-gray">
+                  <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  No Ads
+                </li>
+              @endif
+              @if ($package->download_enabled)
+              <li class="flex items-center gap-x-2 text-sm text-gray-600 dark:text-gray">
+                <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                </svg>
+                Download your movies anytime
+              </li>
+              @endif
+            </ul>
+
+            <form action="{{ route('account.update-plan', $package->uuid) }}" method="POST">
+              @csrf
+              <button type="submit" {{ $isCurrent ? 'disabled' : '' }}
+                class="w-full inline-flex text-center font-bold leading-none transition-colors uppercase justify-center py-3 px-4 text-xs {{ $isCurrent ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-600' : 'bg-gray-900 hover:bg-accent hover:text-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-accent' }}">
+                {{ $isCurrent ? 'Active Plan' : 'Switch Plan' }}
+              </button>
+            </form>
+          </div>
+        @endforeach
+      </div>
+    </div>
+
   </div>
-
-  {{-- Payment Method --}}
-  <div class="bg-white shadow-3xl p-8 md:p-10 lg:p-14 xl:p-[60px] dark:bg-gray-700">
-    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-1">Payment Method</h2>
-    <p class="text-sm text-gray-500 dark:text-gray mb-8">Update your card details.</p>
-
-    <form method="POST" action="#" class="flex flex-col gap-y-6 max-w-lg">
-      @csrf
-
-      <div>
-        <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="card_name">
-          Name on Card
-        </label>
-        <input
-          class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full"
-          type="text" name="card_name" id="card_name" placeholder="e.g. John Smith" autocomplete="cc-name">
-      </div>
-
-      <div>
-        <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="card_number">
-          Card Number
-        </label>
-        <input
-          class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full"
-          type="text" name="card_number" id="card_number" placeholder="•••• •••• •••• ••••" maxlength="19" autocomplete="cc-number">
-      </div>
-
-      <div class="grid grid-cols-2 gap-x-5">
-        <div>
-          <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="card_expiry">
-            Expiry Date
-          </label>
-          <input
-            class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full"
-            type="text" name="card_expiry" id="card_expiry" placeholder="MM / YY" maxlength="7" autocomplete="cc-exp">
-        </div>
-        <div>
-          <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="card_cvc">
-            CVC
-          </label>
-          <input
-            class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full"
-            type="text" name="card_cvc" id="card_cvc" placeholder="•••" maxlength="4" autocomplete="cc-csc">
-        </div>
-      </div>
-
-      <div>
-        <button type="submit"
-          class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-4 px-8 text-sm text-gray-900 bg-accent hover:bg-accent/90">
-          Update Payment Method
-        </button>
-      </div>
-    </form>
-  </div>
-
-  {{-- Billing Address --}}
-  <div class="bg-white shadow-3xl p-8 md:p-10 lg:p-14 xl:p-[60px] dark:bg-gray-700">
-    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-1">Billing Address</h2>
-    <p class="text-sm text-gray-500 dark:text-gray mb-8">Address used for invoices and receipts.</p>
-
-    <form method="POST" action="#" class="flex flex-col gap-y-6 max-w-lg">
-      @csrf
-
-      <div class="grid grid-cols-2 gap-x-5 gap-y-6">
-        <div>
-          <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="first_name">First Name</label>
-          <input
-            class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full"
-            type="text" name="first_name" id="first_name" autocomplete="given-name">
-        </div>
-        <div>
-          <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="last_name">Last Name</label>
-          <input
-            class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full"
-            type="text" name="last_name" id="last_name" autocomplete="family-name">
-        </div>
-      </div>
-
-      <div>
-        <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="address">Street Address</label>
-        <input
-          class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full"
-          type="text" name="address" id="address" autocomplete="street-address">
-      </div>
-
-      <div class="grid grid-cols-2 gap-x-5 gap-y-6">
-        <div>
-          <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="city">City</label>
-          <input
-            class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full"
-            type="text" name="city" id="city" autocomplete="address-level2">
-        </div>
-        <div>
-          <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="postcode">Postcode</label>
-          <input
-            class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full"
-            type="text" name="postcode" id="postcode" autocomplete="postal-code">
-        </div>
-      </div>
-
-      <div>
-        <button type="submit"
-          class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-4 px-8 text-sm text-gray-900 bg-accent hover:bg-accent/90">
-          Save Address
-        </button>
-      </div>
-    </form>
-  </div>
-
-</div>
 @endsection

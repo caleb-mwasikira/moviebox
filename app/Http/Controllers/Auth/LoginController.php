@@ -24,11 +24,11 @@ class LoginController extends Controller
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             throw ValidationException::withMessages([
                 'email' => __('auth.failed'),
-            ]);
+            ])->errorBag('login');
         }
 
         $request->session()->regenerate();
 
-        return redirect()->intended('/');
+        return redirect()->route('account.dashboard');
     }
 }

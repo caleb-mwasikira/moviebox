@@ -143,26 +143,26 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>
   (function () {
-    // ── Sidebar Controls ──
-    const sidebar = document.querySelector('.watch-sidebar');
-    const overlay = document.querySelector('.watch-sidebar-overlay');
-    const openBtn = document.getElementById('toggle-sidebar');
-    const closeBtn = document.getElementById('close-sidebar');
-
-    openBtn.addEventListener('click', () => { sidebar.classList.add('open'); overlay.classList.add('show'); });
-    const hideMenu = () => { sidebar.classList.remove('open'); overlay.classList.remove('show'); };
-    closeBtn.addEventListener('click', hideMenu);
-    overlay.addEventListener('click', hideMenu);
+    @php
+      $uid = Auth::id() ?? 0;
+      $exp = time() + 7200;
+      $sig = hash_hmac('sha256', $uid . ':' . $exp, env('APP_SECRET', ''));
+      $hlsToken = base64_encode($uid . ':' . $exp . ':' . $sig);
+    @endphp
+    const hlsToken = @json($hlsToken);
 
     // ── HLS Player ──
     const video = document.getElementById('movie-player');
-    const movieId = @json($movie->id);
     let hlsInst = null;
 
     function loadHls(src) {
       if (Hls.isSupported()) {
         if (hlsInst) hlsInst.destroy();
-        hlsInst = new Hls();
+        hlsInst = new Hls({
+          xhrSetup: function (xhr) {
+            xhr.setRequestHeader('Authorization', 'Bearer ' + hlsToken);
+          },
+        });
         hlsInst.loadSource(src);
         hlsInst.attachMedia(video);
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
@@ -175,6 +175,29 @@
     @else
       video.src = @json($movie->videoUrl());
     @endif
+
+    // ── Resume playback ──
+    const _key = 'mvbox_pos_' + @json($movie->uuid);
+    let _saveTimer = null;
+
+    function _save() {
+      const t = video.currentTime, d = video.duration;
+      if (!t || !d || t < 5) return;
+      (d - t < 30) ? localStorage.removeItem(_key) : localStorage.setItem(_key, t.toFixed(1));
+    }
+
+    video.addEventListener('timeupdate', function () {
+      if (_saveTimer) return;
+      _saveTimer = setTimeout(function () { _saveTimer = null; _save(); }, 5000);
+    });
+    video.addEventListener('pause', _save);
+    video.addEventListener('ended', function () { localStorage.removeItem(_key); });
+    video.addEventListener('loadedmetadata', function () {
+      const saved = parseFloat(localStorage.getItem(_key) || '0');
+      if (saved > 5 && video.duration && saved < video.duration - 30) {
+        video.currentTime = saved;
+      }
+    });
   })();
 </script>
 @endpush

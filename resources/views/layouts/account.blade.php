@@ -3,62 +3,94 @@
 @section('title')Account - @yield('account-title', 'Dashboard')@endsection
 
 @section('content')
-<div class="pt-10 pb-16 lg:pt-20 lg:pb-44">
-  <div class="container">
+  <div class="pt-10 pb-16 lg:pt-20 lg:pb-44">
+    <div class="container">
 
-    <div class="flex flex-col lg:flex-row gap-y-8 lg:gap-x-12 xl:gap-x-16">
+      <div class="flex flex-col lg:flex-row gap-y-8 lg:gap-x-12 xl:gap-x-16">
 
-      {{-- Sidebar --}}
-      <aside class="lg:w-52 xl:w-60 shrink-0">
-        <nav class="lg:sticky lg:top-8">
-          <ul class="flex flex-row flex-wrap gap-x-6 gap-y-2 lg:flex-col lg:gap-x-0 lg:gap-y-1 font-bold">
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('account') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('account') }}">
-                Dashboard
-              </a>
-            </li>
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.personal-info') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('account.personal-info') }}">
-                Personal Info
-              </a>
-            </li>
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.billing') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('account.billing') }}">
-                Billing Details
-              </a>
-            </li>
-            <li class="lg:mt-4 lg:pt-4 lg:border-t lg:border-gray-200 lg:dark:border-gray-600">
-              <form method="POST" action="{{ route('logout') }}" class="inline">
-                @csrf
-                <button type="submit"
-                  class="block py-1.5 transition-all text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent font-bold">
-                  Logout
+        {{-- Sidebar --}}
+        <aside class="lg:w-52 xl:w-60 shrink-0">
+          <nav class="lg:sticky lg:top-8">
+            <ul class="flex flex-row flex-wrap gap-x-6 gap-y-2 lg:flex-col lg:gap-x-0 lg:gap-y-1 font-bold">
+              <li>
+                <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('account') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                  href="{{ route('account.dashboard') }}">
+                  Dashboard
+                </a>
+              </li>
+              <li>
+                <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.personal-info') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                  href="{{ route('account.personal-info') }}">
+                  Personal Info
+                </a>
+              </li>
+              <li>
+                <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.billing') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                  href="{{ route('account.billing') }}">
+                  Billing Details
+                </a>
+              </li>
+              <li class="lg:mt-4 lg:pt-4 lg:border-t lg:border-gray-200 lg:dark:border-gray-600">
+                <form method="POST" action="{{ route('logout') }}" class="inline">
+                  @csrf
+                  <button type="submit"
+                    class="block py-1.5 transition-all text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent font-bold">
+                    Logout
+                  </button>
+                </form>
+              </li>
+            </ul>
+          </nav>
+        </aside>
+
+        {{-- Main content --}}
+        <div class="flex-1 min-w-0">
+            @if (session('success'))
+              <div class="mb-6 flex items-center justify-between bg-accent/10 border border-accent p-4 dark:bg-accent/5">
+                  <div class="flex items-center gap-x-3">
+                      <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      <span class="text-sm font-bold uppercase tracking-tight text-gray-900 dark:text-white">
+                          {{ session('success') }}
+                      </span>
+                  </div>
+                  <button type="button" onclick="this.parentElement.remove()" class="text-gray-500 hover:text-gray-900 dark:hover:text-white">
+                      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"></path></svg>
+                  </button>
+              </div>
+            @endif
+
+          @if (session('error'))
+            <div class="mb-6 flex items-center justify-between bg-red-500/10 border border-red-500 p-4 dark:bg-red-500/5">
+                <div class="flex items-center gap-x-3">
+                    <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    <span class="text-sm font-bold uppercase tracking-tight text-gray-900 dark:text-white">
+                        {{ session('error') }}
+                    </span>
+                </div>
+                <button type="button" onclick="this.parentElement.remove()" class="text-gray-500 hover:text-gray-900 dark:hover:text-white">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"></path></svg>
                 </button>
-              </form>
-            </li>
-          </ul>
-        </nav>
-      </aside>
+            </div>
+          @endif
 
-      {{-- Main content --}}
-      <div class="flex-1 min-w-0">
-        @if (session('status') === 'profile-updated')
-          <div class="mb-6 border border-accent bg-accent/10 px-4 py-3 text-sm text-accent font-medium">
-            Profile updated successfully.
-          </div>
-        @elseif (session('status') === 'password-updated')
-          <div class="mb-6 border border-accent bg-accent/10 px-4 py-3 text-sm text-accent font-medium">
-            Password updated successfully.
-          </div>
-        @endif
+          @if (session('status') === 'profile-updated')
+            <div class="mb-6 border border-accent bg-accent/10 px-4 py-3 text-sm text-accent font-medium">
+              Profile updated successfully.
+            </div>
+          @elseif (session('status') === 'password-updated')
+            <div class="mb-6 border border-accent bg-accent/10 px-4 py-3 text-sm text-accent font-medium">
+              Password updated successfully.
+            </div>
+          @endif
 
-        @yield('account-content')
+          @yield('account-content')
+        </div>
+
       </div>
-
     </div>
   </div>
-</div>
 @endsection

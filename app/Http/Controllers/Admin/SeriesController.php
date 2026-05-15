@@ -72,8 +72,9 @@ class SeriesController extends Controller
             $this->convertVideo(
                 $series->uuid,
                 'series_trailer',
-                $series->title . ' (trailer)',
+                $series->title,
                 storage_path('app/public/' . $tStagingPath),
+                $series->title,
             );
         }
 
@@ -131,8 +132,9 @@ class SeriesController extends Controller
             $this->convertVideo(
                 $series->uuid,
                 'series_trailer',
-                $series->title . ' (trailer)',
+                $series->title,
                 storage_path('app/public/' . $tStagingPath),
+                $series->title,
             );
         }
 
@@ -180,8 +182,9 @@ class SeriesController extends Controller
         $this->convertVideo(
             $series->uuid,
             'series_trailer',
-            $series->title . ' (trailer)',
+            $series->title,
             storage_path('app/public/' . $stagingPath),
+            $series->title,
         );
 
         return redirect()->route('admin.series.edit', $series)->with('status', 'trailer-processing');

@@ -40,11 +40,80 @@ class EpisodeController extends Controller
 
         $series = $season->series;
 
+        if (strtolower($ext) === 'mkv') {
+            $mp4RelPath = "videos/series/{$uuid}.mp4";
+            $this->convertMkv(
+                $episode->uuid,
+                storage_path('app/public/' . $finalPath),
+                storage_path('app/public/' . $mp4RelPath),
+                $mp4RelPath,
+                'series',
+            );
+        }
+
         $this->convertVideo(
             $episode->uuid,
             'series',
-            $series->title . ' - ep. ' . $validated['episode_number'],
+            $episode->label(),
             storage_path('app/public/' . $finalPath),
+            $series->title,
+        );
+
+        return redirect()
+            ->route('admin.series.edit', $series)
+            ->with('status', 'episode-processing');
+    }
+
+    public function updateVideo(Request $request, Episode $episode)
+    {
+        $request->validate([
+            'video'         => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska,video/mkv,video/matroska'],
+            'streaming_url' => ['nullable', 'string', 'max:2048'],
+        ]);
+
+        if (!$request->hasFile('video') && !$request->filled('streaming_url')) {
+            return back()->withErrors(['video' => 'Provide a video file or a streaming URL.']);
+        }
+
+        $series = $episode->season->series;
+
+        if ($request->filled('streaming_url')) {
+            $episode->update(['streaming_path' => $request->input('streaming_url')]);
+            return redirect()->route('admin.series.edit', $series)->with('status', 'streaming-url-saved');
+        }
+
+        if ($episode->video_path) {
+            Storage::disk('public')->delete($episode->video_path);
+        }
+
+        $ext       = $request->file('video')->getClientOriginalExtension();
+        $uuid      = Str::uuid();
+        $finalPath = "videos/series/{$uuid}.{$ext}";
+
+        $request->file('video')->storeAs('videos/series', "{$uuid}.{$ext}", 'public');
+
+        $episode->update([
+            'video_path'     => $finalPath,
+            'streaming_path' => null,
+        ]);
+
+        if (strtolower($ext) === 'mkv') {
+            $mp4RelPath = "videos/series/{$uuid}.mp4";
+            $this->convertMkv(
+                $episode->uuid,
+                storage_path('app/public/' . $finalPath),
+                storage_path('app/public/' . $mp4RelPath),
+                $mp4RelPath,
+                'series',
+            );
+        }
+
+        $this->convertVideo(
+            $episode->uuid,
+            'series',
+            $episode->label(),
+            storage_path('app/public/' . $finalPath),
+            $series->title,
         );
 
         return redirect()

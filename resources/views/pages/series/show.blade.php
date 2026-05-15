@@ -138,24 +138,55 @@
 @endsection
 
 @push('scripts')
+@php
+    $uid      = auth()->id() ?? 0;
+    $exp      = time() + 7200;
+    $sig      = hash_hmac('sha256', $uid . ':' . $exp, env('APP_SECRET', ''));
+    $hlsToken = base64_encode($uid . ':' . $exp . ':' . $sig);
+@endphp
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>
-window.openTrailerModal = function (url) {
-  var modal = document.getElementById('trailer-modal');
-  var video = document.getElementById('trailer-modal-video');
-  video.src = url;
-  modal.style.display = 'flex';
-  video.play().catch(function () {});
-};
-window.closeTrailerModal = function () {
-  var modal = document.getElementById('trailer-modal');
-  var video = document.getElementById('trailer-modal-video');
-  video.pause();
-  video.src = '';
-  modal.style.display = 'none';
-};
-document.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape') window.closeTrailerModal();
-});
+(function () {
+  var hlsToken   = @json($hlsToken);
+  var trailerHls = null;
+
+  window.openTrailerModal = function (url) {
+    var modal = document.getElementById('trailer-modal');
+    var video = document.getElementById('trailer-modal-video');
+    modal.style.display = 'flex';
+
+    if (Hls.isSupported()) {
+      if (trailerHls) trailerHls.destroy();
+      trailerHls = new Hls({
+        xhrSetup: function (xhr) {
+          xhr.setRequestHeader('Authorization', 'Bearer ' + hlsToken);
+        }
+      });
+      trailerHls.loadSource(url);
+      trailerHls.attachMedia(video);
+      trailerHls.on(Hls.Events.MANIFEST_PARSED, function () {
+        video.play().catch(function () {});
+      });
+    } else {
+      // Safari native HLS
+      video.src = url;
+      video.play().catch(function () {});
+    }
+  };
+
+  window.closeTrailerModal = function () {
+    var modal = document.getElementById('trailer-modal');
+    var video = document.getElementById('trailer-modal-video');
+    video.pause();
+    if (trailerHls) { trailerHls.destroy(); trailerHls = null; }
+    video.src = '';
+    modal.style.display = 'none';
+  };
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') window.closeTrailerModal();
+  });
+})();
 </script>
 @endpush
 

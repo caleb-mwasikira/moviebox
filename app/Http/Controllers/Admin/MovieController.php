@@ -69,6 +69,17 @@ class MovieController extends Controller
             ]);
         }
 
+        if (strtolower($ext) === 'mkv') {
+            $mp4RelPath = "videos/movies/{$uuid}.mp4";
+            $this->convertMkv(
+                $movie->uuid,
+                storage_path('app/public/' . $finalPath),
+                storage_path('app/public/' . $mp4RelPath),
+                $mp4RelPath,
+                'movies',
+            );
+        }
+
         $this->convertVideo(
             $movie->uuid,
             'movies',
@@ -86,7 +97,7 @@ class MovieController extends Controller
             $this->convertVideo(
                 $movie->uuid,
                 'movies_trailer',
-                $movie->title . ' (trailer)',
+                $movie->title,
                 storage_path('app/public/' . $tStagingPath),
             );
         }
@@ -194,6 +205,58 @@ class MovieController extends Controller
         $movie->delete();
 
         return redirect()->route('admin.movies.index')->with('status', 'movie-deleted');
+    }
+
+    public function updateVideo(Request $request, Movie $movie)
+    {
+        $request->validate([
+            'video'         => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska,video/mkv,video/matroska'],
+            'streaming_url' => ['nullable', 'string', 'max:2048'],
+        ]);
+
+        if (!$request->hasFile('video') && !$request->filled('streaming_url')) {
+            return back()->withErrors(['video' => 'Provide a video file or a streaming URL.']);
+        }
+
+        if ($request->filled('streaming_url')) {
+            $movie->update(['streaming_path' => $request->input('streaming_url')]);
+            return redirect()->route('admin.movies.edit', $movie)->with('status', 'streaming-url-saved');
+        }
+
+        if ($movie->video_path) {
+            Storage::disk('public')->delete($movie->video_path);
+        }
+
+        $ext       = $request->file('video')->getClientOriginalExtension();
+        $uuid      = Str::uuid();
+        $finalPath = "videos/movies/{$uuid}.{$ext}";
+
+        $request->file('video')->storeAs('videos/movies', "{$uuid}.{$ext}", 'public');
+
+        $movie->update([
+            'video_path'     => $finalPath,
+            'streaming_path' => null,
+        ]);
+
+        if (strtolower($ext) === 'mkv') {
+            $mp4RelPath = "videos/movies/{$uuid}.mp4";
+            $this->convertMkv(
+                $movie->uuid,
+                storage_path('app/public/' . $finalPath),
+                storage_path('app/public/' . $mp4RelPath),
+                $mp4RelPath,
+                'movies',
+            );
+        }
+
+        $this->convertVideo(
+            $movie->uuid,
+            'movies',
+            $movie->title,
+            storage_path('app/public/' . $finalPath),
+        );
+
+        return redirect()->route('admin.movies.edit', $movie)->with('status', 'movie-processing');
     }
 
     public function uploadTrailer(Request $request, Movie $movie)

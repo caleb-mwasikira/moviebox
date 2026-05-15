@@ -160,7 +160,7 @@
               @auth
               <div
                 class="relative hover:[&>.sub-menu]:lg:visible hover:[&>.sub-menu]:animate-popper-pop-in hover:[&>.sub-menu]:lg:opacity-100">
-                <a class="block py-4 px-2 xl:px-3" href="{{ route('account') }}">
+                <a class="block py-4 px-2 xl:px-3" href="{{ route('account.dashboard') }}">
                   <svg role="img" class="h-6 w-6 fill-gray-900 dark:fill-white">
                     <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#user"></use>
                   </svg>
@@ -170,7 +170,7 @@
                   class="sub-menu invisible absolute right-full z-20 -mr-9 flex w-40 origin-top-right flex-col bg-white dark:bg-gray-700 py-3 text-sm font-bold opacity-0 shadow-2xl transition-all">
                   <li class="px-5.5">
                     <a class="flex flex-row-reverse items-center justify-between py-1.5 text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent"
-                      href="{{ route('account') }}">
+                      href="{{ route('account.dashboard') }}">
                       Account
                     </a>
                   </li>
@@ -300,7 +300,7 @@
               <input
                 class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 placeholder:font-normal placeholder:text-gray-500/60 focus:border-accent focus:bg-white focus:text-gray-900 focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:placeholder:text-gray-500/80 dark:focus:border-accent dark:focus:bg-gray-900 w-full"
                 type="email" name="email" id="modal-login-email" value="{{ old('email') }}" autocomplete="email" required>
-              @error('email')
+              @error('email', 'login')
               <p class="mt-1.5 text-xs text-danger">{{ $message }}</p>
               @enderror
             </div>
@@ -309,7 +309,7 @@
               <input
                 class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 placeholder:font-normal placeholder:text-gray-500/60 focus:border-accent focus:bg-white focus:text-gray-900 focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:placeholder:text-gray-500/80 dark:focus:border-accent dark:focus:bg-gray-900 w-full"
                 type="password" name="password" id="modal-login-password" autocomplete="current-password" required>
-              @error('password')
+              @error('password', 'login')
               <p class="mt-1.5 text-xs text-danger">{{ $message }}</p>
               @enderror
             </div>
@@ -351,7 +351,7 @@
 
   <script>
   window.APP_AUTH = {!! json_encode(auth()->check()) !!};
-  window.OPEN_AUTH_MODAL = {!! json_encode($errors->any() || session('show_auth_modal')) !!};
+  window.OPEN_AUTH_MODAL = {!! json_encode($errors->getBag('login')->any() || session('show_auth_modal')) !!};
 
   function watchOrLogin(url) {
     if (window.APP_AUTH) {

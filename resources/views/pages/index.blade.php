@@ -423,7 +423,7 @@
                 src="{{ asset('assets/img/str1/stream-banner-2.png') }}" alt="">
 
               @auth
-                <a href="{{ route('account') }}" class="block absolute inset-0"></a>
+                <a href="{{ route('account.dashboard') }}" class="block absolute inset-0"></a>
               @else
                 <a href="{{ route('register') }}" class="block absolute inset-0"></a>
               @endauth

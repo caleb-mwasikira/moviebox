@@ -11,6 +11,46 @@ use Illuminate\Support\Facades\Log;
 
 class VideoCallbackController extends Controller
 {
+    public function mkvConverted(Request $request)
+    {
+        $request->validate([
+            'success'    => ['required', 'boolean'],
+            'video_uuid' => ['required', 'string'],
+            'message'    => ['nullable', 'string'],
+        ]);
+
+        $isSuccess    = $request->boolean('success');
+        $videoUUID    = $request->input('video_uuid');
+        $filmType     = $request->query('film_type');
+        $relativePath = $request->query('path');
+        $adminId      = (int) $request->query('user_id');
+
+        Log::info('MKV conversion complete', [
+            'success'    => $isSuccess,
+            'video_uuid' => $videoUUID,
+            'film_type'  => $filmType,
+            'path'       => $relativePath,
+            'message'    => $request->input('message'),
+        ]);
+
+        if ($isSuccess && $relativePath) {
+            match ($filmType) {
+                'movies' => Movie::where('uuid', $videoUUID)->update(['video_path' => $relativePath]),
+                'series' => Episode::where('uuid', $videoUUID)->update(['video_path' => $relativePath]),
+                default  => Log::error("Unknown film_type in mkv callback: {$filmType}"),
+            };
+        }
+
+        if ($adminId > 0) {
+            $message = $isSuccess
+                ? 'MKV conversion complete — MP4 ready'
+                : ($request->input('message') ?? 'MKV conversion failed');
+            broadcast(new VideoReady($adminId, $message, $isSuccess));
+        }
+
+        return response()->json(['ok' => true]);
+    }
+
     public function videoReady(Request $request)
     {
         $validated = $request->validate([

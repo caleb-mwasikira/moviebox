@@ -265,10 +265,22 @@
       overlay.addEventListener('click', closeMenu);
 
       // ── HLS PLAYER ──
+      @php
+        $uid = Auth::id() ?? 0;
+        $exp = time() + 7200;
+        $sig = hash_hmac('sha256', $uid . ':' . $exp, env('APP_SECRET', ''));
+        $hlsToken = base64_encode($uid . ':' . $exp . ':' . $sig);
+      @endphp
+      const hlsToken = @json($hlsToken);
+
       const video = document.getElementById('episode-player');
       function loadHls(src) {
         if (Hls.isSupported()) {
-          const hls = new Hls();
+          const hls = new Hls({
+            xhrSetup: function (xhr) {
+              xhr.setRequestHeader('Authorization', 'Bearer ' + hlsToken);
+            },
+          });
           hls.loadSource(src);
           hls.attachMedia(video);
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
@@ -277,6 +289,29 @@
       }
       const hlsSrc = @json($episode->streamingUrl());
       if (hlsSrc) loadHls(hlsSrc); else video.src = @json($episode->videoUrl());
+
+      // ── Resume playback ──
+      const _key = 'mvbox_pos_' + @json($episode->uuid);
+      let _saveTimer = null;
+
+      function _save() {
+        const t = video.currentTime, d = video.duration;
+        if (!t || !d || t < 5) return;
+        (d - t < 30) ? localStorage.removeItem(_key) : localStorage.setItem(_key, t.toFixed(1));
+      }
+
+      video.addEventListener('timeupdate', function () {
+        if (_saveTimer) return;
+        _saveTimer = setTimeout(function () { _saveTimer = null; _save(); }, 5000);
+      });
+      video.addEventListener('pause', _save);
+      video.addEventListener('ended', function () { localStorage.removeItem(_key); });
+      video.addEventListener('loadedmetadata', function () {
+        const saved = parseFloat(localStorage.getItem(_key) || '0');
+        if (saved > 5 && video.duration && saved < video.duration - 30) {
+          video.currentTime = saved;
+        }
+      });
     })();
   </script>
 @endpush
