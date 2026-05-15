@@ -24,6 +24,7 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <meta name="theme-color" media="(prefers-color-scheme: dark)"  content="#111827">
   <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   @vite('resources/js/app.js')
   @stack('head')
 
@@ -49,6 +50,7 @@
     .dark .auth-banner-fade-r {
       background: linear-gradient(to right, transparent, rgb(17, 24, 39));
     }
+    [x-cloak] { display: none !important; }
   </style>
 
 </head>
@@ -145,6 +147,16 @@
             <!-- Header Controls -->
             <div class="flex ml-auto -mr-3">
 
+              {{-- Search button --}}
+              <button type="button"
+                x-data x-on:click="$dispatch('open-search')"
+                class="flex items-center py-4 px-2 xl:px-3 text-gray-900 dark:text-white hover:text-accent dark:hover:text-accent transition-colors"
+                aria-label="Search">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+              </button>
+
               <div class="flex items-center py-4 px-1 sm:px-2">
                 <label for="theme-toggle" class="relative inline-flex cursor-pointer items-center">
                   <input type="checkbox" value="" id="theme-toggle" class="peer sr-only">
@@ -213,14 +225,185 @@
 
     </div>
 
+    {{-- Search modal (Alpine.js) --}}
+    <div
+      x-data="{
+        open: false,
+        query: '',
+        results: [],
+        loading: false,
+        activeIdx: -1,
+        _timer: null,
+        _suggestUrl: '{{ route('search.suggestions') }}',
+        _browseUrl: '{{ route('browse') }}',
+        show() {
+          this.open = true;
+          this.$nextTick(() => { if (this.$refs.searchInput) this.$refs.searchInput.focus(); });
+        },
+        hide() {
+          this.open = false;
+          this.query = '';
+          this.results = [];
+          this.activeIdx = -1;
+          clearTimeout(this._timer);
+        },
+        onInput() {
+          clearTimeout(this._timer);
+          this.activeIdx = -1;
+          if (this.query.length < 2) { this.results = []; this.loading = false; return; }
+          this.loading = true;
+          this._timer = setTimeout(() => {
+            fetch(this._suggestUrl + '?q=' + encodeURIComponent(this.query), { headers: { 'Accept': 'application/json' } })
+              .then(r => r.json())
+              .then(data => { this.results = data; this.loading = false; })
+              .catch(() => { this.loading = false; });
+          }, 280);
+        },
+        moveDown() { if (this.results.length) this.activeIdx = Math.min(this.activeIdx + 1, this.results.length - 1); },
+        moveUp() { this.activeIdx = Math.max(this.activeIdx - 1, -1); },
+        go() {
+          var r = this.results[this.activeIdx];
+          if (r && r.url) { window.location.href = r.url; }
+          else { this.submit(); }
+        },
+        submit() { if (this.query.trim()) window.location.href = this._browseUrl + '?q=' + encodeURIComponent(this.query.trim()); }
+      }"
+      x-on:open-search.window="show()"
+      x-on:keydown.escape.window="if (open) hide()"
+      x-on:keydown.window="
+        if (($event.key === 'k' && ($event.metaKey || $event.ctrlKey)) ||
+            ($event.key === '/' && !['INPUT','TEXTAREA'].includes(document.activeElement.tagName))) {
+          $event.preventDefault(); show();
+        }
+      ">
+
+      {{-- Backdrop --}}
+      <div x-show="open" x-cloak
+        x-transition:enter="transition-opacity ease-out duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition-opacity ease-in duration-150"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-start justify-center pt-[10vh] px-4"
+        x-on:click.self="hide()">
+
+        {{-- Panel --}}
+        <div x-show="open"
+          x-transition:enter="transition ease-out duration-200"
+          x-transition:enter-start="opacity-0 -translate-y-3 scale-[0.98]"
+          x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+          x-transition:leave="transition ease-in duration-150"
+          x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+          x-transition:leave-end="opacity-0 -translate-y-3 scale-[0.98]"
+          class="w-full max-w-2xl bg-white dark:bg-gray-900 shadow-2xl overflow-hidden">
+
+          {{-- Input row --}}
+          <div class="flex items-center gap-x-3 px-5 h-16 border-b border-gray-200 dark:border-gray-700">
+            <svg class="w-5 h-5 shrink-0 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input
+              x-ref="searchInput"
+              x-model="query"
+              x-on:input="onInput()"
+              x-on:keydown.arrow-down.prevent="moveDown()"
+              x-on:keydown.arrow-up.prevent="moveUp()"
+              x-on:keydown.enter.prevent="results.length ? go() : submit()"
+              type="text"
+              placeholder="Search movies, series, coming soon…"
+              autocomplete="off" spellcheck="false"
+              class="flex-1 bg-transparent text-gray-900 dark:text-white placeholder:text-gray-400 text-base font-medium focus:outline-none">
+            <button x-on:click="hide()"
+              class="shrink-0 p-1 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors" aria-label="Close">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M18 6 6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          {{-- Loading --}}
+          <div x-show="loading" class="flex items-center gap-x-3 px-5 py-5 text-sm text-gray-400">
+            <svg class="w-4 h-4 animate-spin fill-current text-accent" viewBox="0 0 24 24">
+              <path d="M12 2a10 10 0 0 1 10 10h-2a8 8 0 0 0-8-8V2z"/>
+            </svg>
+            Searching…
+          </div>
+
+          {{-- Results --}}
+          <div x-show="results.length > 0 && !loading" class="max-h-[50vh] overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
+            <template x-for="(r, i) in results" :key="i">
+              <a :href="r.url ?? (_browseUrl + '?q=' + encodeURIComponent(query))"
+                x-on:mouseenter="activeIdx = i"
+                :class="activeIdx === i ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'"
+                class="flex items-center gap-x-4 px-5 py-3 transition-colors">
+                {{-- Thumbnail --}}
+                <div class="w-9 h-12 shrink-0 bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                  <img x-show="r.thumb" :src="r.thumb" class="w-full h-full object-cover" loading="lazy">
+                </div>
+                {{-- Info --}}
+                <div class="flex-1 min-w-0">
+                  <p class="font-bold text-sm text-gray-900 dark:text-white truncate" x-text="r.title"></p>
+                  <p x-show="r.genre" class="text-xs text-gray-500 mt-0.5 truncate" x-text="r.genre"></p>
+                </div>
+                {{-- Type badge --}}
+                <span class="shrink-0 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5"
+                  :class="{
+                    'bg-accent/20 text-accent': r.type === 'movie',
+                    'bg-blue-500/15 text-blue-500': r.type === 'series',
+                    'bg-yellow-400/15 text-yellow-600 dark:text-yellow-400': r.type === 'coming_soon'
+                  }"
+                  x-text="r.label"></span>
+              </a>
+            </template>
+            <div class="px-5 py-3">
+              <a :href="_browseUrl + '?q=' + encodeURIComponent(query)"
+                class="text-xs font-bold uppercase tracking-widest text-accent hover:text-accent/70 transition-colors">
+                View all results for "<span x-text="query"></span>" →
+              </a>
+            </div>
+          </div>
+
+          {{-- No results --}}
+          <div x-show="!loading && query.length >= 2 && results.length === 0" class="px-5 py-10 text-center">
+            <svg class="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <p class="text-sm font-bold text-gray-900 dark:text-white">No results found</p>
+            <p class="text-xs text-gray-500 mt-1">Try a different search term</p>
+          </div>
+
+          {{-- Empty / genre chips --}}
+          <div x-show="query.length < 2 && !loading" class="px-5 py-5">
+            <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3">Try searching for</p>
+            <div class="flex flex-wrap gap-2">
+              <template x-for="genre in ['Action', 'Drama', 'Comedy', 'Thriller', 'Horror', 'Sci-Fi']" :key="genre">
+                <button x-on:click="query = genre; onInput()"
+                  class="text-xs font-bold px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-accent hover:text-gray-900 transition-colors"
+                  x-text="genre"></button>
+              </template>
+            </div>
+          </div>
+
+          {{-- Keyboard hints --}}
+          <div class="flex items-center gap-x-5 px-5 py-2.5 border-t border-gray-100 dark:border-gray-800 text-[11px] text-gray-400">
+            <span><kbd class="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 text-[10px] font-mono">↑↓</kbd> navigate</span>
+            <span><kbd class="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 text-[10px] font-mono">↵</kbd> select</span>
+            <span><kbd class="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 text-[10px] font-mono">Esc</kbd> close</span>
+            <span class="ml-auto hidden sm:inline"><kbd class="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 text-[10px] font-mono">/</kbd> or <kbd class="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-1.5 py-0.5 text-[10px] font-mono">⌘K</kbd> to open</span>
+          </div>
+
+        </div>{{-- /panel --}}
+      </div>{{-- /backdrop --}}
+    </div>{{-- /x-data --}}
+
     <!-- Mobile Menu -->
     <div
       class="js-mobile-menu fixed left-0 top-[64px] z-50 h-[calc(100dvh-64px)] w-full translate-x-full overflow-hidden bg-white dark:bg-gray-700 transition-transform duration-300 lg:hidden">
 
-      {{-- ── Level 1: Main nav (guests only) ── --}}
-      @guest
-      <div id="mobile-menu-l1" class="absolute inset-0 overflow-y-auto py-5">
-        <div class="container">
+      {{-- ── L1: Site / Guest menu (always first) ── --}}
+      <div id="mobile-l1" class="absolute inset-0 flex flex-col overflow-y-auto">
+        <div class="container flex-1 py-5">
           <ul class="flex flex-col font-bold">
             <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
               <a class="flex-grow py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
@@ -242,33 +425,75 @@
               <a class="flex-grow py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
                 href="{{ route('coming-soon') }}">Coming Soon</a>
             </li>
-            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+            <li class="flex items-center">
               <a class="flex-grow py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
                 href="{{ route('contact') }}">Contact</a>
             </li>
-            <li class="flex items-center mt-2 pt-2 border-t border-gray-200/50 dark:border-gray-200/10">
-              <button type="button" id="mobile-account-open"
-                class="flex-grow flex items-center justify-between py-4 font-bold text-gray-900 dark:text-white hover:text-accent dark:hover:text-accent transition-colors">
-                My Account
-                <svg class="w-3.5 h-3.5 shrink-0 opacity-40" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
-              </button>
-            </li>
           </ul>
+        </div>
+
+        <div class="container pb-5 border-t border-gray-200/50 dark:border-gray-200/10">
+          @auth
+          <button type="button" data-nav-to="mobile-l2"
+            class="flex items-center justify-between w-full py-4 font-bold text-gray-900 dark:text-white hover:text-accent dark:hover:text-accent transition-colors">
+            My Account
+            <svg class="w-3.5 h-3.5 shrink-0 opacity-40" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+          @if (auth()->user()->isAdmin())
+          <button type="button" data-nav-to="mobile-l3"
+            class="flex items-center justify-between w-full py-4 font-bold text-accent hover:text-accent/80 transition-colors border-t border-gray-200/50 dark:border-gray-200/10">
+            Admin Panel
+            <svg class="w-3.5 h-3.5 shrink-0 opacity-60" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+          @endif
+          <form method="POST" action="{{ route('logout') }}" class="border-t border-gray-200/50 dark:border-gray-200/10">
+            @csrf
+            <button type="submit"
+              class="w-full text-left py-4 font-bold text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+              Logout
+            </button>
+          </form>
+          @else
+          <button type="button" data-nav-to="mobile-l2"
+            class="flex items-center justify-between w-full py-4 font-bold text-gray-900 dark:text-white hover:text-accent dark:hover:text-accent transition-colors">
+            Login / Register
+            <svg class="w-3.5 h-3.5 shrink-0 opacity-40" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+          @endauth
         </div>
       </div>
 
-      {{-- ── Level 2: Guest auth panel (overlays level 1) ── --}}
-      <div id="mobile-menu-l2"
-        class="absolute inset-0 overflow-y-auto py-5 bg-white dark:bg-gray-700 transition-transform duration-300"
-        style="transform:translateX(100%);">
-        <div class="container">
-
-          <button type="button" id="mobile-account-back"
-            class="flex items-center gap-x-2 py-3 mb-3 font-bold text-sm text-gray-500 dark:text-gray-400 hover:text-accent dark:hover:text-accent transition-colors">
+      {{-- ── L2: Account or Auth menu ── --}}
+      <div id="mobile-l2" class="absolute inset-0 flex flex-col overflow-y-auto bg-white dark:bg-gray-700 transition-transform duration-300" style="transform:translateX(100%)">
+        <div class="container flex-1 py-5">
+          <button type="button" data-nav-close="mobile-l2"
+            class="flex items-center gap-x-2 py-3 mb-4 font-bold text-sm text-gray-500 dark:text-gray-400 hover:text-accent dark:hover:text-accent transition-colors">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
             Back
           </button>
 
+          @auth
+          <p class="mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">My Account</p>
+          <ul class="flex flex-col font-bold">
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.dashboard') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('account.dashboard') }}">Dashboard</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.personal-info') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('account.personal-info') }}">Personal Info</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.watching') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('account.watching') }}">Continue Watching</a>
+            </li>
+            <li class="flex items-center">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.billing') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('account.billing') }}">Billing Details</a>
+            </li>
+          </ul>
+          @else
+          <p class="mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">Account</p>
           <ul class="flex flex-col font-bold">
             <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
               <a class="flex-grow py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
@@ -279,19 +504,41 @@
                 href="{{ route('register') }}">Create Account</a>
             </li>
           </ul>
-
+          @endauth
         </div>
+
+        @auth
+        <div class="container pb-5 border-t border-gray-200/50 dark:border-gray-200/10">
+          @if (auth()->user()->isAdmin())
+          <button type="button" data-nav-to="mobile-l3"
+            class="flex items-center justify-between w-full py-4 font-bold text-accent hover:text-accent/80 transition-colors">
+            Admin Panel
+            <svg class="w-3.5 h-3.5 shrink-0 opacity-60" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+          @endif
+          <form method="POST" action="{{ route('logout') }}" class="@if(auth()->user()->isAdmin()) border-t border-gray-200/50 dark:border-gray-200/10 @endif">
+            @csrf
+            <button type="submit"
+              class="w-full text-left py-4 font-bold text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+              Logout
+            </button>
+          </form>
+        </div>
+        @endauth
       </div>
-      @endguest
 
-      {{-- ── Logged-in: admin menu ── --}}
+      {{-- ── L3: Admin menu ── --}}
       @auth
-      @if (auth()->user()->isAdmin() && request()->routeIs('admin.*'))
-      <div class="absolute inset-0 overflow-y-auto py-5">
-        <div class="container">
+      @if (auth()->user()->isAdmin())
+      <div id="mobile-l3" class="absolute inset-0 flex flex-col overflow-y-auto bg-white dark:bg-gray-700 transition-transform duration-300" style="transform:translateX(100%)">
+        <div class="container flex-1 py-5">
+          <button type="button" data-nav-close="mobile-l3"
+            class="flex items-center gap-x-2 py-3 mb-4 font-bold text-sm text-gray-500 dark:text-gray-400 hover:text-accent dark:hover:text-accent transition-colors">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+            Back
+          </button>
 
-          <p class="mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">Admin Panel</p>
-
+          <p class="mb-1 text-[10px] font-bold uppercase tracking-widest text-accent">Admin Panel</p>
           <ul class="flex flex-col font-bold">
             <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
               <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.dashboard') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
@@ -313,69 +560,21 @@
               <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.users.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.users.index') }}">Users</a>
             </li>
-            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+            <li class="flex items-center">
               <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.packages.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.packages.index') }}">Subscription Packages</a>
             </li>
-            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10 mt-2 pt-2 border-t border-gray-200/50 dark:border-gray-200/10">
-              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('account.dashboard') }}">My Account</a>
-            </li>
-            <li class="flex items-center">
-              <form method="POST" action="{{ route('logout') }}" class="flex-grow">
-                @csrf
-                <button type="submit"
-                  class="w-full text-left py-4 leading-normal font-bold text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent">
-                  Logout
-                </button>
-              </form>
-            </li>
           </ul>
-
         </div>
-      </div>
 
-      {{-- ── Logged-in: account menu ── --}}
-      @else
-      <div class="absolute inset-0 overflow-y-auto py-5">
-        <div class="container">
-
-          <p class="mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">My Account</p>
-
-          <ul class="flex flex-col font-bold">
-            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
-              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.dashboard') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('account.dashboard') }}">Dashboard</a>
-            </li>
-            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
-              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.personal-info') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('account.personal-info') }}">Personal Info</a>
-            </li>
-            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
-              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.watching') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('account.watching') }}">Continue Watching</a>
-            </li>
-            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
-              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.billing') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('account.billing') }}">Billing Details</a>
-            </li>
-            @if (auth()->user()->isAdmin())
-            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
-              <a class="flex-grow py-4 leading-normal font-bold text-accent hover:text-accent/80 transition-colors"
-                href="{{ route('admin.dashboard') }}">Admin Panel</a>
-            </li>
-            @endif
-            <li class="flex items-center mt-2 pt-2 border-t border-gray-200/50 dark:border-gray-200/10">
-              <form method="POST" action="{{ route('logout') }}" class="flex-grow">
-                @csrf
-                <button type="submit"
-                  class="w-full text-left py-4 leading-normal font-bold text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent">
-                  Logout
-                </button>
-              </form>
-            </li>
-          </ul>
-
+        <div class="container pb-5 border-t border-gray-200/50 dark:border-gray-200/10">
+          <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit"
+              class="w-full text-left py-4 font-bold text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+              Logout
+            </button>
+          </form>
         </div>
       </div>
       @endif
@@ -384,24 +583,35 @@
     </div>
     <!-- Mobile Menu / End -->
 
-    @guest
     <script>
     (function () {
-      var l2      = document.getElementById('mobile-menu-l2');
-      var openBtn = document.getElementById('mobile-account-open');
-      var backBtn = document.getElementById('mobile-account-back');
+      function showPanel(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.transform = 'translateX(0)';
+      }
+      function hidePanel(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.transform = 'translateX(100%)';
+      }
 
-      function showAccount() { if (l2) l2.style.transform = 'translateX(0)'; }
-      function showMain()    { if (l2) l2.style.transform = 'translateX(100%)'; }
-
-      if (openBtn) openBtn.addEventListener('click', showAccount);
-      if (backBtn) backBtn.addEventListener('click', showMain);
+      document.addEventListener('click', function (e) {
+        var fwd = e.target.closest('[data-nav-to]');
+        if (fwd) { showPanel(fwd.getAttribute('data-nav-to')); return; }
+        var back = e.target.closest('[data-nav-close]');
+        if (back) { hidePanel(back.getAttribute('data-nav-close')); return; }
+      });
 
       var toggle = document.querySelector('.js-menu-toggle');
-      if (toggle) toggle.addEventListener('click', function () { setTimeout(showMain, 320); });
+      if (toggle) {
+        toggle.addEventListener('click', function () {
+          setTimeout(function () {
+            hidePanel('mobile-l2');
+            hidePanel('mobile-l3');
+          }, 320);
+        });
+      }
     })();
     </script>
-    @endguest
 
     @php
       $__sub = auth()->check() ? auth()->user()->currentSubscription : null;

@@ -188,13 +188,16 @@ class ComingSoonController extends Controller
         return redirect()->route('admin.movies.edit', $comingSoon)->with('status', 'movie-processing');
     }
 
-    public function toggleFeatured(Movie $comingSoon)
+    public function toggleFeatured(Request $request, Movie $comingSoon)
     {
         $comingSoon->update(['featured' => !$comingSoon->featured]);
+        if ($request->wantsJson()) {
+            return response()->json(['featured' => $comingSoon->featured]);
+        }
         return back();
     }
 
-    public function destroy(Movie $comingSoon)
+    public function destroy(Request $request, Movie $comingSoon)
     {
         if ($comingSoon->thumbnail) {
             Storage::disk('public')->delete($comingSoon->thumbnail);
@@ -207,6 +210,9 @@ class ComingSoonController extends Controller
         }
         $comingSoon->delete();
 
+        if ($request->wantsJson()) {
+            return response()->json(['deleted' => true]);
+        }
         return redirect()->route('admin.coming-soon.index')->with('status', 'coming-soon-deleted');
     }
 }

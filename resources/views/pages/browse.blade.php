@@ -10,9 +10,16 @@
 
         <div class="flex flex-col gap-y-6 sm:flex-row sm:items-center sm:justify-between mb-12 md:mb-16 lg:mb-20">
 
-          <h1 class="text-2xl font-bold tracking-tighter text-gray-900 before:text-accent before:content-['.'] dark:text-white sm:text-3xl md:text-4xl">
-            Browse All
-          </h1>
+          <div>
+            <h1 class="text-2xl font-bold tracking-tighter text-gray-900 before:text-accent before:content-['.'] dark:text-white sm:text-3xl md:text-4xl">
+              @if ($query) Search Results @else Browse All @endif
+            </h1>
+            @if ($query)
+              <p class="mt-1 text-sm text-gray-500">
+                Results for <span class="font-bold text-gray-900 dark:text-white">"{{ $query }}"</span>
+              </p>
+            @endif
+          </div>
 
           <div class="flex flex-wrap gap-x-6 gap-y-3 items-center">
 
@@ -21,15 +28,15 @@
               <ul class="flex flex-wrap gap-x-5 text-sm font-bold">
                 <li>
                   <a class="transition-colors {{ $type === 'all' ? 'text-accent' : 'text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent' }}"
-                    href="{{ route('browse', array_filter(['genre' => $genre])) }}">All</a>
+                    href="{{ route('browse', array_filter(['genre' => $genre, 'q' => $query])) }}">All</a>
                 </li>
                 <li>
                   <a class="transition-colors {{ $type === 'movies' ? 'text-accent' : 'text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent' }}"
-                    href="{{ route('browse', array_filter(['genre' => $genre, 'type' => 'movies'])) }}">Movies</a>
+                    href="{{ route('browse', array_filter(['genre' => $genre, 'type' => 'movies', 'q' => $query])) }}">Movies</a>
                 </li>
                 <li>
                   <a class="transition-colors {{ $type === 'series' ? 'text-accent' : 'text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent' }}"
-                    href="{{ route('browse', array_filter(['genre' => $genre, 'type' => 'series'])) }}">Series</a>
+                    href="{{ route('browse', array_filter(['genre' => $genre, 'type' => 'series', 'q' => $query])) }}">Series</a>
                 </li>
               </ul>
             </nav>
@@ -66,11 +73,22 @@
           }
         @endphp
 
-        @if ($items->isEmpty())
+        @php
+          $hasResults = $items->isNotEmpty() || $comingSoon->isNotEmpty();
+        @endphp
+
+        @if (!$hasResults)
           <div class="py-24 text-center text-gray-500 font-bold uppercase text-sm tracking-widest">
-            Nothing found.
+            @if ($query)
+              No results found for "{{ $query }}"
+            @else
+              Nothing found.
+            @endif
           </div>
         @else
+
+        {{-- Movies & Series grid --}}
+        @if ($items->isNotEmpty())
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-5 gap-y-9 md:gap-x-6 lg:gap-x-7.5">
           @foreach ($items as $entry)
           @php $item = $entry['item']; $isMovie = $entry['type'] === 'movie'; @endphp
@@ -110,6 +128,60 @@
           </div>
           @endforeach
         </div>
+        @endif
+
+        {{-- Coming Soon results (search only) --}}
+        @if ($comingSoon->isNotEmpty())
+        <div class="{{ $items->isNotEmpty() ? 'mt-16' : '' }}">
+          <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-6 pb-3 border-b border-gray-200 dark:border-gray-700 uppercase tracking-widest text-xs">
+            Coming Soon
+          </h2>
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-5 gap-y-9 md:gap-x-6 lg:gap-x-7.5">
+            @foreach ($comingSoon as $cs)
+            @php $csThumb = $cs->posters->first()?->url() ?? $cs->thumbnailUrl(); @endphp
+            <div>
+              <figure class="group relative mb-4 overflow-hidden bg-gray-800">
+                @if ($csThumb)
+                  <img class="aspect-[2/3] w-full object-cover transition-transform duration-300 group-hover:scale-110 opacity-90"
+                    src="{{ $csThumb }}" alt="{{ $cs->title }}">
+                @else
+                  <div class="aspect-[2/3] w-full bg-gray-700 flex items-center justify-center">
+                    <svg class="h-12 w-12 fill-gray-500" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  </div>
+                @endif
+                <div class="absolute top-2 left-2">
+                  <span style="background:var(--color-accent,#facc15); color:#111; font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:2px 7px;">Coming Soon</span>
+                </div>
+                @if ($cs->trailerIsReady())
+                <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all bg-black/50 duration-300 flex items-center justify-center cursor-pointer"
+                  onclick="document.getElementById('browse-trailer-modal').style.display='flex'; var v=document.getElementById('browse-trailer-video'); v.src='{{ $cs->trailerUrl() }}';">
+                  <span class="w-10 h-10 rounded-full bg-accent/90 flex items-center justify-center">
+                    <svg class="w-4 h-4 fill-white ml-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  </span>
+                </div>
+                @endif
+              </figure>
+              <div>
+                <h3 class="font-bold text-gray-900 dark:text-white text-sm leading-tight mb-1">{{ $cs->title }}</h3>
+                <div class="text-xs text-gray-500 leading-snug">
+                  @php $meta = array_filter([$cs->genre, $cs->year]); @endphp
+                  {{ implode(' · ', $meta) }}
+                </div>
+              </div>
+            </div>
+            @endforeach
+          </div>
+        </div>
+
+        {{-- Minimal trailer modal for browse page --}}
+        <div id="browse-trailer-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.92); align-items:center; justify-content:center;"
+          onclick="if(event.target===this){this.style.display='none'; document.getElementById('browse-trailer-video').src='';}">
+          <button onclick="this.closest('#browse-trailer-modal').style.display='none'; document.getElementById('browse-trailer-video').src='';"
+            style="position:absolute; top:20px; right:24px; background:none; border:none; color:#fff; font-size:28px; line-height:1; cursor:pointer;">&#x2715;</button>
+          <video id="browse-trailer-video" style="width:90vw; max-width:1100px; aspect-ratio:16/9; background:#000; display:block;" controls></video>
+        </div>
+        @endif
+
         @endif
 
       </div>

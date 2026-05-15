@@ -15,4 +15,11 @@ class ComingSoonController extends Controller
 
         return view('pages.coming-soon', compact('films'));
     }
+
+    public function show(Movie $comingSoon)
+    {
+        abort_unless($comingSoon->coming_soon, 404);
+        $comingSoon->loadMissing('posters');
+        return view('pages.coming-soon-show', compact('comingSoon'));
+    }
 }

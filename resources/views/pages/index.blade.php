@@ -133,27 +133,7 @@
           <div class="swiper-wrapper">
             @foreach ($series as $show)
             <div class="swiper-slide">
-              <a class="flex flex-col gap-y-5 group" href="{{ route('series.show', $show) }}">
-                <figure class="relative overflow-hidden bg-gray-100 dark:bg-gray-700">
-                  @if ($show->thumbnail)
-                    <img class="w-full object-cover aspect-[17/22] transition-transform duration-300 group-hover:scale-110"
-                      src="{{ $show->thumbnailUrl() }}" alt="{{ $show->title }}">
-                  @else
-                    <div class="w-full aspect-[17/22] bg-gray-200 dark:bg-gray-600"></div>
-                  @endif
-                  <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all bg-accent/80 duration-300">
-                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-7.5 aspect-square bg-gray-900 grid place-items-center text-white scale-90 group-hover:scale-100 transition-all duration-300">
-                      <svg class="h-2.5 aspect-square" fill="currentColor">
-                        <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#plus-thinest"></use>
-                      </svg>
-                    </div>
-                  </div>
-                </figure>
-                <div class="leading-tight">
-                  <h5 class="font-bold text-gray-900 dark:text-white mb-1.5 group-hover:text-accent">{{ $show->title }}</h5>
-                  <div class="text-gray-500">{{ $show->genre ?? 'Series' }}</div>
-                </div>
-              </a>
+              <x-film-card :film="$show" type="series" />
             </div>
             @endforeach
           </div>
@@ -242,34 +222,12 @@
           <div class="swiper-wrapper">
             @forelse ($movies as $movie)
             <div class="swiper-slide">
-              <a class="flex flex-col gap-y-5 group" href="{{ route('movies.show', $movie) }}">
-                <figure class="relative overflow-hidden bg-gray-100 dark:bg-gray-700">
-                  @if ($movie->thumbnail)
-                    <img class="w-full object-cover aspect-[17/22] transition-transform duration-300 group-hover:scale-110"
-                      src="{{ $movie->thumbnailUrl() }}" alt="{{ $movie->title }}">
-                  @else
-                    <div class="w-full aspect-[17/22] bg-gray-200 dark:bg-gray-600"></div>
-                  @endif
-                  <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all bg-accent/80 duration-300">
-                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-7.5 aspect-square bg-gray-900 grid place-items-center text-white scale-90 group-hover:scale-100 transition-all duration-300">
-                      <svg class="h-2.5 aspect-square" fill="currentColor">
-                        <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#plus-thinest"></use>
-                      </svg>
-                    </div>
-                  </div>
-                </figure>
-                <div class="leading-tight">
-                  <h5 class="font-bold text-gray-900 dark:text-white mb-1.5 group-hover:text-accent">{{ $movie->title }}</h5>
-                  <div class="text-gray-500">{{ $movie->genre ?? 'Film' }}</div>
-                </div>
-              </a>
+              <x-film-card :film="$movie" type="movie" />
             </div>
             @empty
             <div class="swiper-slide">
-              <div class="flex flex-col gap-y-5">
-                <div class="w-full aspect-[17/22] bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                  <span class="text-xs text-gray-400 uppercase font-bold">No movies yet</span>
-                </div>
+              <div class="w-full aspect-[17/22] bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <span class="text-xs text-gray-400 uppercase font-bold">No movies yet</span>
               </div>
             </div>
             @endforelse
@@ -312,62 +270,8 @@
         <div class="swiper js-coming-soon-swiper">
           <div class="swiper-wrapper">
             @foreach ($comingSoon as $cs)
-            @php $csThumb = $cs->posters->first()?->url() ?? $cs->thumbnailUrl(); @endphp
             <div class="swiper-slide">
-              <div class="flex flex-col gap-y-4 group">
-
-                {{-- Poster --}}
-                <figure class="relative overflow-hidden bg-gray-800 cursor-pointer"
-                  @if ($cs->trailerIsReady()) onclick="openTrailerModal('{{ $cs->trailerUrl() }}')" @endif>
-
-                  @if ($csThumb)
-                    <img class="w-full object-cover aspect-[17/22] transition-transform duration-300 group-hover:scale-105"
-                      src="{{ $csThumb }}" alt="{{ $cs->title }}">
-                  @else
-                    <div class="w-full aspect-[17/22] bg-gray-700 flex items-center justify-center">
-                      <svg class="w-8 h-8 text-gray-500 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                    </div>
-                  @endif
-
-                  {{-- Dark overlay --}}
-                  <div class="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-300"></div>
-
-                  {{-- Coming Soon badge --}}
-                  <div class="absolute top-2.5 left-2.5">
-                    <span style="background:var(--color-accent,#facc15); color:#111; font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:2px 7px;">
-                      Coming Soon
-                    </span>
-                  </div>
-
-                  {{-- Trailer play icon --}}
-                  @if ($cs->trailerIsReady())
-                  <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <span class="w-11 h-11 rounded-full bg-black/40 border border-white/60 flex items-center justify-center backdrop-blur-sm group-hover:bg-accent/80 group-hover:border-accent transition-all duration-200">
-                      <svg class="w-4 h-4 fill-white ml-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                    </span>
-                  </div>
-                  @endif
-                </figure>
-
-                {{-- Info --}}
-                <div class="leading-tight">
-                  <h5 class="font-bold text-gray-900 dark:text-white mb-1 group-hover:text-accent transition-colors">
-                    {{ $cs->title }}
-                  </h5>
-                  <div class="text-gray-500 text-sm">
-                    {{ $cs->genre ?? 'Film' }}
-                    @if ($cs->year)<span class="text-gray-400"> · {{ $cs->year }}</span>@endif
-                  </div>
-                  @if ($cs->trailerIsReady())
-                    <button type="button" onclick="openTrailerModal('{{ $cs->trailerUrl() }}')"
-                      class="mt-2 inline-flex items-center gap-x-1.5 text-[10px] font-bold uppercase tracking-wide text-accent hover:underline">
-                      <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                      Watch Trailer
-                    </button>
-                  @endif
-                </div>
-
-              </div>
+              <x-coming-soon-card :film="$cs" />
             </div>
             @endforeach
           </div>

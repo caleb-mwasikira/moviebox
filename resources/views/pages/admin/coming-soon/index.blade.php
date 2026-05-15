@@ -40,8 +40,7 @@
   {{-- ── Mobile cards (< lg) ── --}}
   <div class="lg:hidden border border-gray-200 dark:border-gray-600 divide-y divide-gray-200 dark:divide-gray-600">
     @foreach ($films as $film)
-      <div class="p-4 flex gap-x-3">
-        {{-- Thumbnail --}}
+      <div class="p-4 flex gap-x-3" x-data="{ featured: {{ $film->featured ? 'true' : 'false' }} }">
         <div class="shrink-0 w-12 h-16 bg-gray-100 dark:bg-gray-800 overflow-hidden">
           @if ($film->thumbnail)
             <img src="{{ $film->thumbnailUrl() }}" alt="" class="w-full h-full object-cover">
@@ -50,8 +49,7 @@
         <div class="flex-1 min-w-0">
           <p class="font-bold text-gray-900 dark:text-white text-sm truncate">{{ $film->title }}</p>
           <p class="text-xs text-gray-500 mt-0.5">
-            {{ $film->genre ?? '—' }}
-            @if ($film->year) · {{ $film->year }} @endif
+            {{ $film->genre ?? '—' }}@if ($film->year) · {{ $film->year }}@endif
           </p>
           <div class="flex items-center gap-x-1.5 mt-1">
             @if ($film->trailerIsReady())
@@ -65,13 +63,20 @@
           <div class="flex items-center gap-x-4 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
             <a href="{{ route('admin.coming-soon.edit', $film) }}"
               class="text-xs font-bold uppercase text-accent hover:underline">Edit</a>
-            <form action="{{ route('admin.coming-soon.toggle-featured', $film) }}" method="POST" class="inline">
-              @csrf @method('PATCH')
-              <button type="submit"
-                class="text-xs font-bold uppercase transition-colors {{ $film->featured ? 'text-accent hover:text-gray-500' : 'text-gray-500 hover:text-accent' }}">
-                {{ $film->featured ? 'Unfeature' : 'Feature' }}
-              </button>
-            </form>
+
+            {{-- Featured toggle --}}
+            <button type="button"
+              x-on:click="fetch('{{ route('admin.coming-soon.toggle-featured', $film) }}', {
+                method: 'PATCH',
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+              }).then(r => r.json()).then(d => featured = d.featured)"
+              :class="featured ? 'text-accent' : 'text-gray-400 hover:text-accent'"
+              class="inline-flex items-center gap-x-1 text-xs font-bold uppercase transition-colors" title="Toggle featured">
+              <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+              <span x-text="featured ? 'Featured' : 'Feature'"></span>
+            </button>
+
+            {{-- Remove --}}
             <form action="{{ route('admin.coming-soon.destroy', $film) }}" method="POST" class="inline"
               onsubmit="return confirm('Remove {{ addslashes($film->title) }}?')">
               @csrf @method('DELETE')
@@ -83,80 +88,93 @@
     @endforeach
   </div>
 
-  {{-- ── Desktop table (≥ lg) ── --}}
-  <div class="hidden lg:block overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead>
-        <tr class="border-b border-gray-200 dark:border-gray-600 text-left">
-          <th class="pb-3 font-bold uppercase text-xs text-gray-500 tracking-widest pr-6">Film</th>
-          <th class="pb-3 font-bold uppercase text-xs text-gray-500 tracking-widest pr-6">Genre / Year</th>
-          <th class="pb-3 font-bold uppercase text-xs text-gray-500 tracking-widest pr-6">Trailer</th>
-          <th class="pb-3 font-bold uppercase text-xs text-gray-500 tracking-widest pr-6">Featured</th>
-          <th class="pb-3 font-bold uppercase text-xs text-gray-500 tracking-widest"></th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-gray-200 dark:divide-gray-600">
-        @foreach ($films as $film)
-          <tr>
-            <td class="py-4 pr-6">
-              <div class="flex items-center gap-x-3">
-                <div class="shrink-0 w-10 h-14 bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                  @if ($film->thumbnail)
-                    <img src="{{ $film->thumbnailUrl() }}" alt="" class="w-full h-full object-cover">
-                  @endif
-                </div>
-                <div>
-                  <p class="font-bold text-gray-900 dark:text-white">{{ $film->title }}</p>
-                  @if ($film->description)
-                    <p class="text-xs text-gray-400 mt-0.5 max-w-xs truncate">{{ $film->description }}</p>
-                  @endif
-                </div>
-              </div>
-            </td>
-            <td class="py-4 pr-6 text-gray-500">
-              {{ $film->genre ?? '—' }}
-              @if ($film->year)<span class="text-gray-400 text-xs ml-1">{{ $film->year }}</span>@endif
-            </td>
-            <td class="py-4 pr-6">
-              @if ($film->trailerIsReady())
-                <span class="inline-flex items-center gap-x-1 text-xs font-bold uppercase text-green-600 dark:text-green-400">
-                  <span class="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span>Ready
-                </span>
-              @elseif ($film->trailer_path)
-                <span class="inline-flex items-center gap-x-1 text-xs font-bold uppercase text-yellow-600 dark:text-yellow-400">
-                  <span class="w-1.5 h-1.5 rounded-full bg-yellow-400 inline-block"></span>Processing
-                </span>
-              @else
-                <span class="text-xs text-gray-400 uppercase">None</span>
-              @endif
-            </td>
-            <td class="py-4 pr-6">
-              <form action="{{ route('admin.coming-soon.toggle-featured', $film) }}" method="POST">
-                @csrf @method('PATCH')
-                <button type="submit"
-                  class="inline-flex items-center gap-x-1.5 text-xs font-bold uppercase transition-colors {{ $film->featured ? 'text-accent' : 'text-gray-400 hover:text-accent' }}">
-                  <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-                  </svg>
-                  {{ $film->featured ? 'Featured' : 'Feature' }}
-                </button>
-              </form>
-            </td>
-            <td class="py-4 text-right whitespace-nowrap">
-              <div class="flex items-center justify-end gap-x-4">
-                <a href="{{ route('admin.coming-soon.edit', $film) }}"
-                  class="text-xs font-bold uppercase text-gray-900 dark:text-white hover:text-accent dark:hover:text-accent transition-colors">Edit</a>
-                <form action="{{ route('admin.coming-soon.destroy', $film) }}" method="POST" class="inline"
-                  onsubmit="return confirm('Remove {{ addslashes($film->title) }}?')">
-                  @csrf @method('DELETE')
-                  <button type="submit" class="text-xs font-bold uppercase text-gray-500 hover:text-red-500 transition-colors">Remove</button>
-                </form>
-              </div>
-            </td>
-          </tr>
-        @endforeach
-      </tbody>
-    </table>
+  {{-- ── Desktop list (≥ lg) ── --}}
+  <div class="hidden lg:block">
+    <div class="flex items-center gap-x-4 pb-3 border-b border-gray-200 dark:border-gray-600 text-xs font-bold uppercase text-gray-500 tracking-widest">
+      <div class="w-10 shrink-0"></div>
+      <div class="flex-1 min-w-0">Film</div>
+      <div class="w-36 shrink-0">Genre / Year</div>
+      <div class="w-28 shrink-0">Trailer</div>
+      <div class="w-24 shrink-0">Featured</div>
+      <div class="w-40 shrink-0">Actions</div>
+    </div>
+
+    <div class="divide-y divide-gray-200 dark:divide-gray-600">
+      @foreach ($films as $film)
+        <div class="flex items-center gap-x-4 py-4" x-data="{ featured: {{ $film->featured ? 'true' : 'false' }} }">
+
+          {{-- Thumbnail --}}
+          <div class="w-10 h-14 shrink-0 bg-gray-100 dark:bg-gray-700 overflow-hidden">
+            @if ($film->thumbnail)
+              <img src="{{ $film->thumbnailUrl() }}" alt="" class="w-full h-full object-cover">
+            @endif
+          </div>
+
+          {{-- Title --}}
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-gray-900 dark:text-white text-sm truncate">{{ $film->title }}</p>
+            @if ($film->description)
+              <p class="text-xs text-gray-400 mt-0.5 truncate">{{ $film->description }}</p>
+            @endif
+          </div>
+
+          {{-- Genre / Year --}}
+          <div class="w-36 shrink-0 text-sm text-gray-500">
+            {{ $film->genre ?? '—' }}
+            @if ($film->year)<span class="text-gray-400 text-xs ml-1">{{ $film->year }}</span>@endif
+          </div>
+
+          {{-- Trailer --}}
+          <div class="w-28 shrink-0">
+            @if ($film->trailerIsReady())
+              <span class="inline-flex items-center gap-x-1 text-xs font-bold uppercase text-green-600 dark:text-green-400">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span>Ready
+              </span>
+            @elseif ($film->trailer_path)
+              <span class="inline-flex items-center gap-x-1 text-xs font-bold uppercase text-yellow-600 dark:text-yellow-400">
+                <span class="w-1.5 h-1.5 rounded-full bg-yellow-400 inline-block"></span>Processing
+              </span>
+            @else
+              <span class="text-xs text-gray-400 uppercase">None</span>
+            @endif
+          </div>
+
+          {{-- Featured toggle --}}
+          <div class="w-24 shrink-0">
+            <button type="button"
+              x-on:click="fetch('{{ route('admin.coming-soon.toggle-featured', $film) }}', {
+                method: 'PATCH',
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+              }).then(r => r.json()).then(d => featured = d.featured)"
+              :class="featured ? 'text-accent' : 'text-gray-400 hover:text-accent'"
+              class="inline-flex items-center gap-x-1.5 text-xs font-bold uppercase transition-colors cursor-pointer"
+              :title="featured ? 'Unfeature' : 'Feature'">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+              <span x-text="featured ? 'Featured' : 'Feature'"></span>
+            </button>
+          </div>
+
+          {{-- Actions --}}
+          <div class="w-40 shrink-0 flex items-center gap-x-3">
+            <a href="{{ route('admin.coming-soon.edit', $film) }}"
+              class="inline-flex items-center gap-x-1 text-xs font-bold uppercase py-1.5 px-3 bg-accent text-gray-900 hover:bg-accent/80 transition-colors">
+              <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+              Edit
+            </a>
+            <form action="{{ route('admin.coming-soon.destroy', $film) }}" method="POST" class="inline"
+              onsubmit="return confirm('Remove {{ addslashes($film->title) }}?')">
+              @csrf @method('DELETE')
+              <button type="submit"
+                class="inline-flex items-center gap-x-1 text-xs font-bold uppercase py-1.5 px-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-red-500 hover:text-red-500 transition-colors">
+                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                Remove
+              </button>
+            </form>
+          </div>
+
+        </div>
+      @endforeach
+    </div>
   </div>
 
   @if ($films->hasPages())

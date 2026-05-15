@@ -86,6 +86,36 @@
                 href="{{ route('account.dashboard') }}">My Account</a>
             </li>
           </ul>
+
+          <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
+            <span class="text-xs font-bold uppercase text-gray-400 tracking-widest">Site</span>
+          </div>
+          <ul class="mt-3 flex flex-row flex-wrap gap-x-6 gap-y-2 lg:flex-col lg:gap-x-0 lg:gap-y-1 font-bold">
+            <li>
+              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('home') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('home') }}">Home</a>
+            </li>
+            <li>
+              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('browse') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('browse') }}">Browse</a>
+            </li>
+            <li>
+              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('movies') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('movies') }}">Movies</a>
+            </li>
+            <li>
+              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('series') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('series') }}">Series</a>
+            </li>
+            <li>
+              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('coming-soon') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('coming-soon') }}">Coming Soon</a>
+            </li>
+            <li>
+              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('contact') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('contact') }}">Contact</a>
+            </li>
+          </ul>
         </nav>
       </aside>
 
