@@ -20,9 +20,9 @@ class BrowseController extends Controller
 
         Movie::where('status', 'published')->where('coming_soon', false)
             ->where(fn($query) => $query
-                ->where('title', 'like', $like)
-                ->orWhere('genre', 'like', $like)
-                ->orWhere('description', 'like', $like))
+                ->where('title', 'ilike', $like)
+                ->orWhere('genre', 'ilike', $like)
+                ->orWhere('description', 'ilike', $like))
             ->latest()->take(4)->get()
             ->each(fn($m) => $results->push([
                 'type'  => 'movie',
@@ -35,9 +35,9 @@ class BrowseController extends Controller
 
         Series::where('status', 'published')
             ->where(fn($query) => $query
-                ->where('title', 'like', $like)
-                ->orWhere('genre', 'like', $like)
-                ->orWhere('description', 'like', $like))
+                ->where('title', 'ilike', $like)
+                ->orWhere('genre', 'ilike', $like)
+                ->orWhere('description', 'ilike', $like))
             ->latest()->take(3)->get()
             ->each(fn($s) => $results->push([
                 'type'  => 'series',
@@ -50,9 +50,9 @@ class BrowseController extends Controller
 
         Movie::where('coming_soon', true)
             ->where(fn($query) => $query
-                ->where('title', 'like', $like)
-                ->orWhere('genre', 'like', $like)
-                ->orWhere('description', 'like', $like))
+                ->where('title', 'ilike', $like)
+                ->orWhere('genre', 'ilike', $like)
+                ->orWhere('description', 'ilike', $like))
             ->latest()->take(4)->get()
             ->each(fn($c) => $results->push([
                 'type'  => 'coming_soon',
@@ -82,14 +82,14 @@ class BrowseController extends Controller
 
         if ($query) {
             $movieQuery->where(function ($q) use ($query) {
-                $q->where('title', 'like', "%{$query}%")
-                  ->orWhere('description', 'like', "%{$query}%")
-                  ->orWhere('genre', 'like', "%{$query}%");
+                $q->where('title', 'ilike', "%{$query}%")
+                  ->orWhere('description', 'ilike', "%{$query}%")
+                  ->orWhere('genre', 'ilike', "%{$query}%");
             });
             $seriesQuery->where(function ($q) use ($query) {
-                $q->where('title', 'like', "%{$query}%")
-                  ->orWhere('description', 'like', "%{$query}%")
-                  ->orWhere('genre', 'like', "%{$query}%");
+                $q->where('title', 'ilike', "%{$query}%")
+                  ->orWhere('description', 'ilike', "%{$query}%")
+                  ->orWhere('genre', 'ilike', "%{$query}%");
             });
         }
 
@@ -106,9 +106,9 @@ class BrowseController extends Controller
         if ($query && $type === 'all') {
             $csQuery = Movie::where('coming_soon', true)
                 ->where(function ($q) use ($query) {
-                    $q->where('title', 'like', "%{$query}%")
-                      ->orWhere('description', 'like', "%{$query}%")
-                      ->orWhere('genre', 'like', "%{$query}%");
+                    $q->where('title', 'ilike', "%{$query}%")
+                      ->orWhere('description', 'ilike', "%{$query}%")
+                      ->orWhere('genre', 'ilike', "%{$query}%");
                 });
             if ($genre) {
                 $csQuery->where('genre', $genre);
