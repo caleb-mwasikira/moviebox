@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Movie;
 use App\Models\Series;
+use App\Models\SubscriptionPackage;
 
 class HomeController extends Controller
 {
@@ -28,6 +29,10 @@ class HomeController extends Controller
         $featured = $featuredMovies->merge($featuredSeries)->merge($featuredComingSoon)
             ->sortByDesc('updated_at')->values()->take(6);
 
-        return view('pages.index', compact('movies', 'series', 'featured', 'comingSoon'));
+        $cheapestPackage = SubscriptionPackage::where('is_active', true)
+            ->orderBy('price')
+            ->first();
+
+        return view('pages.index', compact('movies', 'series', 'featured', 'comingSoon', 'cheapestPackage'));
     }
 }

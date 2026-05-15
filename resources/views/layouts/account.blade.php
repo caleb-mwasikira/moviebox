@@ -9,7 +9,7 @@
       <div class="flex flex-col lg:flex-row gap-y-8 lg:gap-x-12 xl:gap-x-16">
 
         {{-- Sidebar --}}
-        <aside class="lg:w-52 xl:w-60 shrink-0">
+        <aside class="hidden lg:block lg:w-52 xl:w-60 shrink-0">
           <nav class="lg:sticky lg:top-8">
             <ul class="flex flex-row flex-wrap gap-x-6 gap-y-2 lg:flex-col lg:gap-x-0 lg:gap-y-1 font-bold">
               <li>
@@ -37,6 +37,14 @@
                 </a>
               </li>
               <li class="lg:mt-4 lg:pt-4 lg:border-t lg:border-gray-200 lg:dark:border-gray-600">
+                @if (auth()->user()->isAdmin())
+                <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                  href="{{ route('admin.dashboard') }}">
+                  Admin Panel
+                </a>
+                @endif
+              </li>
+              <li>
                 <form method="POST" action="{{ route('logout') }}" class="inline">
                   @csrf
                   <button type="submit"

@@ -523,7 +523,12 @@
                 <div class="font-bold text-base leading-none sm:text-lg md:text-base md:leading-none lg:text-lg mb-1.5 xl:mb-2.5">
                   Unlimited access from</div>
                 <h4 class="font-bold text-2xl sm:text-3xl md:text-2xl md:leading-none leading-none lg:text-3xl xl:text-[42px]">
-                  $7.99 / month</h4>
+                  @if ($cheapestPackage)
+                    {{ $cheapestPackage->currency ?? '$' }}{{ number_format($cheapestPackage->price, 2) }} / {{ $cheapestPackage->interval ?? 'month' }}
+                  @else
+                    Subscribe Now
+                  @endif
+                </h4>
               </div>
 
               <img class="absolute -z-10 right-0 top-0 bottom-0 object-cover object-left max-w-[27%]"

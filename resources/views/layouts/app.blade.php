@@ -215,51 +215,193 @@
 
     <!-- Mobile Menu -->
     <div
-      class="js-mobile-menu p-t-[64px] fixed left-0 top-[64px] z-50 block h-[calc(100dvh-64px)] w-full translate-x-full overflow-auto bg-white dark:bg-gray-700 py-5 text-primary dark:text-white transition-transform duration-300 lg:hidden">
-      <div class="container">
-        <!-- Navigation (Mobile) -->
-        <ul class="flex flex-col font-bold">
-          <li class="flex flex-wrap items-center gap-x-4 border-b border-b-gray-200/50 dark:border-b-gray-200/10">
-            <a class="flex-grow gap-x-1 py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-              href="{{ route('about') }}">
-              About
-            </a>
-          </li>
-          <li class="flex flex-wrap items-center gap-x-4 border-b border-b-gray-200/50 dark:border-b-gray-200/10">
-            <a class="flex-grow gap-x-1 py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-              href="{{ route('browse') }}">
-              Browse
-            </a>
-          </li>
-          <li class="flex flex-wrap items-center gap-x-4 border-b border-b-gray-200/50 dark:border-b-gray-200/10">
-            <a class="flex-grow gap-x-1 py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-              href="{{ route('movies') }}">
-              Movies
-            </a>
-          </li>
-          <li class="flex flex-wrap items-center gap-x-4 border-b border-b-gray-200/50 dark:border-b-gray-200/10">
-            <a class="flex-grow gap-x-1 py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-              href="{{ route('series') }}">
-              Series
-            </a>
-          </li>
-          <li class="flex flex-wrap items-center gap-x-4 border-b border-b-gray-200/50 dark:border-b-gray-200/10">
-            <a class="flex-grow gap-x-1 py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-              href="{{ route('coming-soon') }}">
-              Coming Soon
-            </a>
-          </li>
-          <li class="flex flex-wrap items-center gap-x-4 border-b border-b-gray-200/50 dark:border-b-gray-200/10">
-            <a class="flex-grow gap-x-1 py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-              href="{{ route('contact') }}">
-              Contact
-            </a>
-          </li>
-        </ul>
-        <!-- Navigation (Mobile) / End -->
+      class="js-mobile-menu fixed left-0 top-[64px] z-50 h-[calc(100dvh-64px)] w-full translate-x-full overflow-hidden bg-white dark:bg-gray-700 transition-transform duration-300 lg:hidden">
+
+      {{-- ── Level 1: Main nav (guests only) ── --}}
+      @guest
+      <div id="mobile-menu-l1" class="absolute inset-0 overflow-y-auto py-5">
+        <div class="container">
+          <ul class="flex flex-col font-bold">
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
+                href="{{ route('about') }}">About</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
+                href="{{ route('browse') }}">Browse</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
+                href="{{ route('movies') }}">Movies</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
+                href="{{ route('series') }}">Series</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
+                href="{{ route('coming-soon') }}">Coming Soon</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
+                href="{{ route('contact') }}">Contact</a>
+            </li>
+            <li class="flex items-center mt-2 pt-2 border-t border-gray-200/50 dark:border-gray-200/10">
+              <button type="button" id="mobile-account-open"
+                class="flex-grow flex items-center justify-between py-4 font-bold text-gray-900 dark:text-white hover:text-accent dark:hover:text-accent transition-colors">
+                My Account
+                <svg class="w-3.5 h-3.5 shrink-0 opacity-40" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+              </button>
+            </li>
+          </ul>
+        </div>
       </div>
+
+      {{-- ── Level 2: Guest auth panel (overlays level 1) ── --}}
+      <div id="mobile-menu-l2"
+        class="absolute inset-0 overflow-y-auto py-5 bg-white dark:bg-gray-700 transition-transform duration-300"
+        style="transform:translateX(100%);">
+        <div class="container">
+
+          <button type="button" id="mobile-account-back"
+            class="flex items-center gap-x-2 py-3 mb-3 font-bold text-sm text-gray-500 dark:text-gray-400 hover:text-accent dark:hover:text-accent transition-colors">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+            Back
+          </button>
+
+          <ul class="flex flex-col font-bold">
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
+                href="{{ route('login') }}">Login</a>
+            </li>
+            <li class="flex items-center">
+              <a class="flex-grow py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
+                href="{{ route('register') }}">Create Account</a>
+            </li>
+          </ul>
+
+        </div>
+      </div>
+      @endguest
+
+      {{-- ── Logged-in: admin menu ── --}}
+      @auth
+      @if (auth()->user()->isAdmin() && request()->routeIs('admin.*'))
+      <div class="absolute inset-0 overflow-y-auto py-5">
+        <div class="container">
+
+          <p class="mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">Admin Panel</p>
+
+          <ul class="flex flex-col font-bold">
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.dashboard') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.dashboard') }}">Dashboard</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.movies.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.movies.index') }}">Movies</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.series.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.series.index') }}">Series</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.coming-soon.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.coming-soon.index') }}">Coming Soon</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.users.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.users.index') }}">Users</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.packages.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.packages.index') }}">Subscription Packages</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10 mt-2 pt-2 border-t border-gray-200/50 dark:border-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('account.dashboard') }}">My Account</a>
+            </li>
+            <li class="flex items-center">
+              <form method="POST" action="{{ route('logout') }}" class="flex-grow">
+                @csrf
+                <button type="submit"
+                  class="w-full text-left py-4 leading-normal font-bold text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent">
+                  Logout
+                </button>
+              </form>
+            </li>
+          </ul>
+
+        </div>
+      </div>
+
+      {{-- ── Logged-in: account menu ── --}}
+      @else
+      <div class="absolute inset-0 overflow-y-auto py-5">
+        <div class="container">
+
+          <p class="mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">My Account</p>
+
+          <ul class="flex flex-col font-bold">
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.dashboard') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('account.dashboard') }}">Dashboard</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.personal-info') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('account.personal-info') }}">Personal Info</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.watching') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('account.watching') }}">Continue Watching</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.billing') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('account.billing') }}">Billing Details</a>
+            </li>
+            @if (auth()->user()->isAdmin())
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal font-bold text-accent hover:text-accent/80 transition-colors"
+                href="{{ route('admin.dashboard') }}">Admin Panel</a>
+            </li>
+            @endif
+            <li class="flex items-center mt-2 pt-2 border-t border-gray-200/50 dark:border-gray-200/10">
+              <form method="POST" action="{{ route('logout') }}" class="flex-grow">
+                @csrf
+                <button type="submit"
+                  class="w-full text-left py-4 leading-normal font-bold text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent">
+                  Logout
+                </button>
+              </form>
+            </li>
+          </ul>
+
+        </div>
+      </div>
+      @endif
+      @endauth
+
     </div>
     <!-- Mobile Menu / End -->
+
+    @guest
+    <script>
+    (function () {
+      var l2      = document.getElementById('mobile-menu-l2');
+      var openBtn = document.getElementById('mobile-account-open');
+      var backBtn = document.getElementById('mobile-account-back');
+
+      function showAccount() { if (l2) l2.style.transform = 'translateX(0)'; }
+      function showMain()    { if (l2) l2.style.transform = 'translateX(100%)'; }
+
+      if (openBtn) openBtn.addEventListener('click', showAccount);
+      if (backBtn) backBtn.addEventListener('click', showMain);
+
+      var toggle = document.querySelector('.js-menu-toggle');
+      if (toggle) toggle.addEventListener('click', function () { setTimeout(showMain, 320); });
+    })();
+    </script>
+    @endguest
 
     @php
       $__sub = auth()->check() ? auth()->user()->currentSubscription : null;

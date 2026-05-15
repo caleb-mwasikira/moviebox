@@ -51,7 +51,7 @@
   <div class="container">
     <div class="flex flex-col lg:flex-row gap-y-8 lg:gap-x-12 xl:gap-x-16">
 
-      <aside class="lg:w-52 xl:w-60 shrink-0">
+      <aside class="hidden lg:block lg:w-52 xl:w-60 shrink-0">
         <nav class="lg:sticky lg:top-8">
           <div class="mb-4 pb-4 border-b border-gray-200 dark:border-gray-600">
             <span class="text-xs font-bold uppercase text-accent tracking-widest">Admin Panel</span>
