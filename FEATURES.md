@@ -24,7 +24,7 @@
 - [✅] Dashboard analytics — signups over time, active subscribers, most watched content
 - [✅] Revenue reports tied to subscription sales
 - [ ] Scheduled publish date — movies publish automatically on a future date
-- [ ] Bulk video upload / import
+- [✅] Bulk video upload / import
 
 ## Video Player
 - [ ] Subtitles / caption tracks per video

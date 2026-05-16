@@ -422,6 +422,91 @@
           </div>
         </form>
       </details>
+
+      {{-- Bulk Upload --}}
+      <div x-data="bulkUpload({{ $season->id }}, '{{ route('admin.episodes.store', $season) }}', {{ ($season->episodes->max('episode_number') ?? 0) + 1 }})" class="mt-3">
+        <button type="button" @click="show = !show"
+          class="text-xs font-bold uppercase text-gray-500 hover:text-accent transition-colors">
+          <span x-text="show ? '− Bulk Upload' : '↑ Bulk Upload'">↑ Bulk Upload</span>
+        </button>
+
+        <div x-show="show" style="display:none" class="mt-4 border border-dashed border-gray-300 dark:border-gray-600 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <p class="text-xs font-bold uppercase text-gray-500 tracking-widest">Bulk Upload Episodes</p>
+            <label class="inline-flex items-center gap-x-1.5 cursor-pointer text-xs font-bold uppercase text-gray-500 hover:text-accent transition-colors border border-gray-300 dark:border-gray-600 hover:border-accent py-1.5 px-3">
+              <svg class="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+              Choose Files
+              <input type="file" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv" multiple class="sr-only" @change="pick($event)">
+            </label>
+          </div>
+
+          <template x-if="!queue.length">
+            <p class="text-xs text-gray-400">Select multiple video files to queue them. Titles are extracted from filenames and can be edited before uploading.</p>
+          </template>
+
+          <template x-if="queue.length > 0">
+            <div class="flex flex-col gap-y-2">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs text-gray-400" x-text="queue.length + ' file' + (queue.length !== 1 ? 's' : '') + ' queued'"></span>
+                <button type="button" @click="uploadAll()"
+                  :disabled="queue.every(function(i){ return i.status !== 'pending'; })"
+                  class="text-xs font-bold uppercase text-gray-900 bg-accent hover:bg-accent/90 disabled:opacity-40 disabled:cursor-not-allowed py-1.5 px-4 transition-colors">
+                  Upload All
+                </button>
+              </div>
+
+              <template x-for="item in queue" :key="item.id">
+                <div class="border border-gray-200 dark:border-gray-700 p-3">
+                  <div class="flex items-center gap-x-2">
+                    <input type="number" x-model.number="item.epNum" min="1"
+                      class="w-14 shrink-0 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white px-2 py-1 text-xs font-bold text-center focus:outline-none focus:border-accent"
+                      :disabled="item.status !== 'pending'">
+                    <input type="text" x-model="item.title" placeholder="Episode title" required
+                      class="flex-1 min-w-0 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white px-2 py-1 text-sm focus:outline-none focus:border-accent"
+                      :disabled="item.status !== 'pending'">
+                    <div class="shrink-0 flex items-center gap-x-2">
+                      <template x-if="item.status === 'pending'">
+                        <div class="flex items-center gap-x-2">
+                          <button type="button" @click="upload(item)"
+                            class="text-xs font-bold uppercase px-3 py-1 bg-accent text-gray-900 hover:bg-accent/90 transition-colors">
+                            Upload
+                          </button>
+                          <button type="button" @click="remove(item.id)"
+                            class="text-xs font-bold text-gray-400 hover:text-red-500 transition-colors">✕</button>
+                        </div>
+                      </template>
+                      <template x-if="item.status === 'uploading'">
+                        <span class="text-xs font-bold uppercase text-gray-500 tabular-nums" x-text="item.progress < 100 ? item.progress + '%' : 'Saving…'"></span>
+                      </template>
+                      <template x-if="item.status === 'done'">
+                        <span class="text-xs font-bold uppercase text-green-600 dark:text-green-400">✓ Done</span>
+                      </template>
+                      <template x-if="item.status === 'error'">
+                        <div class="flex items-center gap-x-2">
+                          <span class="text-xs text-danger" x-text="item.error"></span>
+                          <button type="button" @click="item.status = 'pending'; item.error = ''"
+                            class="text-xs font-bold uppercase text-gray-400 hover:text-accent transition-colors">Retry</button>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                  <template x-if="item.status === 'uploading'">
+                    <div class="mt-2 w-full h-1 bg-gray-200 dark:bg-gray-700">
+                      <div class="h-1 bg-accent transition-all duration-150" :style="'width:' + item.progress + '%'"></div>
+                    </div>
+                  </template>
+                  <p class="text-[11px] text-gray-400 mt-1 truncate" x-text="item.file.name"></p>
+                </div>
+              </template>
+
+              <template x-if="queue.some(function(i){ return i.status === 'done'; })">
+                <p class="text-xs text-gray-400 mt-1">Reload the page to see uploaded episodes.</p>
+              </template>
+            </div>
+          </template>
+        </div>
+      </div>
+
     </div>
   @empty
     <p class="text-gray-500 dark:text-gray mb-8">No seasons yet. Add the first season below.</p>
@@ -599,6 +684,75 @@ document.addEventListener('alpine:init', function () {
         xhr.open('POST', form.action);
         xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
         xhr.send(fd);
+      }
+    };
+  });
+
+  Alpine.data('bulkUpload', function (seasonId, storeUrl, startEpNum) {
+    return {
+      show: false,
+      queue: [],
+      nextNum: startEpNum,
+      titleFromFile: function (filename) {
+        return filename
+          .replace(/\.[^.]+$/, '')
+          .replace(/[_\-\.]+/g, ' ')
+          .replace(/\b\w/g, function (c) { return c.toUpperCase(); })
+          .trim();
+      },
+      pick: function (event) {
+        var self = this;
+        Array.from(event.target.files).forEach(function (file) {
+          self.queue.push({
+            id: Math.random().toString(36).slice(2),
+            file: file,
+            title: self.titleFromFile(file.name),
+            epNum: self.nextNum++,
+            status: 'pending',
+            progress: 0,
+            error: '',
+          });
+        });
+        event.target.value = '';
+      },
+      remove: function (id) {
+        this.queue = this.queue.filter(function (item) { return item.id !== id; });
+      },
+      upload: function (item) {
+        item.status = 'uploading';
+        item.progress = 0;
+        item.error = '';
+        var fd = new FormData();
+        fd.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+        fd.append('episode_number', item.epNum);
+        fd.append('title', item.title);
+        fd.append('video', item.file);
+        var xhr = new XMLHttpRequest();
+        var self = this;
+        xhr.upload.addEventListener('progress', function (ev) {
+          if (ev.lengthComputable) item.progress = Math.round(ev.loaded / ev.total * 100);
+        });
+        xhr.addEventListener('load', function () {
+          if (xhr.status >= 200 && xhr.status < 400) {
+            item.status = 'done';
+          } else {
+            item.status = 'error';
+            item.error = 'Upload failed (' + xhr.status + ')';
+          }
+        });
+        xhr.addEventListener('error', function () {
+          item.status = 'error';
+          item.error = 'Network error — try again.';
+        });
+        xhr.open('POST', storeUrl);
+        xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
+        xhr.send(fd);
+      },
+      uploadAll: function () {
+        var self = this;
+        this.queue
+          .filter(function (i) { return i.status === 'pending'; })
+          .forEach(function (item) { self.upload(item); });
       }
     };
   });
