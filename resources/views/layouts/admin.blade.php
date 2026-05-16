@@ -81,6 +81,16 @@
               <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.packages.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.packages.index') }}">Subscription Packages</a>
             </li>
+            <li>
+              @php $unreadContacts = \App\Models\Contact::unread()->count(); @endphp
+              <a class="flex items-center gap-x-2 py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.contacts.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.contacts.index') }}">
+                Messages
+                @if ($unreadContacts > 0)
+                  <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold bg-accent text-gray-900 rounded-full">{{ $unreadContacts }}</span>
+                @endif
+              </a>
+            </li>
             <li class="lg:mt-4 lg:pt-4 lg:border-t lg:border-gray-200 lg:dark:border-gray-600">
               <a class="block py-1.5 transition-all text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent"
                 href="{{ route('account.dashboard') }}">My Account</a>

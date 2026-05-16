@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\StreamingStatusController as AdminStreamingStatus
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\SubscriptionPackageController as AdminSubscriptionController;
 use App\Http\Controllers\Admin\ComingSoonController as AdminComingSoonController;
+use App\Http\Controllers\Admin\ContactController as AdminContactController;
 use App\Http\Controllers\ComingSoonController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
@@ -129,6 +130,10 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::post('coming-soon/{comingSoon}/video', [AdminComingSoonController::class, 'uploadVideo'])->name('coming-soon.video');
     Route::post('coming-soon/{comingSoon}/promote-series', [AdminComingSoonController::class, 'promoteToSeries'])->name('coming-soon.promote-series');
     Route::delete('coming-soon/{comingSoon}', [AdminComingSoonController::class, 'destroy'])->name('coming-soon.destroy');
+
+    Route::get('contacts', [AdminContactController::class, 'index'])->name('contacts.index');
+    Route::get('contacts/{contact}', [AdminContactController::class, 'show'])->name('contacts.show');
+    Route::delete('contacts/{contact}', [AdminContactController::class, 'destroy'])->name('contacts.destroy');
 });
 
 require __DIR__.'/settings.php';
