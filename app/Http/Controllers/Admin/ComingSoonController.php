@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Traits\TriggersHlsEncoding;
 use App\Models\Movie;
+use App\Models\Series;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -186,6 +187,72 @@ class ComingSoonController extends Controller
         );
 
         return redirect()->route('admin.movies.edit', $comingSoon)->with('status', 'movie-processing');
+    }
+
+    public function promoteToSeries(Request $request, Movie $comingSoon)
+    {
+        $request->validate([
+            'episode_title' => ['required', 'string', 'max:255'],
+            'video'         => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska,video/mkv,video/matroska'],
+        ]);
+
+        $series = Series::create([
+            'title'        => $comingSoon->title,
+            'description'  => $comingSoon->description,
+            'genre'        => $comingSoon->genre,
+            'year'         => $comingSoon->year,
+            'thumbnail'    => $comingSoon->thumbnail,
+            'trailer_path' => $comingSoon->trailer_path,
+            'status'       => 'published',
+            'featured'     => $comingSoon->featured,
+        ]);
+
+        // Re-attach posters to the new series
+        $comingSoon->posters()->update([
+            'posterable_type' => Series::class,
+            'posterable_id'   => $series->id,
+        ]);
+
+        $season = $series->seasons()->create([
+            'season_number' => 1,
+            'title'         => 'Season 1',
+        ]);
+
+        $ext       = $request->file('video')->getClientOriginalExtension();
+        $uuid      = Str::uuid();
+        $finalPath = "videos/series/{$uuid}.{$ext}";
+
+        $request->file('video')->storeAs('videos/series', "{$uuid}.{$ext}", 'public');
+
+        $episode = $season->episodes()->create([
+            'episode_number' => 1,
+            'title'          => $request->input('episode_title'),
+            'video_path'     => $finalPath,
+        ]);
+
+        if (strtolower($ext) === 'mkv') {
+            $mp4RelPath = "videos/series/{$uuid}.mp4";
+            $this->convertMkv(
+                $episode->uuid,
+                storage_path('app/public/' . $finalPath),
+                storage_path('app/public/' . $mp4RelPath),
+                $mp4RelPath,
+                'series',
+            );
+        }
+
+        $this->convertVideo(
+            $episode->uuid,
+            'series',
+            $episode->title,
+            storage_path('app/public/' . $finalPath),
+            $series->title,
+        );
+
+        // Delete record only — files are now referenced by the series
+        $comingSoon->delete();
+
+        return redirect()->route('admin.series.edit', $series)->with('status', 'series-created');
     }
 
     public function toggleFeatured(Request $request, Movie $comingSoon)

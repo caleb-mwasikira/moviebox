@@ -17,6 +17,18 @@ class RequireAuthModal
         // Preserve the intended URL so post-login redirect works
         session()->put('url.intended', $request->url());
 
-        return redirect()->back()->with('show_auth_modal', true);
+        // Use the HTTP Referer header for the back URL.
+        // redirect()->back() reads the stale session _previous.url which can itself
+        // be a watch URL, causing an infinite redirect loop. The Referer header
+        // reliably reflects where the user just came from (typically the show page).
+        // If there is no Referer, or the Referer is also a protected watch URL,
+        // open the auth modal on the home page instead.
+        $back = $request->header('referer', '');
+        $backPath = parse_url($back, PHP_URL_PATH) ?? '';
+        if (!$back || str_contains($backPath, '/watch')) {
+            $back = route('home');
+        }
+
+        return redirect($back)->with('show_auth_modal', true);
     }
 }

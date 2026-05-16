@@ -63,6 +63,22 @@ trait TriggersHlsEncoding
         }
     }
 
+    public function cancelJob(string $videoUUID): void
+    {
+        $serviceUrl = env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090');
+
+        try {
+            Http::timeout(5)
+                ->withHeaders(['X-Api-Key' => env('APP_SECRET', '')])
+                ->post($serviceUrl . '/cancel-job', ['video_uuid' => $videoUUID]);
+        } catch (\Exception $e) {
+            Log::warning('cancelJob: could not reach streaming service', [
+                'video_uuid' => $videoUUID,
+                'error'      => $e->getMessage(),
+            ]);
+        }
+    }
+
     public function convertVideo(
         string $videoUUID,
         string $filmType,

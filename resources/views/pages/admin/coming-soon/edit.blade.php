@@ -178,40 +178,116 @@
     Upload the full film video to move this title out of Coming Soon and publish it immediately.
   </p>
 
-  <form method="POST" action="{{ route('admin.coming-soon.video', $film) }}" enctype="multipart/form-data"
-    id="cs-video-form" class="flex flex-col gap-y-5 max-w-xl">
-    @csrf
+  {{-- Tabs --}}
+  <div class="flex border-b border-gray-200 dark:border-gray-600 mb-7">
+    <button type="button" id="cs-tab-btn-movie" data-tab="movie"
+      onclick="switchReleaseTab('movie')"
+      class="px-5 py-3 text-xs font-bold uppercase transition-colors border-b-2 border-accent text-gray-900 dark:text-white -mb-px">
+      Movie
+    </button>
+    <button type="button" id="cs-tab-btn-series" data-tab="series"
+      onclick="switchReleaseTab('series')"
+      class="px-5 py-3 text-xs font-bold uppercase transition-colors text-gray-500 hover:text-gray-900 dark:hover:text-white">
+      Series — S01E01
+    </button>
+  </div>
 
-    <label for="cs-video-input"
-      class="flex flex-col items-center justify-center gap-y-3 w-full border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-accent dark:hover:border-accent transition-colors cursor-pointer py-10 px-6 text-center bg-gray-50 dark:bg-gray-800/40 group">
-      <svg class="h-8 w-8 fill-gray-400 group-hover:fill-accent transition-colors" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
-      <span class="text-sm font-bold text-gray-700 dark:text-gray-300 group-hover:text-accent transition-colors">
-        Click to select video<span class="hidden sm:inline"> or drag &amp; drop</span>
-      </span>
-      <span id="cs-video-filename" class="text-xs text-gray-500">MP4, WebM, OGG, MKV</span>
-    </label>
-    <input id="cs-video-input" type="file" name="video" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv" class="sr-only">
+  {{-- Movie tab --}}
+  <div id="cs-tab-movie">
+    <form method="POST" action="{{ route('admin.coming-soon.video', $film) }}" enctype="multipart/form-data"
+      id="cs-video-form" class="flex flex-col gap-y-5 max-w-xl">
+      @csrf
 
-    <div id="cs-vprogress-wrap" class="hidden flex flex-col gap-y-1.5">
-      <div class="flex justify-between text-xs font-bold uppercase text-gray-500">
-        <span>Uploading…</span>
-        <span id="cs-vprogress-label">0%</span>
+      <label for="cs-video-input"
+        class="flex flex-col items-center justify-center gap-y-3 w-full border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-accent dark:hover:border-accent transition-colors cursor-pointer py-10 px-6 text-center bg-gray-50 dark:bg-gray-800/40 group">
+        <svg class="h-8 w-8 fill-gray-400 group-hover:fill-accent transition-colors" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+        <span class="text-sm font-bold text-gray-700 dark:text-gray-300 group-hover:text-accent transition-colors">
+          Click to select video<span class="hidden sm:inline"> or drag &amp; drop</span>
+        </span>
+        <span id="cs-video-filename" class="text-xs text-gray-500">MP4, WebM, OGG, MKV</span>
+      </label>
+      <input id="cs-video-input" type="file" name="video" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv" class="sr-only">
+
+      <div id="cs-vprogress-wrap" class="hidden flex flex-col gap-y-1.5">
+        <div class="flex justify-between text-xs font-bold uppercase text-gray-500">
+          <span>Uploading…</span><span id="cs-vprogress-label">0%</span>
+        </div>
+        <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div id="cs-vprogress-bar" class="h-1.5 bg-accent transition-all duration-150 rounded-full" style="width:0%"></div>
+        </div>
+        <p class="text-xs text-gray-500">Do not close this tab until the upload completes.</p>
       </div>
-      <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-        <div id="cs-vprogress-bar" class="h-1.5 bg-accent transition-all duration-150 rounded-full" style="width:0%"></div>
-      </div>
-      <p class="text-xs text-gray-500">Do not close this tab until the upload completes.</p>
-    </div>
 
-    <div>
-      <button type="submit" id="cs-video-submit"
-        class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-3 px-6 text-sm text-gray-900 bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed">
-        Upload &amp; Publish
-      </button>
-      <p class="mt-2 text-xs text-gray-400">The film will be published immediately after encoding completes.</p>
-    </div>
-  </form>
+      <div>
+        <button type="submit" id="cs-video-submit"
+          class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-3 px-6 text-sm text-gray-900 bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed">
+          Upload &amp; Publish
+        </button>
+        <p class="mt-2 text-xs text-gray-400">The film will be published immediately after encoding completes.</p>
+      </div>
+    </form>
+  </div>
+
+  {{-- Series tab --}}
+  <div id="cs-tab-series" style="display:none">
+    <p class="text-sm text-gray-500 mb-5">
+      Creates <strong class="text-gray-700 dark:text-gray-300">Season 1</strong> with Episode 1. Additional seasons and episodes can be added from the series page afterward.
+    </p>
+
+    <form method="POST" action="{{ route('admin.coming-soon.promote-series', $film) }}" enctype="multipart/form-data"
+      id="cs-series-form" class="flex flex-col gap-y-5 max-w-xl">
+      @csrf
+
+      <div>
+        <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="cs-episode-title">Episode 1 Title</label>
+        <input class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full"
+          type="text" name="episode_title" id="cs-episode-title" required placeholder="e.g. Pilot">
+      </div>
+
+      <label for="cs-series-video-input"
+        class="flex flex-col items-center justify-center gap-y-3 w-full border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-accent dark:hover:border-accent transition-colors cursor-pointer py-10 px-6 text-center bg-gray-50 dark:bg-gray-800/40 group">
+        <svg class="h-8 w-8 fill-gray-400 group-hover:fill-accent transition-colors" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+        <span class="text-sm font-bold text-gray-700 dark:text-gray-300 group-hover:text-accent transition-colors">
+          Click to select episode video<span class="hidden sm:inline"> or drag &amp; drop</span>
+        </span>
+        <span id="cs-series-video-filename" class="text-xs text-gray-500">MP4, WebM, OGG, MKV</span>
+      </label>
+      <input id="cs-series-video-input" type="file" name="video" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv" class="sr-only">
+
+      <div id="cs-sprogress-wrap" class="hidden flex flex-col gap-y-1.5">
+        <div class="flex justify-between text-xs font-bold uppercase text-gray-500">
+          <span>Uploading…</span><span id="cs-sprogress-label">0%</span>
+        </div>
+        <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div id="cs-sprogress-bar" class="h-1.5 bg-accent transition-all duration-150 rounded-full" style="width:0%"></div>
+        </div>
+        <p class="text-xs text-gray-500">Do not close this tab until the upload completes.</p>
+      </div>
+
+      <div>
+        <button type="submit" id="cs-series-submit"
+          class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-3 px-6 text-sm text-gray-900 bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed">
+          Create Series &amp; Go Live
+        </button>
+        <p class="mt-2 text-xs text-gray-400">Series will be published immediately after encoding completes.</p>
+      </div>
+    </form>
+  </div>
+
 </section>
+
+<script>
+function switchReleaseTab(tab) {
+  var isMovie = tab === 'movie';
+  document.getElementById('cs-tab-movie').style.display  = isMovie ? '' : 'none';
+  document.getElementById('cs-tab-series').style.display = isMovie ? 'none' : '';
+  var activeClass   = 'border-b-2 border-accent text-gray-900 dark:text-white -mb-px';
+  var inactiveClass = 'text-gray-500 hover:text-gray-900 dark:hover:text-white';
+  var base = 'px-5 py-3 text-xs font-bold uppercase transition-colors ';
+  document.getElementById('cs-tab-btn-movie').className  = base + (isMovie  ? activeClass : inactiveClass);
+  document.getElementById('cs-tab-btn-series').className = base + (!isMovie ? activeClass : inactiveClass);
+}
+</script>
 
 <div>
   <a href="{{ route('admin.coming-soon.index') }}"
@@ -329,29 +405,36 @@
 
   bindXhrUpload('cs-trailer-form', 'trailer', 'cs-tprogress-wrap', 'cs-tprogress-bar', 'cs-tprogress-label', 'cs-trailer-submit', 'Upload Trailer');
   bindXhrUpload('cs-video-form',   'video',   'cs-vprogress-wrap', 'cs-vprogress-bar', 'cs-vprogress-label', 'cs-video-submit',   'Upload & Publish');
+  bindXhrUpload('cs-series-form',  'video',   'cs-sprogress-wrap', 'cs-sprogress-bar', 'cs-sprogress-label', 'cs-series-submit',  'Create Series & Go Live');
 
-  // ── Video drop zone ───────────────────────────────────────────
-  var fileInput   = document.getElementById('cs-video-input');
-  var fileNameEl  = document.getElementById('cs-video-filename');
-  var dropZone    = document.querySelector('label[for="cs-video-input"]');
+  // ── Drop zone helper ──────────────────────────────────────────
+  function bindDropZone(inputId, fileNameId) {
+    var input    = document.getElementById(inputId);
+    var nameEl   = document.getElementById(fileNameId);
+    var zone     = document.querySelector('label[for="' + inputId + '"]');
+    var fallback = 'MP4, WebM, OGG, MKV';
 
-  if (fileInput && fileNameEl) {
-    fileInput.addEventListener('change', function () {
-      fileNameEl.textContent = fileInput.files.length ? fileInput.files[0].name : 'MP4, WebM, OGG, MKV';
-    });
+    if (input && nameEl) {
+      input.addEventListener('change', function () {
+        nameEl.textContent = input.files.length ? input.files[0].name : fallback;
+      });
+    }
+    if (zone && input) {
+      zone.addEventListener('dragover',  function (e) { e.preventDefault(); zone.classList.add('border-accent'); });
+      zone.addEventListener('dragleave', function ()  { zone.classList.remove('border-accent'); });
+      zone.addEventListener('drop', function (e) {
+        e.preventDefault();
+        zone.classList.remove('border-accent');
+        if (e.dataTransfer.files.length) {
+          input.files = e.dataTransfer.files;
+          if (nameEl) nameEl.textContent = e.dataTransfer.files[0].name;
+        }
+      });
+    }
   }
-  if (dropZone && fileInput) {
-    dropZone.addEventListener('dragover', function (e) { e.preventDefault(); dropZone.classList.add('border-accent'); });
-    dropZone.addEventListener('dragleave', function () { dropZone.classList.remove('border-accent'); });
-    dropZone.addEventListener('drop', function (e) {
-      e.preventDefault();
-      dropZone.classList.remove('border-accent');
-      if (e.dataTransfer.files.length) {
-        fileInput.files = e.dataTransfer.files;
-        if (fileNameEl) fileNameEl.textContent = e.dataTransfer.files[0].name;
-      }
-    });
-  }
+
+  bindDropZone('cs-video-input',        'cs-video-filename');
+  bindDropZone('cs-series-video-input', 'cs-series-video-filename');
 })();
 </script>
 @endpush

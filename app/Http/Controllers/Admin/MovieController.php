@@ -179,6 +179,8 @@ class MovieController extends Controller
 
     public function reprocess(Movie $movie)
     {
+        $this->cancelJob($movie->uuid);
+
         $ok = $this->convertVideo(
             $movie->uuid,
             'movies',
@@ -237,6 +239,8 @@ class MovieController extends Controller
             'video_path'     => $finalPath,
             'streaming_path' => null,
         ]);
+
+        $this->cancelJob($movie->uuid);
 
         if (strtolower($ext) === 'mkv') {
             $mp4RelPath = "videos/movies/{$uuid}.mp4";

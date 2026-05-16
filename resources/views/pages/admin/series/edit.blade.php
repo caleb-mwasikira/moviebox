@@ -113,8 +113,8 @@
     </div>
   @endif
 
-  <form method="POST" action="{{ route('admin.series.trailer', $series) }}" enctype="multipart/form-data"
-    id="trailer-upload-form" class="flex flex-col gap-y-4 max-w-xl">
+  <form x-data="trailerUpload" method="POST" action="{{ route('admin.series.trailer', $series) }}"
+    enctype="multipart/form-data" @submit.prevent="upload($el)" class="flex flex-col gap-y-4 max-w-xl">
     @csrf
 
     <div>
@@ -127,22 +127,25 @@
       @error('trailer')<p class="mt-1.5 text-xs text-danger">{{ $message }}</p>@enderror
     </div>
 
-    {{-- Upload progress --}}
-    <div id="trailer-progress-wrap" class="hidden flex flex-col gap-y-2">
+    <div x-show="uploading" style="display:none" class="flex flex-col gap-y-2">
       <div class="flex justify-between text-xs font-bold uppercase text-gray-500">
         <span>Uploading trailer…</span>
-        <span id="trailer-progress-label">0%</span>
+        <span x-text="progress < 100 ? progress + '%' : 'Saving…'">0%</span>
       </div>
       <div class="w-full h-2 bg-gray-200 dark:bg-gray-700">
-        <div id="trailer-progress-bar" class="h-2 bg-accent transition-all duration-150" style="width:0%"></div>
+        <div class="h-2 bg-accent transition-all duration-150" :style="'width:' + progress + '%'"></div>
       </div>
       <p class="text-xs text-gray-500">Large files may take a few minutes. Do not close this tab.</p>
     </div>
 
+    <p x-show="error" style="display:none" x-text="error" class="text-xs text-danger"></p>
+
     <div>
-      <button type="submit" id="trailer-submit"
+      <button type="submit" :disabled="uploading"
         class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-4 px-8 text-sm text-gray-900 bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed">
-        Upload Trailer
+        <span x-show="!uploading">{{ $series->trailer_path ? 'Replace Trailer' : 'Upload Trailer' }}</span>
+        <span x-show="uploading && progress < 100" style="display:none">Uploading…</span>
+        <span x-show="uploading && progress >= 100" style="display:none">Saving…</span>
       </button>
     </div>
   </form>
@@ -179,8 +182,9 @@
               <th class="pb-2 font-bold uppercase text-xs text-gray-500 tracking-widest"></th>
             </tr>
           </thead>
-          <tbody>
-            @foreach ($season->episodes as $episode)
+          @foreach ($season->episodes as $episode)
+            {{-- Each episode pair gets its own tbody for Alpine scoping --}}
+            <tbody x-data="seriesVideoReplace">
               {{-- Episode row --}}
               <tr class="border-b border-gray-100 dark:border-gray-700">
                 <td class="py-2 pr-4 text-gray-500">{{ str_pad($episode->episode_number, 2, '0', STR_PAD_LEFT) }}</td>
@@ -201,8 +205,7 @@
                 </td>
                 <td class="py-2 text-right">
                   <div class="flex items-center justify-end gap-4">
-                    <button type="button"
-                      onclick="toggleVideoReplace('{{ $episode->id }}')"
+                    <button type="button" @click="open = !open"
                       class="text-xs font-bold uppercase text-accent hover:text-accent/70 transition-colors">
                       Replace Video
                     </button>
@@ -215,53 +218,65 @@
                 </td>
               </tr>
               {{-- Collapsible video-replace row --}}
-              <tr id="video-replace-{{ $episode->id }}" class="hidden border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+              <tr style="display:none" x-show="open" class="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                 <td colspan="5" class="py-5 px-4">
                   <form method="POST" action="{{ route('admin.episodes.video', $episode) }}"
-                    enctype="multipart/form-data" data-video-replace-form="{{ $episode->id }}"
+                    enctype="multipart/form-data" x-ref="form" @submit.prevent="upload($refs.form)"
                     class="flex flex-col gap-y-4 max-w-xl">
                     @csrf
                     <p class="text-xs font-bold uppercase text-gray-500 tracking-wider">Replace video — {{ $episode->label() }}</p>
 
                     {{-- Underline tab nav --}}
                     <div class="flex border-b border-gray-200 dark:border-gray-600">
-                      <button type="button" data-tab-btn="upload"
-                        class="inline-flex items-center gap-x-1.5 pb-2.5 px-1 mr-5 text-xs font-bold uppercase tracking-wider border-b-2 border-accent text-accent transition-colors">
+                      <button type="button" @click="tab = 'upload'"
+                        :class="tab === 'upload' ? 'border-accent text-accent' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
+                        class="inline-flex items-center gap-x-1.5 pb-2.5 px-1 mr-5 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors">
                         <svg class="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
                         Upload File
                       </button>
-                      <button type="button" data-tab-btn="url"
-                        class="inline-flex items-center gap-x-1.5 pb-2.5 px-1 text-xs font-bold uppercase tracking-wider border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+                      <button type="button" @click="tab = 'url'"
+                        :class="tab === 'url' ? 'border-accent text-accent' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
+                        class="inline-flex items-center gap-x-1.5 pb-2.5 px-1 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors">
                         <svg class="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
                         Streaming URL
                       </button>
                     </div>
 
                     {{-- Upload panel --}}
-                    <div data-tab-panel="upload" class="flex flex-col gap-y-3">
-                      <label data-drop-zone
-                        class="flex items-center gap-x-4 w-full border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-accent dark:hover:border-accent transition-colors cursor-pointer py-4 px-5 bg-white dark:bg-gray-900/40 group">
+                    <div x-show="tab === 'upload'" class="flex flex-col gap-y-3">
+                      <label
+                        @dragover.prevent="dragging = true"
+                        @dragleave="dragging = false"
+                        @drop.prevent="drop($event)"
+                        :class="dragging ? 'border-accent' : 'border-gray-300 dark:border-gray-600'"
+                        class="flex items-center gap-x-4 w-full border-2 border-dashed hover:border-accent dark:hover:border-accent transition-colors cursor-pointer py-4 px-5 bg-white dark:bg-gray-900/40 group">
                         <svg class="h-6 w-6 fill-gray-400 group-hover:fill-accent transition-colors shrink-0" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
                         <div>
                           <span class="block text-sm font-bold text-gray-700 dark:text-gray-300 group-hover:text-accent transition-colors">Click to browse</span>
-                          <span data-file-name class="block text-xs text-gray-500 mt-0.5">MP4, WebM, OGG, MKV</span>
+                          <span x-text="fileName" class="block text-xs text-gray-500 mt-0.5">MP4, WebM, OGG, MKV</span>
                         </div>
-                        <input type="file" name="video" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv" class="sr-only">
+                        <input x-ref="videoInput" type="file" name="video"
+                          accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv"
+                          :disabled="tab !== 'upload'"
+                          class="sr-only"
+                          @change="fileName = $event.target.files[0] ? $event.target.files[0].name : 'MP4, WebM, OGG, MKV'">
                       </label>
 
-                      <div data-replace-progress class="hidden flex flex-col gap-y-1.5">
+                      <div x-show="uploading" style="display:none" class="flex flex-col gap-y-1.5">
                         <div class="flex justify-between text-xs font-bold uppercase text-gray-500">
                           <span>Uploading…</span>
-                          <span data-replace-label>0%</span>
+                          <span x-text="progress < 100 ? progress + '%' : 'Saving…'">0%</span>
                         </div>
                         <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div data-replace-bar class="h-1.5 bg-accent transition-all duration-150 rounded-full" style="width:0%"></div>
+                          <div class="h-1.5 bg-accent transition-all duration-150 rounded-full" :style="'width:' + progress + '%'"></div>
                         </div>
                       </div>
+
+                      <p x-show="error" style="display:none" x-text="error" class="text-xs text-danger"></p>
                     </div>
 
                     {{-- URL panel --}}
-                    <div data-tab-panel="url" class="hidden flex flex-col gap-y-3">
+                    <div x-show="tab === 'url'" style="display:none" class="flex flex-col gap-y-3">
                       <div class="flex items-stretch border border-gray-300 dark:border-gray-600 focus-within:border-accent transition-colors">
                         <div class="flex items-center px-3 bg-gray-50 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-600 shrink-0">
                           <svg class="h-3.5 w-3.5 fill-gray-400" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
@@ -273,11 +288,12 @@
                     </div>
 
                     <div class="flex items-center gap-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                      <button type="submit" data-replace-submit
-                        class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-2 py-2.5 px-5 text-sm text-gray-900 bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed">
+                      <button type="submit" :disabled="uploading"
+                        class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-2 py-2.5 px-5 text-sm text-gray-900 bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                        x-text="submitLabel">
                         Upload
                       </button>
-                      <button type="button" onclick="toggleVideoReplace('{{ $episode->id }}')"
+                      <button type="button" @click="open = false"
                         class="text-xs font-bold uppercase text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
                         Cancel
                       </button>
@@ -285,8 +301,8 @@
                   </form>
                 </td>
               </tr>
-            @endforeach
-          </tbody>
+            </tbody>
+          @endforeach
         </table>
       @endif
 
@@ -295,8 +311,8 @@
         <summary class="cursor-pointer text-xs font-bold uppercase text-accent hover:text-accent/70 transition-colors list-none">
           + Add Episode
         </summary>
-        <form method="POST" action="{{ route('admin.episodes.store', $season) }}" enctype="multipart/form-data"
-          data-upload-form="episode" class="mt-5 flex flex-col gap-y-4 max-w-xl">
+        <form x-data="episodeUpload" method="POST" action="{{ route('admin.episodes.store', $season) }}"
+          enctype="multipart/form-data" @submit.prevent="upload($el)" class="mt-5 flex flex-col gap-y-4 max-w-xl">
           @csrf
           <div class="grid grid-cols-2 gap-4">
             <div>
@@ -316,22 +332,25 @@
             </div>
           </div>
 
-          {{-- Upload progress --}}
-          <div data-progress-wrap class="hidden flex flex-col gap-y-1.5">
+          <div x-show="uploading" style="display:none" class="flex flex-col gap-y-1.5">
             <div class="flex justify-between text-xs font-bold uppercase text-gray-500">
               <span>Uploading…</span>
-              <span data-progress-label>0%</span>
+              <span x-text="progress < 100 ? progress + '%' : 'Saving…'">0%</span>
             </div>
             <div class="w-full h-2 bg-gray-200 dark:bg-gray-700">
-              <div data-progress-bar class="h-2 bg-accent transition-all duration-150" style="width:0%"></div>
+              <div class="h-2 bg-accent transition-all duration-150" :style="'width:' + progress + '%'"></div>
             </div>
             <p class="text-xs text-gray-500">Do not close this tab until the upload completes.</p>
           </div>
 
+          <p x-show="error" style="display:none" x-text="error" class="text-xs text-danger"></p>
+
           <div>
-            <button type="submit" data-upload-submit
+            <button type="submit" :disabled="uploading"
               class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-3 px-6 text-sm text-gray-900 bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed">
-              Upload Episode
+              <span x-show="!uploading">Upload Episode</span>
+              <span x-show="uploading && progress < 100" style="display:none">Uploading…</span>
+              <span x-show="uploading && progress >= 100" style="display:none">Saving…</span>
             </button>
           </div>
         </form>
@@ -397,8 +416,8 @@
   }
 })();
 
+// ── Image previews ────────────────────────────────────────────
 (function () {
-  // ── Image previews ────────────────────────────────────────────
   function attachPreview(inputId, containerId) {
     var input = document.getElementById(inputId);
     var container = document.getElementById(containerId);
@@ -428,223 +447,109 @@
 
   attachPreview('series-thumbnail', 'series-thumbnail-preview');
   attachPreview('series-posters-input', 'series-posters-preview');
-
-  // ── Trailer upload form ───────────────────────────────────────
-  var trailerForm  = document.getElementById('trailer-upload-form');
-  var trailerWrap  = document.getElementById('trailer-progress-wrap');
-  var trailerBar   = document.getElementById('trailer-progress-bar');
-  var trailerLabel = document.getElementById('trailer-progress-label');
-  var trailerBtn   = document.getElementById('trailer-submit');
-
-  if (trailerForm) {
-    trailerForm.addEventListener('submit', function (e) {
-      var input = document.getElementById('series-trailer');
-      if (!input || !input.files.length) return; // nothing selected — let browser show validation
-
-      e.preventDefault();
-      var formData = new FormData(trailerForm);
-      var xhr = new XMLHttpRequest();
-
-      trailerWrap.classList.remove('hidden');
-      trailerBtn.disabled = true;
-      trailerBtn.textContent = 'Uploading…';
-
-      xhr.upload.addEventListener('progress', function (ev) {
-        if (!ev.lengthComputable) return;
-        var pct = Math.round((ev.loaded / ev.total) * 100);
-        trailerBar.style.width = pct + '%';
-        trailerLabel.textContent = pct + '%';
-        if (pct === 100) { trailerLabel.textContent = 'Saving…'; trailerBtn.textContent = 'Saving…'; }
-      });
-
-      xhr.addEventListener('load', function () {
-        if (xhr.status >= 200 && xhr.status < 400) {
-          window.location.href = xhr.responseURL;
-        } else {
-          trailerBtn.disabled = false;
-          trailerBtn.textContent = 'Upload Trailer';
-          trailerLabel.textContent = 'Upload failed (' + xhr.status + ') — try again.';
-          trailerBar.style.width = '0%';
-        }
-      });
-
-      xhr.addEventListener('error', function () {
-        trailerBtn.disabled = false;
-        trailerBtn.textContent = 'Upload Trailer';
-        trailerLabel.textContent = 'Upload failed — try again.';
-        trailerBar.style.width = '0%';
-      });
-
-      xhr.open('POST', trailerForm.action);
-      xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
-      xhr.send(formData);
-    });
-  }
-
-  // ── Video replace toggle ─────────────────────────────────────
-  window.toggleVideoReplace = function (id) {
-    var row = document.getElementById('video-replace-' + id);
-    if (row) row.classList.toggle('hidden');
-  };
-
-  // ── Video replace XHR ────────────────────────────────────────
-  document.querySelectorAll('[data-video-replace-form]').forEach(function (form) {
-    var progressWrap  = form.querySelector('[data-replace-progress]');
-    var progressBar   = form.querySelector('[data-replace-bar]');
-    var progressLabel = form.querySelector('[data-replace-label]');
-    var submitBtn     = form.querySelector('[data-replace-submit]');
-
-    // Tab toggle
-    function activateTab(tab) {
-      var fileInput = form.querySelector('[name="video"]');
-      form.querySelectorAll('[data-tab-btn]').forEach(function (b) {
-        var active = b.dataset.tabBtn === tab;
-        b.classList.toggle('border-accent', active);
-        b.classList.toggle('text-accent', active);
-        b.classList.toggle('border-transparent', !active);
-        b.classList.toggle('text-gray-500', !active);
-      });
-      form.querySelectorAll('[data-tab-panel]').forEach(function (panel) {
-        panel.classList.toggle('hidden', panel.dataset.tabPanel !== tab);
-      });
-      if (fileInput) {
-        fileInput.disabled = (tab !== 'upload');
-        if (tab !== 'upload') {
-          fileInput.value = '';
-          var fn = form.querySelector('[data-file-name]');
-          if (fn) fn.textContent = 'MP4, WebM, OGG, MKV';
-        }
-      }
-      if (submitBtn) submitBtn.textContent = tab === 'upload' ? 'Upload' : 'Save URL';
-    }
-
-    form.querySelectorAll('[data-tab-btn]').forEach(function (btn) {
-      btn.addEventListener('click', function () { activateTab(btn.dataset.tabBtn); });
-    });
-
-    // Drop zone wiring
-    var dropZone  = form.querySelector('[data-drop-zone]');
-    var fileInput = form.querySelector('[name="video"]');
-    if (dropZone && fileInput) {
-      fileInput.addEventListener('change', function () {
-        var fn = form.querySelector('[data-file-name]');
-        if (fn) fn.textContent = fileInput.files.length ? fileInput.files[0].name : 'MP4, WebM, OGG, MKV';
-      });
-      dropZone.addEventListener('dragover', function (e) { e.preventDefault(); dropZone.classList.add('border-accent'); });
-      dropZone.addEventListener('dragleave', function () { dropZone.classList.remove('border-accent'); });
-      dropZone.addEventListener('drop', function (e) {
-        e.preventDefault();
-        dropZone.classList.remove('border-accent');
-        if (e.dataTransfer.files.length) {
-          fileInput.files = e.dataTransfer.files;
-          var fn = form.querySelector('[data-file-name]');
-          if (fn) fn.textContent = e.dataTransfer.files[0].name;
-        }
-      });
-    }
-
-    form.addEventListener('submit', function (e) {
-      var fileInput = form.querySelector('[name="video"]');
-      if (!fileInput || !fileInput.files.length) return; // URL mode — regular submit
-
-      e.preventDefault();
-      var formData = new FormData(form);
-      var xhr = new XMLHttpRequest();
-
-      progressWrap.classList.remove('hidden');
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Uploading…';
-
-      xhr.upload.addEventListener('progress', function (ev) {
-        if (!ev.lengthComputable) return;
-        var pct = Math.round((ev.loaded / ev.total) * 100);
-        progressBar.style.width = pct + '%';
-        progressLabel.textContent = pct + '%';
-        if (pct === 100) { progressLabel.textContent = 'Saving…'; submitBtn.textContent = 'Saving…'; }
-      });
-
-      xhr.addEventListener('load', function () {
-        if (xhr.status >= 200 && xhr.status < 400) {
-          window.location.href = xhr.responseURL;
-        } else {
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Upload';
-          progressLabel.textContent = 'Upload failed (' + xhr.status + ') — try again.';
-          progressBar.style.width = '0%';
-        }
-      });
-
-      xhr.addEventListener('error', function () {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Upload';
-        progressLabel.textContent = 'Upload failed — try again.';
-        progressBar.style.width = '0%';
-      });
-
-      xhr.open('POST', form.action);
-      xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
-      xhr.send(formData);
-    });
-  });
-
-  // ── Episode upload progress ───────────────────────────────────
-  document.querySelectorAll('[data-upload-form="episode"]').forEach(function (form) {
-    var progressWrap = form.querySelector('[data-progress-wrap]');
-    var progressBar  = form.querySelector('[data-progress-bar]');
-    var progressLabel = form.querySelector('[data-progress-label]');
-    var submitBtn    = form.querySelector('[data-upload-submit]');
-
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-
-      var videoInput = form.querySelector('[name="video"]');
-      if (!videoInput || !videoInput.files.length) {
-        form.submit();
-        return;
-      }
-
-      var formData = new FormData(form);
-      var xhr = new XMLHttpRequest();
-
-      progressWrap.classList.remove('hidden');
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Uploading…';
-
-      xhr.upload.addEventListener('progress', function (e) {
-        if (!e.lengthComputable) return;
-        var pct = Math.round((e.loaded / e.total) * 100);
-        progressBar.style.width = pct + '%';
-        progressLabel.textContent = pct + '%';
-        if (pct === 100) {
-          progressLabel.textContent = 'Saving…';
-          submitBtn.textContent = 'Saving…';
-        }
-      });
-
-      xhr.addEventListener('load', function () {
-        if (xhr.status >= 200 && xhr.status < 400) {
-          window.location.href = xhr.responseURL;
-        } else {
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Upload Episode';
-          progressLabel.textContent = 'Upload failed (status ' + xhr.status + ') — try again.';
-          progressBar.style.width = '0%';
-          progressWrap.classList.remove('hidden');
-        }
-      });
-
-      xhr.addEventListener('error', function () {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Upload Episode';
-        progressLabel.textContent = 'Upload failed — try again.';
-        progressBar.style.width = '0%';
-      });
-
-      xhr.open('POST', form.action);
-      xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
-      xhr.send(formData);
-    });
-  });
 })();
+
+// ── Alpine components ─────────────────────────────────────────
+document.addEventListener('alpine:init', function () {
+  Alpine.data('seriesVideoReplace', function () {
+    return {
+      open: false,
+      tab: 'upload',
+      uploading: false,
+      progress: 0,
+      fileName: 'MP4, WebM, OGG, MKV',
+      dragging: false,
+      error: '',
+      get submitLabel() {
+        if (this.tab === 'url') return 'Save URL';
+        if (this.uploading) return this.progress < 100 ? 'Uploading…' : 'Saving…';
+        return 'Upload';
+      },
+      upload: function (form) {
+        var input = form.querySelector('[name="video"]');
+        if (!input || !input.files.length) { form.submit(); return; }
+        var fd = new FormData(form);
+        var xhr = new XMLHttpRequest();
+        var self = this;
+        self.uploading = true; self.progress = 0; self.error = '';
+        xhr.upload.addEventListener('progress', function (ev) {
+          if (ev.lengthComputable) self.progress = Math.round(ev.loaded / ev.total * 100);
+        });
+        xhr.addEventListener('load', function () {
+          if (xhr.status >= 200 && xhr.status < 400) { window.location.href = xhr.responseURL; }
+          else { self.uploading = false; self.error = 'Upload failed (' + xhr.status + ') — try again.'; }
+        });
+        xhr.addEventListener('error', function () { self.uploading = false; self.error = 'Upload failed — try again.'; });
+        xhr.open('POST', form.action);
+        xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
+        xhr.send(fd);
+      },
+      drop: function (e) {
+        this.dragging = false;
+        var files = e.dataTransfer.files;
+        if (!files.length) return;
+        if (this.$refs.videoInput) { this.$refs.videoInput.files = files; }
+        this.fileName = files[0].name;
+      }
+    };
+  });
+
+  Alpine.data('episodeUpload', function () {
+    return {
+      uploading: false,
+      progress: 0,
+      error: '',
+      upload: function (form) {
+        var input = form.querySelector('[name="video"]');
+        if (!input || !input.files.length) { form.submit(); return; }
+        var fd = new FormData(form);
+        var xhr = new XMLHttpRequest();
+        var self = this;
+        self.uploading = true; self.progress = 0; self.error = '';
+        xhr.upload.addEventListener('progress', function (ev) {
+          if (ev.lengthComputable) self.progress = Math.round(ev.loaded / ev.total * 100);
+        });
+        xhr.addEventListener('load', function () {
+          if (xhr.status >= 200 && xhr.status < 400) { window.location.href = xhr.responseURL; }
+          else { self.uploading = false; self.error = 'Upload failed (' + xhr.status + ') — try again.'; }
+        });
+        xhr.addEventListener('error', function () { self.uploading = false; self.error = 'Upload failed — try again.'; });
+        xhr.open('POST', form.action);
+        xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
+        xhr.send(fd);
+      }
+    };
+  });
+
+  Alpine.data('trailerUpload', function () {
+    return {
+      uploading: false,
+      progress: 0,
+      error: '',
+      upload: function (form) {
+        var input = form.querySelector('[name="trailer"]');
+        if (!input || !input.files.length) {
+          this.error = 'Please select a file first.';
+          return;
+        }
+        var fd = new FormData(form);
+        var xhr = new XMLHttpRequest();
+        var self = this;
+        self.uploading = true; self.progress = 0; self.error = '';
+        xhr.upload.addEventListener('progress', function (ev) {
+          if (ev.lengthComputable) self.progress = Math.round(ev.loaded / ev.total * 100);
+        });
+        xhr.addEventListener('load', function () {
+          if (xhr.status >= 200 && xhr.status < 400) { window.location.href = xhr.responseURL; }
+          else { self.uploading = false; self.error = 'Upload failed (' + xhr.status + ') — try again.'; }
+        });
+        xhr.addEventListener('error', function () { self.uploading = false; self.error = 'Upload failed — try again.'; });
+        xhr.open('POST', form.action);
+        xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
+        xhr.send(fd);
+      }
+    };
+  });
+});
 </script>
 @endpush

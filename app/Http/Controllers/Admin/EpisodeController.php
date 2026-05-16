@@ -97,6 +97,8 @@ class EpisodeController extends Controller
             'streaming_path' => null,
         ]);
 
+        $this->cancelJob($episode->uuid);
+
         if (strtolower($ext) === 'mkv') {
             $mp4RelPath = "videos/series/{$uuid}.mp4";
             $this->convertMkv(
