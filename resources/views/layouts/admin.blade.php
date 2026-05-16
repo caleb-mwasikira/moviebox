@@ -62,6 +62,10 @@
                 href="{{ route('admin.dashboard') }}">Dashboard</a>
             </li>
             <li>
+              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.analytics') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.analytics') }}">Analytics</a>
+            </li>
+            <li>
               <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.movies.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.movies.index') }}">Movies</a>
             </li>

@@ -21,8 +21,8 @@
 - [ ] Download for offline viewing — `download_enabled` flag exists on subscription packages but is not yet implemented
 
 ## Admin
-- [ ] Dashboard analytics — signups over time, active subscribers, most watched content
-- [ ] Revenue reports tied to subscription sales
+- [✅] Dashboard analytics — signups over time, active subscribers, most watched content
+- [✅] Revenue reports tied to subscription sales
 - [ ] Scheduled publish date — movies publish automatically on a future date
 - [ ] Bulk video upload / import
 

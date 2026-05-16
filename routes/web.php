@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\EpisodeController as AdminEpisodeController;
 use App\Http\Controllers\Admin\PosterController as AdminPosterController;
 use App\Http\Controllers\Admin\StreamingStatusController as AdminStreamingStatusController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\AnalyticsController as AdminAnalyticsController;
 use App\Http\Controllers\Admin\SubscriptionPackageController as AdminSubscriptionController;
 use App\Http\Controllers\Admin\ComingSoonController as AdminComingSoonController;
 use App\Http\Controllers\Admin\ContactController as AdminContactController;
@@ -119,6 +120,7 @@ Route::middleware(['auth', 'verified'])->prefix('account')->name('account.')->gr
 
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('analytics', [AdminAnalyticsController::class, 'index'])->name('analytics');
 
     Route::resource('movies', AdminMovieController::class)->except(['show']);
     Route::patch('movies/{movie}/status', [AdminMovieController::class, 'toggleStatus'])->name('movies.toggle-status');
