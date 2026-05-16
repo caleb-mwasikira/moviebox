@@ -671,6 +671,34 @@
       </script>
     @endif
 
+    @if (session('error'))
+    <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 6000)"
+      x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+      class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9998] w-full max-w-md px-4">
+      <div class="flex items-start gap-x-3 bg-red-600 text-white px-5 py-4 shadow-lg">
+        <svg class="h-5 w-5 shrink-0 mt-0.5 fill-current" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        <p class="text-sm font-medium leading-snug">{{ session('error') }}</p>
+        <button @click="show = false" class="ml-auto shrink-0 text-white/80 hover:text-white">
+          <svg class="h-4 w-4 fill-current" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+    </div>
+    @endif
+
+    @if (session('success'))
+    <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
+      x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+      class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9998] w-full max-w-md px-4">
+      <div class="flex items-start gap-x-3 bg-green-600 text-white px-5 py-4 shadow-lg">
+        <svg class="h-5 w-5 shrink-0 mt-0.5 fill-current" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" style="display:none"/><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        <p class="text-sm font-medium leading-snug">{{ session('success') }}</p>
+        <button @click="show = false" class="ml-auto shrink-0 text-white/80 hover:text-white">
+          <svg class="h-4 w-4 fill-current" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </div>
+    </div>
+    @endif
+
     <main id="main-content" class="grow lg:pt-0">
       @yield('content')
     </main>

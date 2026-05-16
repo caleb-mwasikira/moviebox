@@ -18,7 +18,7 @@
 - [✅] Email notifications — welcome email, subscription expiry reminder, new content alerts
 - [✅] User profile page — avatar, change password, watch history
 - [✅] Multiple profiles per account (like Netflix) — useful for family plan tiers
-- [ ] Download for offline viewing — `download_enabled` flag exists on subscription packages but is not yet implemented
+- [✅] Download for offline viewing — `download_enabled` flag exists on subscription packages but is not yet implemented
 
 ## Admin
 - [✅] Dashboard analytics — signups over time, active subscribers, most watched content

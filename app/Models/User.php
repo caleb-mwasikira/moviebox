@@ -87,6 +87,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->currentSubscription?->package?->max_screens ?? 1;
     }
 
+    public function canDownload(): bool
+    {
+        return (bool) $this->currentSubscription?->package?->download_enabled;
+    }
+
     public function watchlistItems(): HasMany
     {
         return $this->hasMany(WatchlistItem::class);

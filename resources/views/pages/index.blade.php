@@ -116,44 +116,26 @@
     @endif
     {{-- End of featured movies and series --}}
 
-    {{-- Latest Series strip --}}
+    {{-- Latest Series grid --}}
     @if ($series->isNotEmpty())
     <div class="pb-20 md:pb-24 lg:pb-[120px]">
       <div class="container">
 
-        <div class="mb-10 md:mb-12 lg:mb-16 xl:mb-20">
-          <h2
-            class="text-2.5xl font-bold tracking-tighter text-gray-900 before:text-accent before:content-['.'] dark:text-white sm:text-3.5xl md:text-4xl lg:text-[62px] lg:leading-none">
+        <div class="mb-10 md:mb-12 lg:mb-16 xl:mb-20 flex items-end justify-between gap-x-6">
+          <h2 class="text-2.5xl font-bold tracking-tighter text-gray-900 before:text-accent before:content-['.'] dark:text-white sm:text-3.5xl md:text-4xl lg:text-[62px] lg:leading-none">
             New Series
           </h2>
+          <a href="{{ route('series') }}" class="shrink-0 text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-accent dark:hover:text-accent transition-colors mb-2 lg:mb-4">
+            View All →
+          </a>
         </div>
 
-        <div class="swiper js-vv-series-swiper">
-
-          <div class="swiper-wrapper">
-            @foreach ($series as $show)
-            <div class="swiper-slide">
-              <x-film-card :film="$show" type="series" />
-            </div>
-            @endforeach
-          </div>
-
-          <div class="flex justify-center gap-x-3.5 pt-8 sm:pt-10 md:pt-12 lg:pt-16">
-            <button
-              class="js-vv-series-swiper-btn-prev flex w-8 aspect-square items-center justify-center text-white hover:cursor-pointer hover:text-accent">
-              <svg class="h-2.5 w-1.5" fill="currentColor">
-                <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#arrow-left-pixel-alt"></use>
-              </svg>
-            </button>
-            <button
-              class="js-vv-series-swiper-btn-next flex w-8 aspect-square items-center justify-center text-white hover:cursor-pointer hover:text-accent">
-              <svg class="h-2.5 w-1.5" fill="currentColor">
-                <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#arrow-right-pixel-alt"></use>
-              </svg>
-            </button>
-          </div>
-
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5 md:gap-6 lg:gap-7.5">
+          @foreach ($series as $show)
+            <x-film-card :film="$show" type="series" />
+          @endforeach
         </div>
+
       </div>
     </div>
     @endif
@@ -210,49 +192,31 @@
     <div class="pb-20 md:pb-24 lg:pb-[120px]">
       <div class="container">
 
-        <div class="mb-10 md:mb-12 lg:mb-16 xl:mb-20">
-          <h2
-            class="text-2.5xl font-bold tracking-tighter text-gray-900 before:text-accent before:content-['.'] dark:text-white sm:text-3.5xl md:text-4xl lg:text-[62px] lg:leading-none">
+        <div class="mb-10 md:mb-12 lg:mb-16 xl:mb-20 flex items-end justify-between gap-x-6">
+          <h2 class="text-2.5xl font-bold tracking-tighter text-gray-900 before:text-accent before:content-['.'] dark:text-white sm:text-3.5xl md:text-4xl lg:text-[62px] lg:leading-none">
             Top Rated Movies
           </h2>
+          <a href="{{ route('movies') }}" class="shrink-0 text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-accent dark:hover:text-accent transition-colors mb-2 lg:mb-4">
+            View All →
+          </a>
         </div>
 
-        <div class="swiper js-vv-games-swiper">
-
-          <div class="swiper-wrapper">
-            @forelse ($movies as $movie)
-            <div class="swiper-slide">
+        @if ($movies->isNotEmpty())
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5 md:gap-6 lg:gap-7.5">
+            @foreach ($movies as $movie)
               <x-film-card :film="$movie" type="movie" />
-            </div>
-            @empty
-            <div class="swiper-slide">
-              <div class="w-full aspect-[17/22] bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                <span class="text-xs text-gray-400 uppercase font-bold">No movies yet</span>
-              </div>
-            </div>
-            @endforelse
+            @endforeach
           </div>
-
-          <div class="flex justify-center gap-x-3.5 pt-8 sm:pt-10 md:pt-12 lg:pt-16">
-            <button
-              class="js-vv-games-swiper-btn-prev flex w-8 aspect-square items-center justify-center text-white hover:cursor-pointer hover:text-accent">
-              <svg class="h-2.5 w-1.5" fill="currentColor">
-                <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#arrow-left-pixel-alt"></use>
-              </svg>
-            </button>
-            <button
-              class="js-vv-games-swiper-btn-next flex w-8 aspect-square items-center justify-center text-white hover:cursor-pointer hover:text-accent">
-              <svg class="h-2.5 w-1.5" fill="currentColor">
-                <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#arrow-right-pixel-alt"></use>
-              </svg>
-            </button>
+        @else
+          <div class="w-full py-16 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+            <span class="text-xs text-gray-400 uppercase font-bold">No movies yet</span>
           </div>
+        @endif
 
-        </div>
       </div>
     </div>
 
-    {{-- Coming Soon strip --}}
+    {{-- Coming Soon grid --}}
     @if ($comingSoon->isNotEmpty())
     <div class="pb-20 md:pb-24 lg:pb-[120px]">
       <div class="container">
@@ -267,33 +231,16 @@
           </a>
         </div>
 
-        <div class="swiper js-coming-soon-swiper">
-          <div class="swiper-wrapper">
-            @foreach ($comingSoon as $cs)
-            <div class="swiper-slide">
-              <x-coming-soon-card :film="$cs" />
-            </div>
-            @endforeach
-          </div>
-
-          <div class="flex justify-center gap-x-3.5 pt-8 sm:pt-10 md:pt-12 lg:pt-16">
-            <button class="js-coming-soon-prev flex w-8 aspect-square items-center justify-center text-white hover:cursor-pointer hover:text-accent">
-              <svg class="h-2.5 w-1.5" fill="currentColor">
-                <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#arrow-left-pixel-alt"></use>
-              </svg>
-            </button>
-            <button class="js-coming-soon-next flex w-8 aspect-square items-center justify-center text-white hover:cursor-pointer hover:text-accent">
-              <svg class="h-2.5 w-1.5" fill="currentColor">
-                <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#arrow-right-pixel-alt"></use>
-              </svg>
-            </button>
-          </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5 md:gap-6 lg:gap-7.5">
+          @foreach ($comingSoon as $cs)
+            <x-coming-soon-card :film="$cs" />
+          @endforeach
         </div>
 
       </div>
     </div>
     @endif
-    {{-- End Coming Soon strip --}}
+    {{-- End Coming Soon grid --}}
 
     <div class="pb-20 md:pb-24 lg:pb-[130px]">
       <div class="container">
@@ -632,41 +579,6 @@
     if (e.key === 'Escape') window.closeTrailerModal();
   });
 
-  // ── Coming Soon swiper ────────────────────────────────────────
-  var csEl = document.querySelector('.js-coming-soon-swiper');
-  if (csEl) {
-    new Swiper(csEl, {
-      slidesPerView: 2,
-      spaceBetween: 20,
-      navigation: {
-        prevEl: '.js-coming-soon-prev',
-        nextEl: '.js-coming-soon-next',
-      },
-      breakpoints: {
-        640:  { slidesPerView: 3, spaceBetween: 20 },
-        768:  { slidesPerView: 4, spaceBetween: 24 },
-        1024: { slidesPerView: 5, spaceBetween: 30 },
-      },
-    });
-  }
-
-  // ── New Series swiper ─────────────────────────────────────────
-  var seriesEl = document.querySelector('.js-vv-series-swiper');
-  if (seriesEl) {
-    new Swiper(seriesEl, {
-      slidesPerView: 2,
-      spaceBetween: 20,
-      navigation: {
-        prevEl: '.js-vv-series-swiper-btn-prev',
-        nextEl: '.js-vv-series-swiper-btn-next',
-      },
-      breakpoints: {
-        640:  { slidesPerView: 3, spaceBetween: 20 },
-        768:  { slidesPerView: 4, spaceBetween: 24 },
-        1024: { slidesPerView: 5, spaceBetween: 30 },
-      },
-    });
-  }
 })();
 </script>
 @endpush

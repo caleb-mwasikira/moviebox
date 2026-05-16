@@ -33,6 +33,7 @@ use App\Http\Controllers\ProfileInviteController;
 use App\Http\Controllers\ProfileSelectionController;
 use App\Http\Controllers\WatchlistController;
 use App\Http\Controllers\WatchProgressController;
+use App\Http\Controllers\DownloadController;
 use Illuminate\Support\Facades\Route;
 
 // Auth routes
@@ -89,6 +90,11 @@ Route::middleware(['auth', 'verified'])->get('/subscription/expired', [Subscript
 Route::middleware(['auth.modal', 'subscription'])->group(function () {
     Route::get('/movies/{movie}/watch', [MovieController::class, 'watch'])->name('movies.watch');
     Route::get('/series/{series}/watch/{episode}', [SeriesController::class, 'watch'])->name('series.watch');
+});
+
+Route::middleware(['auth', 'verified', 'subscription'])->group(function () {
+    Route::get('/movies/{movie}/download', [DownloadController::class, 'movie'])->name('movies.download');
+    Route::get('/episodes/{episode}/download', [DownloadController::class, 'episode'])->name('episodes.download');
 });
 Route::view('/single-product', 'pages.single-product')->name('single-product');
 Route::view('/trailers', 'pages.view-trailers')->name('trailers');

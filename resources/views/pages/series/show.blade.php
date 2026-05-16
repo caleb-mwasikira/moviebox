@@ -91,6 +91,7 @@
         </div>
 
         {{-- Seasons / Episodes --}}
+        @php $canDownload = auth()->check() && auth()->user()->canDownload(); @endphp
         @if ($series->seasons->isEmpty())
           <div class="py-16 text-center text-gray-500 font-bold uppercase text-sm tracking-widest border border-gray-200 dark:border-gray-600">
             No seasons added yet.
@@ -119,9 +120,6 @@
                       <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-x-2 mb-0.5">
                           <span class="font-bold text-gray-900 dark:text-white text-sm leading-tight">{{ $episode->label() }}</span>
-                          @if ($episode->is_free)
-                            <span class="bg-green-500 text-white text-[10px] font-bold uppercase px-1.5 py-0.5 tracking-wider shrink-0">Free</span>
-                          @endif
                         </div>
                         @if ($episode->description)
                         <div class="text-xs text-gray-500 leading-snug line-clamp-2">{{ $episode->description }}</div>
@@ -130,6 +128,13 @@
                       <div class="shrink-0 flex items-center gap-x-3">
                         @if ($episode->duration)
                           <span class="text-xs text-gray-500 font-bold">{{ $episode->duration }} min</span>
+                        @endif
+                        @if ($canDownload && $episode->video_path)
+                          <a href="{{ route('episodes.download', $episode) }}"
+                            class="inline-flex items-center justify-center w-8 h-8 border border-gray-200 dark:border-gray-600 text-gray-400 hover:text-accent hover:border-accent transition-colors"
+                            title="Download for offline viewing">
+                            <svg class="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
+                          </a>
                         @endif
                         @if ($episode->videoIsReady())
                           @if ($episode->is_free)

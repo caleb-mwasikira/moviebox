@@ -7,8 +7,22 @@
 
     {{-- Subscription Status --}}
     @php
-      $userSubscription = auth()->user()->currentSubscription;
-      $selectedPackage = $userSubscription ? $userSubscription->package : null;
+      $user             = auth()->user();
+      $userSubscription = $user->currentSubscription;
+      $selectedPackage  = $userSubscription?->package;
+
+      // Detect if the active profile belongs to a different account owner
+      $activeProfile     = $user->activeProfile();
+      $sharingAccount    = $activeProfile && $activeProfile->user_id !== $user->id
+                             ? $activeProfile->user
+                             : null;
+      $ownerSubscription = $sharingAccount?->currentSubscription;
+      $ownerPackage      = $ownerSubscription?->package;
+
+      $paymentHistory = $user->userSubscriptions()
+          ->with('package')
+          ->orderByDesc('starts_at')
+          ->get();
     @endphp
 
     <div class="bg-white shadow-3xl p-8 md:p-10 lg:p-14 xl:p-[60px] dark:bg-gray-700">
@@ -32,21 +46,38 @@
             class="inline-flex items-center px-3 py-1 text-xs font-bold uppercase bg-accent/10 text-accent border border-accent">
             Active
           </span>
+        @elseif ($sharingAccount)
+          <div>
+            <div class="text-xs font-bold uppercase text-gray-500 mb-1">Current Plan</div>
+            <div class="text-lg font-bold text-gray-900 dark:text-white">
+              {{ $ownerPackage?->name ?? 'Shared Access' }}
+            </div>
+            <div class="text-sm text-gray-500 dark:text-gray mt-1">
+              Shared via <span class="font-semibold text-gray-700 dark:text-gray-300">{{ $sharingAccount->name }}</span>'s account.
+              Billing is managed by them.
+              @if ($ownerSubscription?->expires_at)
+                Access until {{ $ownerSubscription->expires_at->format('F j, Y') }}.
+              @endif
+            </div>
+          </div>
+          <span class="inline-flex items-center px-3 py-1 text-xs font-bold uppercase bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-700 dark:text-blue-400">
+            Shared
+          </span>
         @else
           <div>
             <div class="text-xs font-bold uppercase text-gray-500 mb-1">Current Plan</div>
-            <div class="text-lg font-bold text-gray-900 dark:text-white">No current subscription plan</div>
+            <div class="text-lg font-bold text-gray-900 dark:text-white">No active subscription</div>
             <div class="text-sm text-gray-500 dark:text-gray mt-1">Choose a plan below to start streaming.</div>
           </div>
-          <span
-            class="inline-flex items-center px-3 py-1 text-xs font-bold uppercase bg-gray-100 text-gray-500 border border-gray-200 dark:bg-gray-800 dark:border-gray-600">
+          <span class="inline-flex items-center px-3 py-1 text-xs font-bold uppercase bg-gray-100 text-gray-500 border border-gray-200 dark:bg-gray-800 dark:border-gray-600">
             Inactive
           </span>
         @endif
       </div>
     </div>
 
-    {{-- Change Plan / Pricing Tiers --}}
+    {{-- Change Plan / Pricing Tiers — hidden for shared-account users --}}
+    @if (! $sharingAccount)
     <div class="bg-white shadow-3xl p-8 md:p-10 lg:p-14 xl:p-[60px] dark:bg-gray-700">
       <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-1">Change Plan</h2>
       <p class="text-sm text-gray-500 dark:text-gray mb-8">Upgrade or downgrade your streaming experience.</p>
@@ -114,6 +145,69 @@
         @endforeach
       </div>
     </div>
+    @endif
+
+    {{-- Payment History — own accounts only --}}
+    @if (! $sharingAccount)
+    <div class="bg-white shadow-3xl p-8 md:p-10 lg:p-14 xl:p-[60px] dark:bg-gray-700">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-1">Payment History</h2>
+      <p class="text-sm text-gray-500 dark:text-gray mb-8">All subscription cycles on your account.</p>
+
+      @if ($paymentHistory->isEmpty())
+        <div class="py-12 text-center border border-dashed border-gray-200 dark:border-gray-600">
+          <p class="text-sm font-bold uppercase text-gray-400 tracking-widest">No payment history yet</p>
+        </div>
+      @else
+        <div class="border border-gray-200 dark:border-gray-600 divide-y divide-gray-100 dark:divide-gray-700">
+
+          <div class="hidden sm:grid grid-cols-12 px-5 py-3 bg-gray-50 dark:bg-gray-800">
+            <span class="col-span-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">Plan</span>
+            <span class="col-span-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">Amount</span>
+            <span class="col-span-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">Period</span>
+            <span class="col-span-2 text-[10px] font-bold uppercase tracking-widest text-gray-400 text-right">Status</span>
+          </div>
+
+          @foreach ($paymentHistory as $sub)
+            @php $pkg = $sub->package; @endphp
+            <div class="grid grid-cols-2 sm:grid-cols-12 items-start gap-y-1 gap-x-4 px-5 py-4">
+
+              <div class="col-span-2 sm:col-span-4">
+                <p class="font-bold text-sm text-gray-900 dark:text-white">{{ $pkg?->name ?? 'Unknown Plan' }}</p>
+                @if ($pkg?->interval)
+                  <p class="text-xs text-gray-400 mt-0.5">{{ ucfirst($pkg->interval) }}</p>
+                @endif
+              </div>
+
+              <div class="sm:col-span-3">
+                <p class="font-bold text-sm text-gray-900 dark:text-white">
+                  {{ $pkg ? $pkg->currency . ' ' . number_format($pkg->price, 2) : '—' }}
+                </p>
+              </div>
+
+              <div class="sm:col-span-3">
+                <p class="text-sm text-gray-600 dark:text-gray-300">{{ $sub->starts_at->format('M j, Y') }}</p>
+                @if ($sub->expires_at)
+                  <p class="text-xs text-gray-400 mt-0.5">→ {{ $sub->expires_at->format('M j, Y') }}</p>
+                @else
+                  <p class="text-xs text-gray-400 mt-0.5">Lifetime</p>
+                @endif
+              </div>
+
+              <div class="sm:col-span-2 sm:text-right">
+                @if ($sub->status === 'active')
+                  <span class="inline-flex px-2 py-0.5 text-[10px] font-bold uppercase bg-accent/10 text-accent border border-accent">Active</span>
+                @else
+                  <span class="inline-flex px-2 py-0.5 text-[10px] font-bold uppercase bg-gray-100 text-gray-400 border border-gray-200 dark:bg-gray-800 dark:border-gray-600">Expired</span>
+                @endif
+              </div>
+
+            </div>
+          @endforeach
+
+        </div>
+      @endif
+    </div>
+    @endif
 
   </div>
 @endsection

@@ -10,9 +10,9 @@ class HomeController extends Controller
 {
     public function index()
     {
-        $movies = Movie::where('status', 'published')->where('coming_soon', false)->with('posters')->latest()->take(7)->get();
-        $series = Series::where('status', 'published')->latest()->take(4)->get();
-        $comingSoon = Movie::where('coming_soon', true)->with('posters')->latest()->take(8)->get();
+        $movies = Movie::where('status', 'published')->where('coming_soon', false)->with('posters')->latest()->take(18)->get();
+        $series = Series::where('status', 'published')->with('posters')->latest()->take(18)->get();
+        $comingSoon = Movie::where('coming_soon', true)->with('posters')->latest()->take(18)->get();
 
         $featuredMovies = Movie::where('status', 'published')->where('coming_soon', false)->where('featured', true)
             ->with('posters')->latest()->take(6)->get();
