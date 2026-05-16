@@ -27,6 +27,7 @@ use App\Http\Controllers\Auth\VerifyOtpController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\VideoCallbackController;
+use App\Http\Controllers\WatchlistController;
 use App\Http\Controllers\WatchProgressController;
 use Illuminate\Support\Facades\Route;
 
@@ -83,6 +84,8 @@ Route::view('/watch', 'pages.watch')->name('watch');
 
 Route::middleware('auth')->post('/watch/progress', [WatchProgressController::class, 'upsert'])->name('watch.progress');
 
+Route::middleware(['auth', 'verified'])->post('/watchlist/{type}/{id}', [WatchlistController::class, 'toggle'])->name('watchlist.toggle');
+
 Route::middleware(['auth', 'verified'])->prefix('account')->name('account.')->group(function () {
     Route::view('/', 'pages.account.index')->name('dashboard');
     Route::get('personal-info', [AccountController::class, 'personalInfo'])->name('personal-info');
@@ -91,6 +94,7 @@ Route::middleware(['auth', 'verified'])->prefix('account')->name('account.')->gr
     Route::get('billing', [AccountController::class, 'billingDetails'])->name('billing');
     Route::post('update-subscription-plan/{newPackage}', [AccountController::class, 'updateSubscriptionPlan'])->name('update-plan');
     Route::get('watching', [WatchProgressController::class, 'index'])->name('watching');
+    Route::get('watchlist', [WatchlistController::class, 'index'])->name('watchlist');
 });
 
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {

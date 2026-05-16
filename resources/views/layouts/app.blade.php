@@ -775,6 +775,32 @@
 
   @stack('scripts')
 
+  <script>
+  document.addEventListener('alpine:init', function () {
+    Alpine.data('watchlistToggle', function (initialState, url) {
+      return {
+        watchlisted: initialState,
+        busy: false,
+        toggle: function () {
+          if (this.busy) return;
+          this.busy = true;
+          var self = this;
+          fetch(url, {
+            method: 'POST',
+            headers: {
+              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+              'Accept': 'application/json',
+            }
+          })
+          .then(function (r) { return r.json(); })
+          .then(function (d) { self.watchlisted = d.watchlisted; self.busy = false; })
+          .catch(function () { self.busy = false; });
+        }
+      };
+    });
+  });
+  </script>
+
 </body>
 
 </html>

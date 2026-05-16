@@ -117,6 +117,28 @@
                 Watch Trailer
               </button>
               @endif
+
+              {{-- Watchlist button --}}
+              @auth
+                <div x-data="watchlistToggle(@js($isWatchlisted), '{{ route('watchlist.toggle', ['movie', $movie->id]) }}')">
+                  <button type="button" @click="toggle()"
+                    :disabled="busy"
+                    class="inline-flex items-center gap-x-2 font-bold leading-none uppercase py-3 px-5 text-sm ring-2 ring-inset ring-gray-300 dark:ring-gray-600 hover:ring-accent hover:text-accent transition-colors bg-transparent text-gray-900 dark:text-white">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" :fill="watchlisted ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                    </svg>
+                    <span x-text="watchlisted ? 'Watchlisted' : 'Watchlist'"></span>
+                  </button>
+                </div>
+              @else
+                <button type="button" onclick="watchOrLogin('{{ route('login') }}')"
+                  class="inline-flex items-center gap-x-2 font-bold leading-none uppercase py-3 px-5 text-sm ring-2 ring-inset ring-gray-300 dark:ring-gray-600 hover:ring-accent hover:text-accent transition-colors bg-transparent text-gray-900 dark:text-white">
+                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+                  </svg>
+                  Watchlist
+                </button>
+              @endauth
             </div>
 
           </div>

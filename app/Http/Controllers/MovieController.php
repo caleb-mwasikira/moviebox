@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Movie;
+use App\Models\WatchlistItem;
 use App\Models\WatchProgress;
 use Illuminate\Http\Request;
 
@@ -35,7 +36,16 @@ class MovieController extends Controller
     {
         abort_unless($movie->isPublished(), 404);
         $movie->load('posters');
-        return view('pages.movies.show', compact('movie'));
+
+        $isWatchlisted = auth()->check()
+            ? WatchlistItem::where([
+                'user_id'        => auth()->id(),
+                'watchable_type' => $movie->getMorphClass(),
+                'watchable_id'   => $movie->id,
+            ])->exists()
+            : false;
+
+        return view('pages.movies.show', compact('movie', 'isWatchlisted'));
     }
 
     public function watch(Movie $movie)

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Episode;
 use App\Models\Series;
+use App\Models\WatchlistItem;
 use App\Models\WatchProgress;
 use Illuminate\Http\Request;
 
@@ -39,7 +40,16 @@ class SeriesController extends Controller
     {
         abort_unless($series->isPublished(), 404);
         $series->load(['seasons.episodes', 'posters']);
-        return view('pages.series.show', compact('series'));
+
+        $isWatchlisted = auth()->check()
+            ? WatchlistItem::where([
+                'user_id'        => auth()->id(),
+                'watchable_type' => $series->getMorphClass(),
+                'watchable_id'   => $series->id,
+            ])->exists()
+            : false;
+
+        return view('pages.series.show', compact('series', 'isWatchlisted'));
     }
 
     public function watch(Series $series, Episode $episode)

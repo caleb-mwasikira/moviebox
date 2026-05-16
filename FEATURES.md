@@ -6,7 +6,7 @@
 - [✅] Search bar across movies, series, and coming soon
 - [ ] Related / recommended content on movie & series detail pages
 - [✅] Continue watching — resume from where the user left off (watch progress table already exists)
-- [ ] Watchlist / favourites — users save content to watch later
+- [✅] Watchlist / favourites — users save content to watch later
 - [ ] Rating & reviews — users rate and review movies after watching
 
 ## Monetization
