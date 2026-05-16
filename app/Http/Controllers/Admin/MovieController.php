@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Traits\TriggersHlsEncoding;
+use App\Jobs\SendNewContentAlerts;
 use App\Models\Movie;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -296,9 +297,18 @@ class MovieController extends Controller
 
     public function toggleStatus(Movie $movie)
     {
-        $movie->update([
-            'status' => $movie->status === 'published' ? 'hidden' : 'published',
-        ]);
+        $newStatus = $movie->status === 'published' ? 'hidden' : 'published';
+        $movie->update(['status' => $newStatus]);
+
+        if ($newStatus === 'published') {
+            SendNewContentAlerts::dispatch(
+                title: $movie->title,
+                type:  'movie',
+                url:   route('movies.show', $movie),
+                genre: $movie->genre,
+                year:  $movie->year,
+            );
+        }
 
         return back();
     }

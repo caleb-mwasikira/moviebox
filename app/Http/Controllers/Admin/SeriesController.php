@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Traits\TriggersHlsEncoding;
+use App\Jobs\SendNewContentAlerts;
 use App\Models\Series;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -193,9 +194,18 @@ class SeriesController extends Controller
 
     public function toggleStatus(Series $series)
     {
-        $series->update([
-            'status' => $series->status === 'published' ? 'hidden' : 'published',
-        ]);
+        $newStatus = $series->status === 'published' ? 'hidden' : 'published';
+        $series->update(['status' => $newStatus]);
+
+        if ($newStatus === 'published') {
+            SendNewContentAlerts::dispatch(
+                title: $series->title,
+                type:  'series',
+                url:   route('series.show', $series),
+                genre: $series->genre,
+                year:  $series->year,
+            );
+        }
 
         return back();
     }

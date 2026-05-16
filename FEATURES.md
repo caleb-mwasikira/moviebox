@@ -15,7 +15,7 @@
 - [ ] Trial period for new subscribers (e.g. 7-day free trial)
 
 ## User Experience
-- [ ] Email notifications — welcome email, subscription expiry reminder, new content alerts
+- [✅] Email notifications — welcome email, subscription expiry reminder, new content alerts
 - [ ] User profile page — avatar, change password, watch history
 - [ ] Multiple profiles per account (like Netflix) — useful for family plan tiers
 - [ ] Download for offline viewing — `download_enabled` flag exists on subscription packages but is not yet implemented

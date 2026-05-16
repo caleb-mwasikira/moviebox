@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Notifications\EmailVerificationOtp;
+use App\Notifications\WelcomeNotification;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -42,6 +43,7 @@ class EmailVerificationController extends Controller
         }
 
         $user->markEmailAsVerified();
+        $user->notify(new WelcomeNotification());
 
         DB::table('email_verification_tokens')->where('email', $user->email)->delete();
 
