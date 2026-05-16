@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
+use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -33,6 +34,8 @@ class RegisterController extends Controller
 
         Auth::login($user);
 
-        return redirect('/');
+        EmailVerificationController::sendOtp($user);
+
+        return redirect()->route('verification.notice');
     }
 }

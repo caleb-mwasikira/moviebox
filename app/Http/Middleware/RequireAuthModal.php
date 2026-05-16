@@ -11,6 +11,10 @@ class RequireAuthModal
     public function handle(Request $request, Closure $next)
     {
         if (Auth::check()) {
+            if (! Auth::user()->hasVerifiedEmail()) {
+                return redirect()->route('verification.notice');
+            }
+
             return $next($request);
         }
 

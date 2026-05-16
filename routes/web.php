@@ -22,6 +22,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\VerifyOtpController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\SubscriptionController;
@@ -44,6 +45,13 @@ Route::middleware('guest')->group(function () {
     Route::post('/reset-password', [ResetPasswordController::class, 'store'])->name('password.update');
 });
 Route::post('/logout', [LogoutController::class, 'destroy'])->name('logout')->middleware('auth');
+
+// Email verification (auth required, verified NOT required)
+Route::middleware('auth')->group(function () {
+    Route::get('/email/verify', [EmailVerificationController::class, 'show'])->name('verification.notice');
+    Route::post('/email/verify', [EmailVerificationController::class, 'verify'])->name('verification.verify');
+    Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->name('verification.send');
+});
 
 // Internal callbacks from Go streaming service — no auth, CSRF-exempt via bootstrap/app.php
 Route::post('/callbacks/video-ready', [VideoCallbackController::class, 'videoReady'])->name('callbacks.video-ready');
