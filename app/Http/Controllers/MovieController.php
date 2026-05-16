@@ -16,6 +16,10 @@ class MovieController extends Controller
             $query->where('genre', $request->genre);
         }
 
+        if ($request->boolean('free')) {
+            $query->where('is_free', true);
+        }
+
         $movies = $query->latest()->paginate(12)->withQueryString();
         $genres = Movie::where('status', 'published')
             ->distinct()

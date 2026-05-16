@@ -14,12 +14,15 @@
             <h1 class="text-2xl font-bold tracking-tighter text-gray-900 before:text-accent before:content-['.'] dark:text-white sm:text-3xl md:text-4xl">Series</h1>
           </div>
 
-          @if ($genres->isNotEmpty())
           <nav>
             <ul class="flex flex-wrap gap-x-4 lg:gap-x-7 text-sm lg:text-base font-bold">
               <li>
-                <a class="transition-colors {{ !request('genre') ? 'text-accent' : 'text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent' }}"
+                <a class="transition-colors {{ !request('genre') && !request('free') ? 'text-accent' : 'text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent' }}"
                   href="{{ route('series') }}">All</a>
+              </li>
+              <li>
+                <a class="transition-colors {{ request('free') ? 'text-green-500' : 'text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent' }}"
+                  href="{{ route('series', ['free' => 1]) }}">Free</a>
               </li>
               @foreach ($genres as $genre)
               <li>
@@ -29,7 +32,6 @@
               @endforeach
             </ul>
           </nav>
-          @endif
 
         </div>
 
@@ -54,6 +56,11 @@
                 <div class="absolute top-2 left-2">
                   <span class="bg-primary text-white text-[10px] font-bold uppercase px-2 py-0.5">Series</span>
                 </div>
+                @if (!empty($show->free_episodes_count) && $show->free_episodes_count > 0)
+                <div class="absolute top-2 right-2">
+                  <span class="bg-green-500 text-white text-[10px] font-bold uppercase px-2 py-0.5 tracking-wider">Free</span>
+                </div>
+                @endif
                 <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all bg-accent/80 duration-300">
                   <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 aspect-square bg-gray-900 grid place-items-center text-white scale-90 group-hover:scale-100 transition-all duration-300">
                     <svg class="h-4 w-4 fill-white" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>

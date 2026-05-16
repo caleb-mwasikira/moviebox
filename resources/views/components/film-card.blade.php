@@ -13,6 +13,11 @@
     @else
       <div class="w-full aspect-[17/22] bg-gray-200 dark:bg-gray-600"></div>
     @endif
+    @if (!empty($film->is_free))
+      <div class="absolute top-2 left-2">
+        <span class="bg-green-500 text-white text-[10px] font-bold uppercase px-2 py-0.5 tracking-wider">Free</span>
+      </div>
+    @endif
     <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all bg-accent/80 duration-300">
       <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-7.5 aspect-square bg-gray-900 grid place-items-center text-white scale-90 group-hover:scale-100 transition-all duration-300">
         <svg class="h-2.5 aspect-square" fill="currentColor">

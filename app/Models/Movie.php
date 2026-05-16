@@ -21,6 +21,11 @@ class Movie extends Model
         'status',
         'featured',
         'coming_soon',
+        'is_free',
+    ];
+
+    protected $casts = [
+        'is_free' => 'boolean',
     ];
 
     protected static function booted(): void

@@ -38,6 +38,9 @@
               {{ $show->genre ?? '—' }} · {{ $show->year ?? '—' }} · {{ $show->seasons_count }} season{{ $show->seasons_count !== 1 ? 's' : '' }}
             </p>
             <div class="flex flex-wrap items-center gap-2 mt-2">
+              @if ($show->free_episodes_count > 0)
+                <span class="text-[10px] font-bold uppercase px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">{{ $show->free_episodes_count }} free ep{{ $show->free_episodes_count !== 1 ? 's' : '' }}</span>
+              @endif
               <form method="POST" action="{{ route('admin.series.toggle-status', $show) }}">
                 @csrf @method('PATCH')
                 <button type="submit"
@@ -99,7 +102,12 @@
                 @else
                   <div class="w-10 h-14 bg-gray-100 dark:bg-gray-700 shrink-0"></div>
                 @endif
-                <span class="font-bold text-gray-900 dark:text-white">{{ $show->title }}</span>
+                <div>
+                  <span class="font-bold text-gray-900 dark:text-white">{{ $show->title }}</span>
+                  @if ($show->free_episodes_count > 0)
+                    <span class="ml-2 text-[10px] font-bold uppercase px-1.5 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">{{ $show->free_episodes_count }} free ep{{ $show->free_episodes_count !== 1 ? 's' : '' }}</span>
+                  @endif
+                </div>
               </div>
             </td>
             <td class="py-4 pr-4 text-gray-500 dark:text-gray">{{ $show->genre ?? '—' }}</td>

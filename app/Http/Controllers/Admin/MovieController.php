@@ -36,6 +36,7 @@ class MovieController extends Controller
             'video'       => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
             'trailer'     => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
             'status'      => ['required', 'in:published,hidden'],
+            'is_free'     => ['nullable', 'boolean'],
             'posters'     => ['nullable', 'array'],
             'posters.*'   => ['image', 'max:4096'],
         ]);
@@ -53,6 +54,7 @@ class MovieController extends Controller
             'year'        => $validated['year'] ?? null,
             'duration'    => $validated['duration'] ?? null,
             'status'      => $validated['status'],
+            'is_free'     => $request->boolean('is_free'),
             'video_path'  => $finalPath,
         ];
 
@@ -122,6 +124,7 @@ class MovieController extends Controller
             'thumbnail'   => ['nullable', 'image', 'max:2048'],
             'video'       => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
             'status'      => ['required', 'in:published,hidden'],
+            'is_free'     => ['nullable', 'boolean'],
             'posters'     => ['nullable', 'array'],
             'posters.*'   => ['image', 'max:4096'],
         ]);
@@ -133,6 +136,7 @@ class MovieController extends Controller
             'year'        => $validated['year'] ?? null,
             'duration'    => $validated['duration'] ?? null,
             'status'      => $validated['status'],
+            'is_free'     => $request->boolean('is_free'),
         ];
 
         if ($request->hasFile('thumbnail')) {

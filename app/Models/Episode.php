@@ -10,7 +10,11 @@ class Episode extends Model
 {
     protected $fillable = [
         'season_id', 'episode_number', 'title',
-        'description', 'video_path', 'streaming_path', 'duration',
+        'description', 'video_path', 'streaming_path', 'duration', 'is_free',
+    ];
+
+    protected $casts = [
+        'is_free' => 'boolean',
     ];
 
     protected static function booted(): void

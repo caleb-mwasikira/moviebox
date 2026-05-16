@@ -9,16 +9,31 @@
 
         {{-- Header --}}
         <div class="text-center mb-12">
-          <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-500/10 mb-6">
-            <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-            </svg>
-          </div>
-          <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-3">Your subscription has ended</h1>
-          <p class="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-            Renew your plan to continue watching movies and series without interruption.
-          </p>
+          @if ($hasEverSubscribed)
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-500/10 mb-6">
+              <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              </svg>
+            </div>
+            <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-3">Your subscription has ended</h1>
+            <p class="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+              Renew your plan to continue watching movies and series without interruption.
+            </p>
+          @else
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent/10 mb-6">
+              <svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+            <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-3">Choose a plan to get started</h1>
+            <p class="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+              Pick a plan and start watching movies and series today.
+            </p>
+          @endif
         </div>
 
         @if (session('success'))
@@ -90,7 +105,7 @@
                   @csrf
                   <button type="submit"
                     class="w-full inline-flex justify-center font-bold uppercase py-3 px-4 text-xs bg-accent text-gray-900 hover:bg-accent/90 transition-colors">
-                    Renew — {{ $package->name }}
+                    {{ $hasEverSubscribed ? 'Renew' : 'Subscribe' }} — {{ $package->name }}
                   </button>
                 </form>
               </div>

@@ -16,6 +16,8 @@ class SubscriptionController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        return view('pages.subscription.expired', compact('packages'));
+        $hasEverSubscribed = auth()->user()->userSubscriptions()->exists();
+
+        return view('pages.subscription.expired', compact('packages', 'hasEverSubscribed'));
     }
 }

@@ -14,6 +14,17 @@ class RequireAuthModal
             return $next($request);
         }
 
+        // Allow free movies and episodes to be watched without login
+        $movie = $request->route('movie');
+        if ($movie instanceof \App\Models\Movie && $movie->is_free) {
+            return $next($request);
+        }
+
+        $episode = $request->route('episode');
+        if ($episode instanceof \App\Models\Episode && $episode->is_free) {
+            return $next($request);
+        }
+
         // Preserve the intended URL so post-login redirect works
         session()->put('url.intended', $request->url());
 

@@ -184,7 +184,8 @@
           </thead>
           @foreach ($season->episodes as $episode)
             {{-- Each episode pair gets its own tbody for Alpine scoping --}}
-            <tbody x-data="seriesVideoReplace">
+            <tbody x-data="seriesVideoReplace({{ $episode->is_free ? 'true' : 'false' }}, '{{ route('admin.episodes.toggle-free', $episode) }}')"
+              >
               {{-- Episode row --}}
               <tr class="border-b border-gray-100 dark:border-gray-700">
                 <td class="py-2 pr-4 text-gray-500">{{ str_pad($episode->episode_number, 2, '0', STR_PAD_LEFT) }}</td>
@@ -205,9 +206,15 @@
                 </td>
                 <td class="py-2 text-right">
                   <div class="flex items-center justify-end gap-4">
+                    <button type="button" @click="toggleFree"
+                      :class="isFree ? 'bg-green-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'"
+                      class="text-[10px] font-bold uppercase px-2 py-0.5 transition-colors"
+                      :title="isFree ? 'Click to remove free access' : 'Click to make free'">
+                      <span x-text="isFree ? 'Free' : 'Set Free'">{{ $episode->is_free ? 'Free' : 'Set Free' }}</span>
+                    </button>
                     <button type="button" @click="open = !open"
                       class="text-xs font-bold uppercase text-accent hover:text-accent/70 transition-colors">
-                      Replace Video
+                      Edit Episode
                     </button>
                     <form method="POST" action="{{ route('admin.episodes.destroy', $episode) }}"
                       onsubmit="return confirm('Delete episode {{ $episode->episode_number }}?')">
@@ -217,88 +224,140 @@
                   </div>
                 </td>
               </tr>
-              {{-- Collapsible video-replace row --}}
+              {{-- Collapsible edit-episode row --}}
               <tr style="display:none" x-show="open" class="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                 <td colspan="5" class="py-5 px-4">
-                  <form method="POST" action="{{ route('admin.episodes.video', $episode) }}"
-                    enctype="multipart/form-data" x-ref="form" @submit.prevent="upload($refs.form)"
-                    class="flex flex-col gap-y-4 max-w-xl">
-                    @csrf
-                    <p class="text-xs font-bold uppercase text-gray-500 tracking-wider">Replace video — {{ $episode->label() }}</p>
+                  <div class="max-w-xl flex flex-col gap-y-7">
+                    <p class="text-xs font-bold uppercase text-gray-500 tracking-wider">Edit Episode — {{ $episode->label() }}</p>
 
-                    {{-- Underline tab nav --}}
-                    <div class="flex border-b border-gray-200 dark:border-gray-600">
-                      <button type="button" @click="tab = 'upload'"
-                        :class="tab === 'upload' ? 'border-accent text-accent' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
-                        class="inline-flex items-center gap-x-1.5 pb-2.5 px-1 mr-5 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors">
-                        <svg class="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
-                        Upload File
-                      </button>
-                      <button type="button" @click="tab = 'url'"
-                        :class="tab === 'url' ? 'border-accent text-accent' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
-                        class="inline-flex items-center gap-x-1.5 pb-2.5 px-1 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors">
-                        <svg class="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
-                        Streaming URL
-                      </button>
-                    </div>
+                    {{-- ── Metadata form ── --}}
+                    <form method="POST" action="{{ route('admin.episodes.update', $episode) }}"
+                      class="flex flex-col gap-y-4">
+                      @csrf @method('PUT')
 
-                    {{-- Upload panel --}}
-                    <div x-show="tab === 'upload'" class="flex flex-col gap-y-3">
-                      <label
-                        @dragover.prevent="dragging = true"
-                        @dragleave="dragging = false"
-                        @drop.prevent="drop($event)"
-                        :class="dragging ? 'border-accent' : 'border-gray-300 dark:border-gray-600'"
-                        class="flex items-center gap-x-4 w-full border-2 border-dashed hover:border-accent dark:hover:border-accent transition-colors cursor-pointer py-4 px-5 bg-white dark:bg-gray-900/40 group">
-                        <svg class="h-6 w-6 fill-gray-400 group-hover:fill-accent transition-colors shrink-0" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+                      <div class="grid grid-cols-2 gap-4">
                         <div>
-                          <span class="block text-sm font-bold text-gray-700 dark:text-gray-300 group-hover:text-accent transition-colors">Click to browse</span>
-                          <span x-text="fileName" class="block text-xs text-gray-500 mt-0.5">MP4, WebM, OGG, MKV</span>
+                          <label class="block text-xs font-bold uppercase text-gray-500 mb-1.5">Episode #</label>
+                          <input class="px-3 py-2 border-base bg-white/40 font-medium text-gray-900 focus:border-accent focus:bg-white focus:outline-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white w-full text-sm"
+                            type="number" name="episode_number" min="1" value="{{ $episode->episode_number }}" readonly disabled>
                         </div>
-                        <input x-ref="videoInput" type="file" name="video"
-                          accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv"
-                          :disabled="tab !== 'upload'"
-                          class="sr-only"
-                          @change="fileName = $event.target.files[0] ? $event.target.files[0].name : 'MP4, WebM, OGG, MKV'">
-                      </label>
-
-                      <div x-show="uploading" style="display:none" class="flex flex-col gap-y-1.5">
-                        <div class="flex justify-between text-xs font-bold uppercase text-gray-500">
-                          <span>Uploading…</span>
-                          <span x-text="progress < 100 ? progress + '%' : 'Saving…'">0%</span>
+                        <div class="col-span-2">
+                          <label class="block text-xs font-bold uppercase text-gray-500 mb-1.5">Title</label>
+                          <input class="px-3 py-2 border-base bg-white/40 font-medium text-gray-900 focus:border-accent focus:bg-white focus:outline-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white w-full text-sm"
+                            type="text" name="title" value="{{ $episode->title }}">
                         </div>
-                        <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div class="h-1.5 bg-accent transition-all duration-150 rounded-full" :style="'width:' + progress + '%'"></div>
+                        <div>
+                          <label class="block text-xs font-bold uppercase text-gray-500 mb-1.5">Duration (min)</label>
+                          <input class="px-3 py-2 border-base bg-white/40 font-medium text-gray-900 focus:border-accent focus:bg-white focus:outline-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white w-full text-sm"
+                            type="number" name="duration" min="1" value="{{ $episode->duration }}">
+                        </div>
+                        <div class="col-span-2">
+                          <label class="block text-xs font-bold uppercase text-gray-500 mb-1.5">Description</label>
+                          <textarea class="px-3 py-2 border-base bg-white/40 font-medium text-gray-900 focus:border-accent focus:bg-white focus:outline-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white w-full text-sm h-20"
+                            name="description">{{ $episode->description }}</textarea>
+                        </div>
+                        <div class="col-span-2 flex items-center gap-x-3">
+                          <input type="checkbox" name="is_free" id="is_free_{{ $episode->id }}" value="1"
+                            x-model="isFree"
+                            class="w-4 h-4 accent-accent cursor-pointer">
+                          <label for="is_free_{{ $episode->id }}" class="text-xs font-bold text-gray-700 dark:text-gray-300 cursor-pointer">
+                            Free to watch <span class="font-normal text-gray-500">(no login required)</span>
+                          </label>
                         </div>
                       </div>
 
-                      <p x-show="error" style="display:none" x-text="error" class="text-xs text-danger"></p>
-                    </div>
-
-                    {{-- URL panel --}}
-                    <div x-show="tab === 'url'" style="display:none" class="flex flex-col gap-y-3">
-                      <div class="flex items-stretch border border-gray-300 dark:border-gray-600 focus-within:border-accent transition-colors">
-                        <div class="flex items-center px-3 bg-gray-50 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-600 shrink-0">
-                          <svg class="h-3.5 w-3.5 fill-gray-400" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
-                        </div>
-                        <input class="flex-1 px-3 py-2.5 bg-white dark:bg-gray-900 text-sm font-medium text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none"
-                          type="text" name="streaming_url" placeholder="/stream/series/title/ep01/master.m3u8" autocomplete="off">
+                      <div>
+                        <button type="submit"
+                          class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-2 py-2.5 px-5 text-sm text-gray-900 bg-accent hover:bg-accent/90">
+                          Save
+                        </button>
                       </div>
-                      <p class="text-xs text-gray-500">Relative path or full URL to the HLS master playlist.</p>
+                    </form>
+
+                    {{-- ── Video form ── --}}
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                      <p class="text-xs font-bold uppercase text-gray-500 tracking-wider mb-4">Replace Video</p>
+                      <form method="POST" action="{{ route('admin.episodes.video', $episode) }}"
+                        enctype="multipart/form-data" x-ref="form" @submit.prevent="upload($refs.form)"
+                        class="flex flex-col gap-y-4">
+                        @csrf
+
+                        {{-- Underline tab nav --}}
+                        <div class="flex border-b border-gray-200 dark:border-gray-600">
+                          <button type="button" @click="tab = 'upload'"
+                            :class="tab === 'upload' ? 'border-accent text-accent' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
+                            class="inline-flex items-center gap-x-1.5 pb-2.5 px-1 mr-5 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors">
+                            <svg class="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+                            Upload File
+                          </button>
+                          <button type="button" @click="tab = 'url'"
+                            :class="tab === 'url' ? 'border-accent text-accent' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
+                            class="inline-flex items-center gap-x-1.5 pb-2.5 px-1 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors">
+                            <svg class="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
+                            Streaming URL
+                          </button>
+                        </div>
+
+                        {{-- Upload panel --}}
+                        <div x-show="tab === 'upload'" class="flex flex-col gap-y-3">
+                          <label
+                            @dragover.prevent="dragging = true"
+                            @dragleave="dragging = false"
+                            @drop.prevent="drop($event)"
+                            :class="dragging ? 'border-accent' : 'border-gray-300 dark:border-gray-600'"
+                            class="flex items-center gap-x-4 w-full border-2 border-dashed hover:border-accent dark:hover:border-accent transition-colors cursor-pointer py-4 px-5 bg-white dark:bg-gray-900/40 group">
+                            <svg class="h-6 w-6 fill-gray-400 group-hover:fill-accent transition-colors shrink-0" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+                            <div>
+                              <span class="block text-sm font-bold text-gray-700 dark:text-gray-300 group-hover:text-accent transition-colors">Click to browse</span>
+                              <span x-text="fileName" class="block text-xs text-gray-500 mt-0.5">MP4, WebM, OGG, MKV</span>
+                            </div>
+                            <input x-ref="videoInput" type="file" name="video"
+                              accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv"
+                              :disabled="tab !== 'upload'"
+                              class="sr-only"
+                              @change="fileName = $event.target.files[0] ? $event.target.files[0].name : 'MP4, WebM, OGG, MKV'">
+                          </label>
+
+                          <div x-show="uploading" style="display:none" class="flex flex-col gap-y-1.5">
+                            <div class="flex justify-between text-xs font-bold uppercase text-gray-500">
+                              <span>Uploading…</span>
+                              <span x-text="progress < 100 ? progress + '%' : 'Saving…'">0%</span>
+                            </div>
+                            <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                              <div class="h-1.5 bg-accent transition-all duration-150 rounded-full" :style="'width:' + progress + '%'"></div>
+                            </div>
+                          </div>
+
+                          <p x-show="error" style="display:none" x-text="error" class="text-xs text-danger"></p>
+                        </div>
+
+                        {{-- URL panel --}}
+                        <div x-show="tab === 'url'" style="display:none" class="flex flex-col gap-y-3">
+                          <div class="flex items-stretch border border-gray-300 dark:border-gray-600 focus-within:border-accent transition-colors">
+                            <div class="flex items-center px-3 bg-gray-50 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-600 shrink-0">
+                              <svg class="h-3.5 w-3.5 fill-gray-400" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
+                            </div>
+                            <input class="flex-1 px-3 py-2.5 bg-white dark:bg-gray-900 text-sm font-medium text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none"
+                              type="text" name="streaming_url" placeholder="/stream/series/title/ep01/master.m3u8" autocomplete="off">
+                          </div>
+                          <p class="text-xs text-gray-500">Relative path or full URL to the HLS master playlist.</p>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                          <button type="submit" :disabled="uploading"
+                            class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-2 py-2.5 px-5 text-sm text-gray-900 bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                            x-text="submitLabel">
+                            Upload
+                          </button>
+                          <button type="button" @click="open = false"
+                            class="text-xs font-bold uppercase text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
                     </div>
 
-                    <div class="flex items-center gap-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                      <button type="submit" :disabled="uploading"
-                        class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-2 py-2.5 px-5 text-sm text-gray-900 bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                        x-text="submitLabel">
-                        Upload
-                      </button>
-                      <button type="button" @click="open = false"
-                        class="text-xs font-bold uppercase text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -329,6 +388,14 @@
               <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Video File <span class="text-danger">*</span></label>
               <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer"
                 type="file" name="video" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv">
+            </div>
+
+            <div class="col-span-2 flex items-center gap-x-3">
+              <input type="checkbox" name="is_free" id="ep_is_free_{{ $season->id }}" value="1"
+                class="w-4 h-4 accent-accent cursor-pointer">
+              <label for="ep_is_free_{{ $season->id }}" class="text-sm font-bold text-gray-700 dark:text-gray-300 cursor-pointer">
+                Free to watch <span class="font-normal text-gray-500">(no login required)</span>
+              </label>
             </div>
           </div>
 
@@ -451,7 +518,7 @@
 
 // ── Alpine components ─────────────────────────────────────────
 document.addEventListener('alpine:init', function () {
-  Alpine.data('seriesVideoReplace', function () {
+  Alpine.data('seriesVideoReplace', function (isFree, toggleFreeUrl) {
     return {
       open: false,
       tab: 'upload',
@@ -460,6 +527,21 @@ document.addEventListener('alpine:init', function () {
       fileName: 'MP4, WebM, OGG, MKV',
       dragging: false,
       error: '',
+      isFree: isFree,
+      toggleFreeUrl: toggleFreeUrl,
+      toggleFree: function () {
+        var self = this;
+        fetch(self.toggleFreeUrl, {
+          method: 'PATCH',
+          headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json',
+          }
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) { self.isFree = data.is_free; })
+        .catch(function () {});
+      },
       get submitLabel() {
         if (this.tab === 'url') return 'Save URL';
         if (this.uploading) return this.progress < 100 ? 'Uploading…' : 'Saving…';

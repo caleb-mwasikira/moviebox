@@ -72,6 +72,9 @@
                 @if ($movie->duration)
                   <span>{{ $movie->duration }} min</span>
                 @endif
+                @if ($movie->is_free)
+                  <span class="bg-accent text-gray-900 text-[10px] px-2 py-0.5 tracking-wider">Free to Watch</span>
+                @endif
               </div>
 
               @if ($movie->description)
@@ -83,12 +86,20 @@
               {{-- Watch button --}}
               <div class="flex flex-wrap gap-3 mb-10">
                 @if ($movie->videoIsReady())
-                  <a href="{{ route('movies.watch', $movie) }}"
-                    onclick="event.preventDefault(); watchOrLogin(this.href)"
-                    class="inline-flex items-center gap-x-3 font-bold leading-none uppercase py-4 px-8 text-sm text-gray-900 bg-accent hover:bg-accent/90 transition-colors">
-                    <svg class="h-4 w-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                    Watch Full Movie
-                  </a>
+                  @if ($movie->is_free)
+                    <a href="{{ route('movies.watch', $movie) }}"
+                      class="inline-flex items-center gap-x-3 font-bold leading-none uppercase py-4 px-8 text-sm text-gray-900 bg-accent hover:bg-accent/90 transition-colors">
+                      <svg class="h-4 w-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                      Watch Free
+                    </a>
+                  @else
+                    <a href="{{ route('movies.watch', $movie) }}"
+                      onclick="event.preventDefault(); watchOrLogin(this.href)"
+                      class="inline-flex items-center gap-x-3 font-bold leading-none uppercase py-4 px-8 text-sm text-gray-900 bg-accent hover:bg-accent/90 transition-colors">
+                      <svg class="h-4 w-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                      Watch Full Movie
+                    </a>
+                  @endif
                 @else
                   <div class="inline-flex items-center gap-x-3 py-3 px-5 bg-gray-100 dark:bg-gray-700">
                     <svg class="h-4 w-4 fill-gray-400 animate-spin" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z" opacity=".3"/><path d="M12 2v4a8 8 0 0 1 8 8h4A12 12 0 0 0 12 2z"/></svg>

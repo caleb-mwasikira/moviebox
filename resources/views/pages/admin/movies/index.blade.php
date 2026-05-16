@@ -38,6 +38,9 @@
             <p class="font-bold text-gray-900 dark:text-white text-sm truncate">{{ $movie->title }}</p>
             <p class="text-xs text-gray-500 mt-0.5">{{ $movie->genre ?? '—' }} · {{ $movie->year ?? '—' }}</p>
             <div class="flex flex-wrap items-center gap-2 mt-2">
+              @if ($movie->is_free)
+                <span class="text-[10px] font-bold uppercase px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Free</span>
+              @endif
               <form method="POST" action="{{ route('admin.movies.toggle-status', $movie) }}">
                 @csrf @method('PATCH')
                 <button type="submit"
@@ -99,7 +102,12 @@
                 @else
                   <div class="w-10 h-14 bg-gray-100 dark:bg-gray-700 shrink-0"></div>
                 @endif
-                <span class="font-bold text-gray-900 dark:text-white">{{ $movie->title }}</span>
+                <div>
+                  <span class="font-bold text-gray-900 dark:text-white">{{ $movie->title }}</span>
+                  @if ($movie->is_free)
+                    <span class="ml-2 text-[10px] font-bold uppercase px-1.5 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Free</span>
+                  @endif
+                </div>
               </div>
             </td>
             <td class="py-4 pr-4 text-gray-500 dark:text-gray">{{ $movie->genre ?? '—' }}</td>

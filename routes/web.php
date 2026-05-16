@@ -103,6 +103,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::delete('seasons/{season}', [AdminSeasonController::class, 'destroy'])->name('seasons.destroy');
 
     Route::post('seasons/{season}/episodes', [AdminEpisodeController::class, 'store'])->name('episodes.store');
+    Route::put('episodes/{episode}', [AdminEpisodeController::class, 'update'])->name('episodes.update');
+    Route::patch('episodes/{episode}/toggle-free', [AdminEpisodeController::class, 'toggleFree'])->name('episodes.toggle-free');
     Route::post('episodes/{episode}/video', [AdminEpisodeController::class, 'updateVideo'])->name('episodes.video');
     Route::delete('episodes/{episode}', [AdminEpisodeController::class, 'destroy'])->name('episodes.destroy');
 

@@ -44,6 +44,14 @@
         <option value="published" {{ old('status') === 'published' ? 'selected' : '' }}>Published</option>
       </select>
     </div>
+
+    <div class="sm:col-span-2 flex items-center gap-x-3">
+      <input type="checkbox" name="is_free" id="is_free" value="1" {{ old('is_free') ? 'checked' : '' }}
+        class="w-4 h-4 accent-accent cursor-pointer">
+      <label for="is_free" class="text-sm font-bold text-gray-700 dark:text-gray-300 cursor-pointer">
+        Free to watch <span class="font-normal text-gray-500">(no login required)</span>
+      </label>
+    </div>
   </div>
 
   <div>

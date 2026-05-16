@@ -17,7 +17,14 @@ class SeriesController extends Controller
             $query->where('genre', $request->genre);
         }
 
-        $series = $query->latest()->paginate(12)->withQueryString();
+        if ($request->boolean('free')) {
+            $query->whereHas('episodes', fn ($q) => $q->where('is_free', true));
+        }
+
+        $series = $query
+            ->withCount(['episodes as free_episodes_count' => fn ($q) => $q->where('is_free', true)])
+            ->latest()->paginate(12)->withQueryString();
+
         $genres = Series::where('status', 'published')
             ->distinct()
             ->orderBy('genre')

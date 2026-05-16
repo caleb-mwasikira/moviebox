@@ -17,6 +17,7 @@ class SeriesController extends Controller
     {
         $series = Series::withCount('seasons')
             ->withCount(['episodes as unprocessed_count' => fn ($q) => $q->whereNull('streaming_path')])
+            ->withCount(['episodes as free_episodes_count' => fn ($q) => $q->where('is_free', true)])
             ->latest()
             ->paginate(20);
         return view('pages.admin.series.index', compact('series'));

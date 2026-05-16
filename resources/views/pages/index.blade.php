@@ -387,6 +387,11 @@
                 <span class="absolute top-1/2 left-1/2 flex aspect-square -translate-x-2/4 -translate-y-2/4 items-center justify-center w-10">
                   <svg class="fill-white w-6 ml-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                 </span>
+                @if ($fm->is_free)
+                <div class="absolute top-3 right-3">
+                  <span class="bg-green-500 text-white text-[10px] font-bold uppercase px-2 py-0.5 tracking-wider">Free</span>
+                </div>
+                @endif
                 <div class="absolute flex inset-x-5 xl:inset-x-6 bottom-5 xl:bottom-6 gap-x-3 items-end">
                   <div class="flex-1 leading-tight min-w-0">
                     <h6 class="font-bold text-white truncate w-full">{{ $fm->title }}</h6>

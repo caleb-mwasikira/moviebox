@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('video_path');
             $table->string('streaming_path')->nullable();
             $table->unsignedSmallInteger('duration')->nullable();
+            $table->boolean('is_free')->default(false);
             $table->timestamps();
 
             $table->unique(['season_id', 'episode_number']);

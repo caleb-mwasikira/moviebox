@@ -91,10 +91,13 @@
                 @else
                   <div class="divide-y divide-gray-100 dark:divide-gray-700">
                     @foreach ($season->episodes as $episode)
-                    <div class="flex w-full items-start justify-between gap-x-4 px-5 py-4">
+                    <div class="flex w-full items-start justify-between gap-x-4 px-5 py-4 {{ $episode->is_free ? 'border-l-2 border-green-500' : '' }}">
                       <div class="flex-1 min-w-0">
-                        <div class="font-bold text-gray-900 dark:text-white text-sm leading-tight mb-0.5">
-                          {{ $episode->label() }}
+                        <div class="flex items-center gap-x-2 mb-0.5">
+                          <span class="font-bold text-gray-900 dark:text-white text-sm leading-tight">{{ $episode->label() }}</span>
+                          @if ($episode->is_free)
+                            <span class="bg-green-500 text-white text-[10px] font-bold uppercase px-1.5 py-0.5 tracking-wider shrink-0">Free</span>
+                          @endif
                         </div>
                         @if ($episode->description)
                         <div class="text-xs text-gray-500 leading-snug line-clamp-2">{{ $episode->description }}</div>
@@ -105,12 +108,20 @@
                           <span class="text-xs text-gray-500 font-bold">{{ $episode->duration }} min</span>
                         @endif
                         @if ($episode->videoIsReady())
-                          <a href="{{ route('series.watch', [$series, $episode]) }}"
-                            onclick="event.preventDefault(); watchOrLogin(this.href)"
-                            class="inline-flex items-center justify-center w-8 h-8 bg-accent text-gray-900 hover:bg-accent/90 transition-colors"
-                            title="Watch">
-                            <svg class="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                          </a>
+                          @if ($episode->is_free)
+                            <a href="{{ route('series.watch', [$series, $episode]) }}"
+                              class="inline-flex items-center gap-x-2 font-bold leading-none uppercase py-2 px-4 text-xs text-white bg-green-500 hover:bg-green-600 transition-colors">
+                              <svg class="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                              Watch Free
+                            </a>
+                          @else
+                            <a href="{{ route('series.watch', [$series, $episode]) }}"
+                              onclick="event.preventDefault(); watchOrLogin(this.href)"
+                              class="inline-flex items-center justify-center w-8 h-8 bg-accent text-gray-900 hover:bg-accent/90 transition-colors"
+                              title="Watch">
+                              <svg class="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            </a>
+                          @endif
                         @else
                           <span class="text-xs text-gray-400 font-bold uppercase">Processing</span>
                         @endif

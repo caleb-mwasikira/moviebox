@@ -14,12 +14,15 @@
             <h1 class="text-2xl font-bold tracking-tighter text-gray-900 before:text-accent before:content-['.'] dark:text-white sm:text-3xl md:text-4xl">Movies</h1>
           </div>
 
-          @if ($genres->isNotEmpty())
           <nav>
             <ul class="flex flex-wrap gap-x-4 lg:gap-x-7 text-sm lg:text-base font-bold">
               <li>
-                <a class="transition-colors {{ !request('genre') ? 'text-accent' : 'text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent' }}"
+                <a class="transition-colors {{ !request('genre') && !request('free') ? 'text-accent' : 'text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent' }}"
                   href="{{ route('movies') }}">All</a>
+              </li>
+              <li>
+                <a class="transition-colors {{ request('free') ? 'text-green-500' : 'text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent' }}"
+                  href="{{ route('movies', ['free' => 1]) }}">Free</a>
               </li>
               @foreach ($genres as $genre)
               <li>
@@ -29,7 +32,6 @@
               @endforeach
             </ul>
           </nav>
-          @endif
 
         </div>
 
@@ -56,6 +58,11 @@
                     <svg class="h-4 w-4 fill-white" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
                   </div>
                 </div>
+                @if ($movie->is_free)
+                <div class="absolute top-2 right-2">
+                  <span class="bg-green-500 text-white text-[10px] font-bold uppercase px-2 py-0.5 tracking-wider">Free</span>
+                </div>
+                @endif
               </a>
             </figure>
             <div>

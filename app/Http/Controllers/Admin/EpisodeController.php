@@ -21,6 +21,7 @@ class EpisodeController extends Controller
             'title'          => ['required', 'string', 'max:255'],
             'description'    => ['nullable', 'string'],
             'duration'       => ['nullable', 'integer', 'min:1'],
+            'is_free'        => ['nullable', 'boolean'],
             'video'          => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
         ]);
 
@@ -35,6 +36,7 @@ class EpisodeController extends Controller
             'title'          => $validated['title'],
             'description'    => $validated['description'] ?? null,
             'duration'       => $validated['duration'] ?? null,
+            'is_free'        => $request->boolean('is_free'),
             'video_path'     => $finalPath,
         ]);
 
@@ -62,6 +64,33 @@ class EpisodeController extends Controller
         return redirect()
             ->route('admin.series.edit', $series)
             ->with('status', 'episode-processing');
+    }
+
+    public function toggleFree(Episode $episode)
+    {
+        $episode->update(['is_free' => !$episode->is_free]);
+        return response()->json(['is_free' => $episode->is_free]);
+    }
+
+    public function update(Request $request, Episode $episode)
+    {
+        $request->validate([
+            'title'       => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'duration'    => ['nullable', 'integer', 'min:1'],
+            'is_free'     => ['nullable', 'boolean'],
+        ]);
+
+        $episode->update([
+            'title'       => $request->input('title'),
+            'description' => $request->input('description'),
+            'duration'    => $request->input('duration'),
+            'is_free'     => $request->boolean('is_free'),
+        ]);
+
+        return redirect()
+            ->route('admin.series.edit', $episode->season->series)
+            ->with('status', 'episode-saved');
     }
 
     public function updateVideo(Request $request, Episode $episode)

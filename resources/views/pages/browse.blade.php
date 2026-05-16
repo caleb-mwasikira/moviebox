@@ -108,6 +108,11 @@
                   <span class="bg-primary text-white text-[10px] font-bold uppercase px-2 py-0.5">Series</span>
                 </div>
                 @endif
+                @if (!empty($item->is_free))
+                <div class="absolute top-2 right-2">
+                  <span class="bg-green-500 text-white text-[10px] font-bold uppercase px-2 py-0.5 tracking-wider">Free</span>
+                </div>
+                @endif
                 <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all bg-accent/80 duration-300">
                   <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 aspect-square bg-gray-900 grid place-items-center text-white scale-90 group-hover:scale-100 transition-all duration-300">
                     <svg class="h-4 w-4 fill-white" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
