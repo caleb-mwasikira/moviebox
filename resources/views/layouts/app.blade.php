@@ -189,6 +189,12 @@
                     </a>
                   </li>
                   <li class="px-5.5">
+                    <a class="flex flex-row-reverse items-center justify-between py-1.5 text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent"
+                      href="{{ route('profiles.select') }}">
+                      Switch Profile
+                    </a>
+                  </li>
+                  <li class="px-5.5">
                     <form method="POST" action="{{ route('logout') }}">
                       @csrf
                       <button type="submit"

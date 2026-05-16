@@ -39,6 +39,12 @@
         <p class="text-sm text-gray-500">Login to continue watching.</p>
       </div>
 
+      @if (session('status'))
+        <div class="mb-6 border border-accent/60 bg-accent/10 px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">
+          {{ session('status') }}
+        </div>
+      @endif
+
       @if (session('banned'))
         <div id="banned-toast"
              class="mb-6 flex items-start justify-between gap-x-3 border border-red-500 bg-red-500/10 px-4 py-3">

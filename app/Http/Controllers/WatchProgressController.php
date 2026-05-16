@@ -18,6 +18,12 @@ class WatchProgressController extends Controller
             'duration' => ['required', 'numeric', 'min:0'],
         ]);
 
+        $profileId = session('active_profile_id');
+
+        if (! $profileId) {
+            return response()->json(['ok' => false, 'reason' => 'no_profile'], 422);
+        }
+
         $model = match ($data['type']) {
             'movie'   => Movie::where('uuid', $data['uuid'])->firstOrFail(),
             'episode' => Episode::where('uuid', $data['uuid'])->firstOrFail(),
@@ -25,11 +31,12 @@ class WatchProgressController extends Controller
 
         WatchProgress::updateOrCreate(
             [
-                'user_id'        => $request->user()->id,
+                'profile_id'     => $profileId,
                 'watchable_type' => $data['type'],
                 'watchable_id'   => $model->id,
             ],
             [
+                'user_id'    => $request->user()->id,
                 'position'   => $data['position'],
                 'duration'   => $data['duration'],
                 'watched_at' => now(),
@@ -41,7 +48,13 @@ class WatchProgressController extends Controller
 
     public function index(Request $request)
     {
-        $items = WatchProgress::where('user_id', $request->user()->id)
+        $profileId = session('active_profile_id');
+
+        $query = $profileId
+            ? WatchProgress::where('profile_id', $profileId)
+            : WatchProgress::where('user_id', $request->user()->id)->whereNull('profile_id');
+
+        $items = $query
             ->where('position', '>=', 30)
             ->orderByDesc('watched_at')
             ->limit(24)

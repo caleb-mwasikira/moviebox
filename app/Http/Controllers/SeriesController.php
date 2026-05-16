@@ -41,9 +41,10 @@ class SeriesController extends Controller
         abort_unless($series->isPublished(), 404);
         $series->load(['seasons.episodes', 'posters']);
 
-        $isWatchlisted = auth()->check()
+        $profileId     = session('active_profile_id');
+        $isWatchlisted = ($profileId && auth()->check())
             ? WatchlistItem::where([
-                'user_id'        => auth()->id(),
+                'profile_id'     => $profileId,
                 'watchable_type' => $series->getMorphClass(),
                 'watchable_id'   => $series->id,
             ])->exists()

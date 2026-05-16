@@ -47,7 +47,7 @@ class EmailVerificationController extends Controller
 
         DB::table('email_verification_tokens')->where('email', $user->email)->delete();
 
-        return redirect()->intended('/')->with('status', 'email-verified');
+        return redirect()->route('profiles.select')->with('status', 'email-verified');
     }
 
     public function resend(Request $request)

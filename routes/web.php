@@ -27,6 +27,9 @@ use App\Http\Controllers\Auth\VerifyOtpController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\VideoCallbackController;
+use App\Http\Controllers\AccountProfileController;
+use App\Http\Controllers\ProfileInviteController;
+use App\Http\Controllers\ProfileSelectionController;
 use App\Http\Controllers\WatchlistController;
 use App\Http\Controllers\WatchProgressController;
 use Illuminate\Support\Facades\Route;
@@ -48,10 +51,18 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [LogoutController::class, 'destroy'])->name('logout')->middleware('auth');
 
 // Email verification (auth required, verified NOT required)
+// Invite routes — open to guests (account creation happens here)
+Route::get('/profiles/invite/{token}', [ProfileInviteController::class, 'show'])->name('profiles.invite');
+Route::post('/profiles/invite/{token}', [ProfileInviteController::class, 'accept'])->name('profiles.invite.accept');
+
 Route::middleware('auth')->group(function () {
     Route::get('/email/verify', [EmailVerificationController::class, 'show'])->name('verification.notice');
     Route::post('/email/verify', [EmailVerificationController::class, 'verify'])->name('verification.verify');
     Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->name('verification.send');
+
+    // Profile selection (auth only, no verified requirement)
+    Route::get('/profiles', [ProfileSelectionController::class, 'show'])->name('profiles.select');
+    Route::post('/profiles/select', [ProfileSelectionController::class, 'select'])->name('profiles.select.post');
 });
 
 // Internal callbacks from Go streaming service — no auth, CSRF-exempt via bootstrap/app.php
@@ -95,6 +106,15 @@ Route::middleware(['auth', 'verified'])->prefix('account')->name('account.')->gr
     Route::post('update-subscription-plan/{newPackage}', [AccountController::class, 'updateSubscriptionPlan'])->name('update-plan');
     Route::get('watching', [WatchProgressController::class, 'index'])->name('watching');
     Route::get('watchlist', [WatchlistController::class, 'index'])->name('watchlist');
+    Route::get('profiles', [AccountProfileController::class, 'index'])->name('profiles');
+    Route::get('profiles/invite', [AccountProfileController::class, 'createInvite'])->name('profiles.create-invite');
+    Route::post('profiles', [AccountProfileController::class, 'store'])->name('profiles.store');
+    Route::patch('profiles/{profile}/activate', [AccountProfileController::class, 'activate'])->name('profiles.activate');
+    Route::patch('profiles/{profile}/enable', [AccountProfileController::class, 'enable'])->name('profiles.enable');
+    Route::patch('profiles/{profile}/disable', [AccountProfileController::class, 'disable'])->name('profiles.disable');
+    Route::post('profiles/{profile}/resend-invite', [AccountProfileController::class, 'resendInvite'])->name('profiles.resend-invite');
+    Route::patch('profiles/{profile}/own', [AccountProfileController::class, 'updateOwn'])->name('profiles.update-own');
+    Route::delete('profiles/{profile}', [AccountProfileController::class, 'destroy'])->name('profiles.destroy');
 });
 
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {

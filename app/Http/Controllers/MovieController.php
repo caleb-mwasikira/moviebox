@@ -37,9 +37,10 @@ class MovieController extends Controller
         abort_unless($movie->isPublished(), 404);
         $movie->load('posters');
 
-        $isWatchlisted = auth()->check()
+        $profileId     = session('active_profile_id');
+        $isWatchlisted = ($profileId && auth()->check())
             ? WatchlistItem::where([
-                'user_id'        => auth()->id(),
+                'profile_id'     => $profileId,
                 'watchable_type' => $movie->getMorphClass(),
                 'watchable_id'   => $movie->id,
             ])->exists()
@@ -52,9 +53,10 @@ class MovieController extends Controller
     {
         abort_unless($movie->isPublished() && $movie->videoIsReady(), 404);
 
-        $savedPosition = auth()->check()
+        $profileId     = session('active_profile_id');
+        $savedPosition = ($profileId && auth()->check())
             ? WatchProgress::where([
-                'user_id'        => auth()->id(),
+                'profile_id'     => $profileId,
                 'watchable_type' => 'movie',
                 'watchable_id'   => $movie->id,
             ])->value('position')

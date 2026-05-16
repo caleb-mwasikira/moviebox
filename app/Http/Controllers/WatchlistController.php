@@ -16,12 +16,15 @@ class WatchlistController extends Controller
 
     public function index(Request $request)
     {
-        $items = $request->user()
-            ->watchlistItems()
-            ->with('watchable.posters')
-            ->latest('created_at')
-            ->get()
-            ->filter(fn ($item) => $item->watchable !== null);
+        $profileId = session('active_profile_id');
+
+        $items = $profileId
+            ? WatchlistItem::where('profile_id', $profileId)
+                ->with('watchable.posters')
+                ->latest('created_at')
+                ->get()
+                ->filter(fn($item) => $item->watchable !== null)
+            : collect();
 
         return view('pages.account.watchlist', compact('items'));
     }
@@ -30,13 +33,15 @@ class WatchlistController extends Controller
     {
         abort_unless(isset(self::TYPES[$type]), 404);
 
-        $modelClass = self::TYPES[$type];
-        $model      = $modelClass::findOrFail($id);
-        $user       = $request->user();
+        $profileId = session('active_profile_id');
+        abort_unless($profileId, 422);
+
+        $model      = self::TYPES[$type]::findOrFail($id);
+        $morphClass = $model->getMorphClass();
 
         $existing = WatchlistItem::where([
-            'user_id'        => $user->id,
-            'watchable_type' => $model->getMorphClass(),
+            'profile_id'     => $profileId,
+            'watchable_type' => $morphClass,
             'watchable_id'   => $model->id,
         ])->first();
 
@@ -45,8 +50,9 @@ class WatchlistController extends Controller
             $watchlisted = false;
         } else {
             WatchlistItem::create([
-                'user_id'        => $user->id,
-                'watchable_type' => $model->getMorphClass(),
+                'user_id'        => $request->user()->id,
+                'profile_id'     => $profileId,
+                'watchable_type' => $morphClass,
                 'watchable_id'   => $model->id,
                 'created_at'     => now(),
             ]);

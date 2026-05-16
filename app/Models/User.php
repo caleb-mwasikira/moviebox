@@ -64,6 +64,22 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(UserSubscriptions::class);
     }
 
+    public function profiles(): HasMany
+    {
+        return $this->hasMany(Profile::class);
+    }
+
+    public function activeProfile(): ?Profile
+    {
+        $id = session('active_profile_id');
+        return $id ? $this->profiles()->find($id) : null;
+    }
+
+    public function maxProfiles(): int
+    {
+        return $this->currentSubscription?->package?->max_screens ?? 1;
+    }
+
     public function watchlistItems(): HasMany
     {
         return $this->hasMany(WatchlistItem::class);

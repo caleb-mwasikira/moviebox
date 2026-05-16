@@ -28,6 +28,12 @@
       <h3 class="text-2xl xl:text-3xl font-bold text-gray-900 dark:text-white mb-1">Login</h3>
       <p class="text-sm text-gray-500 dark:text-gray mb-8">Enter your credentials to access your account.</p>
 
+      @if (session('status'))
+        <div class="mb-6 border border-accent bg-accent/10 px-4 py-3 text-sm text-gray-900 dark:text-white font-medium">
+          {{ session('status') }}
+        </div>
+      @endif
+
       @if ($errors->any())
         <div class="mb-6 border border-danger bg-danger/10 px-4 py-3 text-sm text-danger font-medium">
           {{ $errors->first() }}
