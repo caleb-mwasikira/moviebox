@@ -19,25 +19,13 @@
                 </a>
               </li>
               <li>
-                <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.personal-info') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                  href="{{ route('account.personal-info') }}">
-                  Personal Info
-                </a>
-              </li>
-              <li>
                 @php $activeProfile = auth()->user()->activeProfile(); @endphp
-                <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.profiles') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                  href="{{ route('account.profiles') }}">
-                  Profiles
+                <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.profile') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                  href="{{ route('account.profile') }}">
+                  My Profile
                   @if ($activeProfile)
                     <span class="text-xs font-normal text-gray-400 ml-1">({{ $activeProfile->name }})</span>
                   @endif
-                </a>
-              </li>
-              <li>
-                <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent text-gray-900 dark:text-white"
-                  href="{{ route('profiles.select') }}">
-                  Switch Profile
                 </a>
               </li>
               <li>

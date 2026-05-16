@@ -13,7 +13,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
-#[Fillable(['name', 'email', 'password', 'role', 'banned_at'])]
+#[Fillable(['name', 'email', 'password', 'role', 'banned_at', 'avatar_path'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -37,6 +37,13 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function avatarUrl(): ?string
+    {
+        return $this->avatar_path
+            ? asset('storage/' . $this->avatar_path)
+            : null;
     }
 
     public function initials(): string

@@ -181,24 +181,32 @@
                 </a>
 
                 <ul
-                  class="sub-menu invisible absolute right-full z-20 -mr-9 flex w-40 origin-top-right flex-col bg-white dark:bg-gray-700 py-3 text-sm font-bold opacity-0 shadow-2xl transition-all">
+                  class="sub-menu invisible absolute right-full z-20 -mr-9 flex w-44 origin-top-right flex-col bg-white dark:bg-gray-700 py-3 text-sm font-bold opacity-0 shadow-2xl transition-all">
                   <li class="px-5.5">
                     <a class="flex flex-row-reverse items-center justify-between py-1.5 text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent"
-                      href="{{ route('account.dashboard') }}">
-                      Account
-                    </a>
+                      href="{{ route('account.profile') }}">My Profile</a>
                   </li>
                   <li class="px-5.5">
                     <a class="flex flex-row-reverse items-center justify-between py-1.5 text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent"
-                      href="{{ route('profiles.select') }}">
-                      Switch Profile
-                    </a>
+                      href="{{ route('account.watching') }}">Continue Watching</a>
+                  </li>
+                  <li class="px-5.5">
+                    <a class="flex flex-row-reverse items-center justify-between py-1.5 text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent"
+                      href="{{ route('account.watchlist') }}">My Watchlist</a>
+                  </li>
+                  <li class="px-5.5">
+                    <a class="flex flex-row-reverse items-center justify-between py-1.5 text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent"
+                      href="{{ route('account.billing') }}">Billing</a>
+                  </li>
+                  <li class="px-5.5 mt-1 pt-1 border-t border-gray-100 dark:border-gray-600">
+                    <a class="flex flex-row-reverse items-center justify-between py-1.5 text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent"
+                      href="{{ route('profiles.select') }}">Switch Profile</a>
                   </li>
                   <li class="px-5.5">
                     <form method="POST" action="{{ route('logout') }}">
                       @csrf
                       <button type="submit"
-                        class="flex flex-row-reverse items-center justify-between py-1.5 text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent w-full text-left cursor-pointer">
+                        class="flex flex-row-reverse items-center justify-between py-1.5 text-gray-500 dark:text-gray-400 transition-colors hover:text-red-500 dark:hover:text-red-400 w-full text-left cursor-pointer">
                         Logout
                       </button>
                     </form>
@@ -482,20 +490,24 @@
           <p class="mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">My Account</p>
           <ul class="flex flex-col font-bold">
             <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
-              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.dashboard') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('account.dashboard') }}">Dashboard</a>
-            </li>
-            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
-              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.personal-info') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('account.personal-info') }}">Personal Info</a>
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.profile') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('account.profile') }}">My Profile</a>
             </li>
             <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
               <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.watching') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('account.watching') }}">Continue Watching</a>
             </li>
-            <li class="flex items-center">
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.watchlist') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('account.watchlist') }}">My Watchlist</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
               <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.billing') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('account.billing') }}">Billing Details</a>
+            </li>
+            <li class="flex items-center">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent text-gray-900 dark:text-white"
+                href="{{ route('profiles.select') }}">Switch Profile</a>
             </li>
           </ul>
           @else

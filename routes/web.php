@@ -100,15 +100,17 @@ Route::middleware(['auth', 'verified'])->post('/watchlist/{type}/{id}', [Watchli
 
 Route::middleware(['auth', 'verified'])->prefix('account')->name('account.')->group(function () {
     Route::view('/', 'pages.account.index')->name('dashboard');
-    Route::get('personal-info', [AccountController::class, 'personalInfo'])->name('personal-info');
+    Route::get('profile', [AccountController::class, 'profile'])->name('profile');
+    Route::post('profile/avatar', [AccountController::class, 'updateAvatar'])->name('profile.avatar');
+    Route::delete('profile/avatar', [AccountController::class, 'removeAvatar'])->name('profile.avatar.remove');
+    Route::get('personal-info', fn() => redirect()->route('account.profile'))->name('personal-info');
     Route::put('personal-info', [AccountController::class, 'updatePersonalInfo'])->name('personal-info.update');
     Route::put('password', [AccountController::class, 'updatePassword'])->name('password.update');
     Route::get('billing', [AccountController::class, 'billingDetails'])->name('billing');
     Route::post('update-subscription-plan/{newPackage}', [AccountController::class, 'updateSubscriptionPlan'])->name('update-plan');
     Route::get('watching', [WatchProgressController::class, 'index'])->name('watching');
     Route::get('watchlist', [WatchlistController::class, 'index'])->name('watchlist');
-    Route::get('profiles', [AccountProfileController::class, 'index'])->name('profiles');
-    Route::get('profiles/invite', [AccountProfileController::class, 'createInvite'])->name('profiles.create-invite');
+    Route::get('profiles', fn() => redirect()->route('account.profile'))->name('profiles');
     Route::post('profiles', [AccountProfileController::class, 'store'])->name('profiles.store');
     Route::patch('profiles/{profile}/activate', [AccountProfileController::class, 'activate'])->name('profiles.activate');
     Route::patch('profiles/{profile}/enable', [AccountProfileController::class, 'enable'])->name('profiles.enable');
