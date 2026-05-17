@@ -34,7 +34,8 @@
         </div>
       @endif
 
-      <form method="POST" action="{{ route('password.update') }}" class="flex flex-col gap-y-5">
+      <form method="POST" action="{{ route('password.update') }}" class="flex flex-col gap-y-5"
+        x-data="{ loading: false }" @submit="loading = true">
         @csrf
 
         <input type="hidden" name="token" value="{{ $request->route('token') }}">
@@ -73,9 +74,13 @@
         </div>
 
         <div class="pt-2">
-          <button type="submit"
-            class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-4 px-8 text-sm text-gray-900 bg-accent hover:bg-accent/90 w-full">
-            Reset Password
+          <button type="submit" :disabled="loading"
+            class="inline-flex items-center text-center font-bold leading-none transition-colors uppercase justify-center gap-x-2 py-4 px-8 text-sm text-gray-900 bg-accent hover:bg-accent/90 w-full disabled:opacity-60 disabled:cursor-not-allowed">
+            <svg x-show="loading" class="animate-spin h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+            <span x-text="loading ? 'Please wait…' : 'Reset Password'"></span>
           </button>
         </div>
       </form>

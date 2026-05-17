@@ -74,11 +74,16 @@
             <span class="font-semibold text-gray-700 dark:text-gray-200">{{ $package->name }}</span>
             plan instantly.
           </p>
-          <form method="POST" action="{{ route('payment.activate-free', $package->uuid) }}">
+          <form method="POST" action="{{ route('payment.activate-free', $package->uuid) }}"
+            x-data="{ loading: false }" @submit="loading = true">
             @csrf
-            <button type="submit"
-              class="inline-flex items-center justify-center gap-x-2 font-bold uppercase tracking-wide py-3.5 px-10 text-sm bg-gray-900 hover:bg-accent hover:text-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-accent transition-colors">
-              Activate Now — It's Free
+            <button type="submit" :disabled="loading"
+              class="inline-flex items-center justify-center gap-x-2 font-bold uppercase tracking-wide py-3.5 px-10 text-sm bg-gray-900 hover:bg-accent hover:text-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-accent transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+              <svg x-show="loading" class="animate-spin h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              <span x-text="loading ? 'Activating…' : 'Activate Now — It\'s Free'"></span>
             </button>
           </form>
         </div>

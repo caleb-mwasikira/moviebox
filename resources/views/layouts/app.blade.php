@@ -186,38 +186,79 @@
                   </svg>
                 </a>
 
-                <ul
-                  class="sub-menu invisible absolute right-full z-20 -mr-9 flex w-44 origin-top-right flex-col bg-white dark:bg-gray-700 py-3 text-sm font-bold opacity-0 shadow-2xl transition-all">
-                  <li class="px-5.5">
-                    <a class="flex flex-row-reverse items-center justify-between py-1.5 text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent"
-                      href="{{ route('account.profile') }}">My Profile</a>
-                  </li>
-                  <li class="px-5.5">
-                    <a class="flex flex-row-reverse items-center justify-between py-1.5 text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent"
-                      href="{{ route('account.watching') }}">Continue Watching</a>
-                  </li>
-                  <li class="px-5.5">
-                    <a class="flex flex-row-reverse items-center justify-between py-1.5 text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent"
-                      href="{{ route('account.watchlist') }}">My Watchlist</a>
-                  </li>
-                  <li class="px-5.5">
-                    <a class="flex flex-row-reverse items-center justify-between py-1.5 text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent"
-                      href="{{ route('account.billing') }}">Billing</a>
-                  </li>
-                  <li class="px-5.5 mt-1 pt-1 border-t border-gray-100 dark:border-gray-600">
-                    <a class="flex flex-row-reverse items-center justify-between py-1.5 text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent"
-                      href="{{ route('profiles.select') }}">Switch Profile</a>
-                  </li>
-                  <li class="px-5.5">
+                <div class="sub-menu invisible absolute right-full z-20 -mr-9 w-60 origin-top-right bg-white dark:bg-gray-800 opacity-0 shadow-2xl ring-1 ring-black/[0.06] dark:ring-white/[0.08] transition-all flex flex-col">
+
+                  {{-- User info --}}
+                  <div class="px-4 py-3.5 border-b border-gray-600 dark:border-gray-700 flex items-center gap-x-3">
+                    @if(auth()->user()->avatarUrl())
+                      <img src="{{ auth()->user()->avatarUrl() }}" alt=""
+                        class="w-9 h-9 rounded-full object-cover shrink-0 ring-2 ring-accent/30">
+                    @else
+                      <div class="w-9 h-9 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
+                        <span class="text-xs font-black text-accent">{{ auth()->user()->initials() }}</span>
+                      </div>
+                    @endif
+                    <div class="min-w-0">
+                      <p class="text-sm font-bold text-gray-600 dark:text-gray-600 truncate leading-tight">{{ auth()->user()->name }}</p>
+                      <p class="text-[11px] text-gray-600 truncate mt-0.5">{{ auth()->user()->email }}</p>
+                    </div>
+                  </div>
+
+                  {{-- Nav links --}}
+                  <div class="py-1.5">
+                    <a href="{{ route('account.profile') }}"
+                      class="flex items-center gap-x-3 px-4 py-2 text-xs font-bold uppercase tracking-wide text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-accent dark:hover:text-accent transition-colors">
+                      <svg class="w-4 h-4 shrink-0 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                      </svg>
+                      My Profile
+                    </a>
+                    <a href="{{ route('account.watching') }}"
+                      class="flex items-center gap-x-3 px-4 py-2 text-xs font-bold uppercase tracking-wide text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-accent dark:hover:text-accent transition-colors">
+                      <svg class="w-4 h-4 shrink-0 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                      </svg>
+                      Continue Watching
+                    </a>
+                    <a href="{{ route('account.watchlist') }}"
+                      class="flex items-center gap-x-3 px-4 py-2 text-xs font-bold uppercase tracking-wide text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-accent dark:hover:text-accent transition-colors">
+                      <svg class="w-4 h-4 shrink-0 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-5-7 5V5z"/>
+                      </svg>
+                      My Watchlist
+                    </a>
+                    <a href="{{ route('account.billing') }}"
+                      class="flex items-center gap-x-3 px-4 py-2 text-xs font-bold uppercase tracking-wide text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-accent dark:hover:text-accent transition-colors">
+                      <svg class="w-4 h-4 shrink-0 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                      </svg>
+                      Billing
+                    </a>
+                  </div>
+
+                  {{-- Switch profile + logout --}}
+                  <div class="border-t border-gray-600 dark:border-gray-700 py-1.5">
+                    <a href="{{ route('profiles.select') }}"
+                      class="flex items-center gap-x-3 px-4 py-2 text-xs font-bold uppercase tracking-wide text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-accent dark:hover:text-accent transition-colors">
+                      <svg class="w-4 h-4 shrink-0 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                      </svg>
+                      Switch Profile
+                    </a>
                     <form method="POST" action="{{ route('logout') }}">
                       @csrf
                       <button type="submit"
-                        class="flex flex-row-reverse items-center justify-between py-1.5 text-gray-500 dark:text-gray-400 transition-colors hover:text-red-500 dark:hover:text-red-400 w-full text-left cursor-pointer">
-                        Logout
+                        class="flex items-center gap-x-3 px-4 py-2 text-xs font-bold uppercase tracking-wide text-gray-600 dark:text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 dark:hover:text-red-400 w-full transition-colors">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                        </svg>
+                        Sign Out
                       </button>
                     </form>
-                  </li>
-                </ul>
+                  </div>
+
+                </div>
 
               </div>
               @else

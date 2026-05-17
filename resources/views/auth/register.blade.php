@@ -39,7 +39,8 @@
         <p class="text-sm text-gray-500">Free to join. Cancel anytime.</p>
       </div>
 
-      <form method="POST" action="{{ route('register') }}" class="flex flex-col gap-y-5">
+      <form method="POST" action="{{ route('register') }}" class="flex flex-col gap-y-5"
+        x-data="{ loading: false }" @submit="loading = true">
         @csrf
 
         <div>
@@ -75,8 +76,13 @@
             type="password" name="password_confirmation" id="password_confirmation" autocomplete="new-password" required>
         </div>
 
-        <button type="submit" class="inline-flex justify-center items-center font-bold leading-none uppercase py-4 px-8 text-sm text-white bg-primary hover:bg-primary/90 transition-colors w-full">
-          Create Account
+        <button type="submit" :disabled="loading"
+          class="inline-flex justify-center items-center gap-x-2 font-bold leading-none uppercase py-4 px-8 text-sm text-white bg-primary hover:bg-primary/90 transition-colors w-full disabled:opacity-60 disabled:cursor-not-allowed">
+          <svg x-show="loading" class="animate-spin h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+          </svg>
+          <span x-text="loading ? 'Please wait…' : 'Create Account'"></span>
         </button>
       </form>
 

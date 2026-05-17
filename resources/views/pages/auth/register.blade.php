@@ -28,7 +28,8 @@
       <h3 class="text-2xl xl:text-3xl font-bold text-gray-900 dark:text-white mb-1">Create Account</h3>
       <p class="text-sm text-gray-500 dark:text-gray mb-8">Fill in the details below to get started.</p>
 
-      <form method="POST" action="{{ route('register') }}" class="flex flex-col gap-y-5">
+      <form method="POST" action="{{ route('register') }}" class="flex flex-col gap-y-5"
+        x-data="{ loading: false }" @submit="loading = true">
         @csrf
 
         <div>
@@ -77,9 +78,13 @@
         </div>
 
         <div class="pt-2">
-          <button type="submit"
-            class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-4 px-8 text-sm text-white bg-primary hover:bg-primary/90 w-full">
-            Create your account
+          <button type="submit" :disabled="loading"
+            class="inline-flex items-center text-center font-bold leading-none transition-colors uppercase justify-center gap-x-2 py-4 px-8 text-sm text-white bg-primary hover:bg-primary/90 w-full disabled:opacity-60 disabled:cursor-not-allowed">
+            <svg x-show="loading" class="animate-spin h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+            <span x-text="loading ? 'Please wait…' : 'Create your account'"></span>
           </button>
         </div>
 
