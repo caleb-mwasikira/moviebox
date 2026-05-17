@@ -106,14 +106,21 @@ class MpesaController extends Controller
         if ($resultCode === 0) {
             $meta = collect($stk['CallbackMetadata']['Item'] ?? [])->pluck('Value', 'Name');
 
-            $payment->update([
-                'status'               => 'paid',
-                'result_code'          => 0,
-                'result_desc'          => 'Success',
-                'mpesa_receipt_number' => $meta->get('MpesaReceiptNumber'),
-            ]);
+            // Atomic update: only proceed if the payment hasn't already been processed.
+            // This prevents duplicate M-Pesa callbacks from activating the subscription twice.
+            $affected = MpesaPayment::where('id', $payment->id)
+                ->where('status', '!=', 'paid')
+                ->update([
+                    'status'               => 'paid',
+                    'result_code'          => 0,
+                    'result_desc'          => 'Success',
+                    'mpesa_receipt_number' => $meta->get('MpesaReceiptNumber'),
+                ]);
 
-            $this->activateSubscription($payment);
+            if ($affected > 0) {
+                $payment->refresh();
+                $this->activateSubscription($payment);
+            }
         } else {
             $payment->update([
                 'status'      => 'failed',
@@ -147,12 +154,34 @@ class MpesaController extends Controller
         $package = $payment->package;
 
         try {
-            DB::transaction(function () use ($user, $package) {
-                $user->userSubscriptions()
+            $sub = DB::transaction(function () use ($user, $package) {
+                $interval = strtolower($package->interval);
+                $existing = $user->userSubscriptions()
                     ->where('status', 'active')
-                    ->update(['status' => 'expired', 'expires_at' => now()]);
+                    ->latest('id')
+                    ->first();
 
-                $expiresAt = match (strtolower($package->interval)) {
+                if ($existing) {
+                    // Stack the new period on top of whatever time is left.
+                    $base      = $existing->expires_at->isFuture() ? $existing->expires_at->copy() : now();
+                    $expiresAt = match ($interval) {
+                        'week'  => $base->addWeek(),
+                        'month' => $base->addMonth(),
+                        'year'  => $base->addYear(),
+                        default => $base->addMonth(),
+                    };
+
+                    $existing->update([
+                        'subscription_package_id' => $package->id,
+                        'expires_at'              => $expiresAt,
+                    ]);
+
+                    $existing->load('package');
+                    return $existing;
+                }
+
+                // No active subscription — create a fresh one from now.
+                $expiresAt = match ($interval) {
                     'week'  => now()->addWeek(),
                     'month' => now()->addMonth(),
                     'year'  => now()->addYear(),
@@ -161,17 +190,18 @@ class MpesaController extends Controller
 
                 $sub = $user->userSubscriptions()->create([
                     'subscription_package_id' => $package->id,
-                    'starts_at'  => now(),
-                    'expires_at' => $expiresAt,
-                    'status'     => 'active',
+                    'starts_at'               => now(),
+                    'expires_at'              => $expiresAt,
+                    'status'                  => 'active',
                 ]);
 
                 $sub->load('package');
-                Mail::to($user->email, $user->name)
-                    ->queue(new PaymentConfirmed($user, $payment));
-                Mail::to($user->email, $user->name)
-                    ->queue(new SubscriptionUpdated($user, $sub, 'renewed'));
+                return $sub;
             });
+
+            // Mail is outside the transaction so a send failure cannot roll back the subscription.
+            Mail::to($user->email, $user->name)->queue(new PaymentConfirmed($user, $payment));
+            Mail::to($user->email, $user->name)->queue(new SubscriptionUpdated($user, $sub, 'renewed'));
         } catch (\Exception $e) {
             Log::error("Failed to activate subscription for user {$user->id} after payment {$payment->id}: " . $e->getMessage());
         }

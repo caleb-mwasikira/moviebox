@@ -134,13 +134,16 @@
               @endif
             </ul>
 
-            <form action="{{ route('account.update-plan', $package->uuid) }}" method="POST">
-              @csrf
-              <button type="submit" {{ $isCurrent ? 'disabled' : '' }}
-                class="w-full inline-flex text-center font-bold leading-none transition-colors uppercase justify-center py-3 px-4 text-xs {{ $isCurrent ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-600' : 'bg-gray-900 hover:bg-accent hover:text-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-accent' }}">
-                {{ $isCurrent ? 'Active Plan' : 'Switch Plan' }}
-              </button>
-            </form>
+            @if ($isCurrent)
+              <span class="w-full inline-flex text-center font-bold leading-none uppercase justify-center py-3 px-4 text-xs bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-600">
+                Active Plan
+              </span>
+            @else
+              <a href="{{ route('payment.show', $package->uuid) }}"
+                class="w-full inline-flex text-center font-bold leading-none transition-colors uppercase justify-center py-3 px-4 text-xs bg-gray-900 hover:bg-accent hover:text-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-accent">
+                Switch Plan
+              </a>
+            @endif
           </div>
         @endforeach
       </div>
