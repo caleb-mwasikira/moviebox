@@ -90,6 +90,10 @@
                 href="{{ route('admin.payments.index') }}">Payments</a>
             </li>
             <li>
+              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.test-email.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.test-email.show') }}">Test Emails</a>
+            </li>
+            <li>
               @php $unreadContacts = \App\Models\Contact::unread()->count(); @endphp
               <a class="flex items-center gap-x-2 py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.contacts.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.contacts.index') }}">

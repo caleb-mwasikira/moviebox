@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\SubscriptionPackageController as AdminSubscriptio
 use App\Http\Controllers\Admin\ComingSoonController as AdminComingSoonController;
 use App\Http\Controllers\Admin\ContactController as AdminContactController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Admin\TestEmailController as AdminTestEmailController;
 use App\Http\Controllers\ComingSoonController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
@@ -188,6 +189,9 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::delete('coming-soon/{comingSoon}', [AdminComingSoonController::class, 'destroy'])->name('coming-soon.destroy');
 
     Route::get('payments', [AdminPaymentController::class, 'index'])->name('payments.index');
+
+    Route::get('test-email', [AdminTestEmailController::class, 'show'])->name('test-email.show');
+    Route::post('test-email', [AdminTestEmailController::class, 'send'])->name('test-email.send');
 
     Route::get('contacts', [AdminContactController::class, 'index'])->name('contacts.index');
     Route::get('contacts/{contact}', [AdminContactController::class, 'show'])->name('contacts.show');

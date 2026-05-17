@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\PaymentConfirmed;
 use App\Mail\SubscriptionUpdated;
 use App\Models\MpesaPayment;
 use App\Models\SubscriptionPackage;
@@ -166,6 +167,8 @@ class MpesaController extends Controller
                 ]);
 
                 $sub->load('package');
+                Mail::to($user->email, $user->name)
+                    ->queue(new PaymentConfirmed($user, $payment));
                 Mail::to($user->email, $user->name)
                     ->queue(new SubscriptionUpdated($user, $sub, 'renewed'));
             });
