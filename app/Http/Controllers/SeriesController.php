@@ -50,7 +50,14 @@ class SeriesController extends Controller
             ])->exists()
             : false;
 
-        return view('pages.series.show', compact('series', 'isWatchlisted'));
+        $related = Series::where('status', 'published')
+            ->where('id', '!=', $series->id)
+            ->when($series->genre, fn ($q) => $q->where('genre', $series->genre))
+            ->inRandomOrder()
+            ->limit(6)
+            ->get();
+
+        return view('pages.series.show', compact('series', 'isWatchlisted', 'related'));
     }
 
     public function watch(Series $series, Episode $episode)

@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\ComingSoonController as AdminComingSoonController
 use App\Http\Controllers\Admin\ContactController as AdminContactController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\TestEmailController as AdminTestEmailController;
+use App\Http\Controllers\Admin\ConvertController as AdminConvertController;
 use App\Http\Controllers\ComingSoonController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
@@ -180,6 +181,9 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::post('movies/{movie}/subtitles', [AdminSubtitleController::class, 'storeForMovie'])->name('movies.subtitles.store');
     Route::post('episodes/{episode}/subtitles', [AdminSubtitleController::class, 'storeForEpisode'])->name('episodes.subtitles.store');
     Route::delete('subtitles/{subtitle}', [AdminSubtitleController::class, 'destroy'])->name('subtitles.destroy');
+
+    Route::post('movies/{movie}/convert-to-episode', [AdminConvertController::class, 'movieToEpisode'])->name('movies.convert-to-episode');
+    Route::post('episodes/{episode}/convert-to-movie', [AdminConvertController::class, 'episodeToMovie'])->name('episodes.convert-to-movie');
 
     Route::resource('packages', AdminSubscriptionController::class);
     Route::post('packages/{uuid}/restore', [AdminSubscriptionController::class, 'restore'])->name('packages.restore');

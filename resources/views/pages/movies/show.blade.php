@@ -156,6 +156,25 @@
       </div>
     </div>
 
+    @if ($related->isNotEmpty())
+    <div class="pb-16 lg:pb-20 border-t border-gray-100 dark:border-gray-800">
+      <div class="container pt-10 lg:pt-14">
+        <div class="flex items-center justify-between gap-x-4 mb-6 lg:mb-8">
+          <h2 class="text-lg font-bold tracking-tight text-gray-900 dark:text-white">More Like This</h2>
+          <a href="{{ route('movies', ['genre' => $movie->genre]) }}"
+            class="shrink-0 text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-accent dark:hover:text-accent transition-colors">
+            View All →
+          </a>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5 md:gap-6">
+          @foreach ($related as $film)
+            <x-film-card :film="$film" type="movie" />
+          @endforeach
+        </div>
+      </div>
+    </div>
+    @endif
+
   </main>
 
   {{-- Trailer modal --}}

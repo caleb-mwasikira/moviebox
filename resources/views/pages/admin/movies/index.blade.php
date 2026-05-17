@@ -67,13 +67,6 @@
             @csrf @method('DELETE')
             <button type="submit" class="text-xs font-bold uppercase text-gray-500 hover:text-red-500 transition-colors">Delete</button>
           </form>
-          @unless ($movie->streaming_path)
-            <form method="POST" action="{{ route('admin.movies.reprocess', $movie) }}"
-              onsubmit="return confirm('Re-encode for HLS? This may take several minutes.')">
-              @csrf
-              <button type="submit" class="text-xs font-bold uppercase text-accent hover:text-accent/70 transition-colors">↺ Stream</button>
-            </form>
-          @endunless
         </div>
       </div>
     @endforeach
@@ -132,15 +125,6 @@
             </td>
             <td class="py-4 text-right">
               <div class="flex items-center justify-end gap-x-4">
-                @unless ($movie->streaming_path)
-                  <form data-reprocess-movie="{{ $movie->id }}"
-                    method="POST" action="{{ route('admin.movies.reprocess', $movie) }}"
-                    onsubmit="return confirm('Re-encode {{ addslashes($movie->title) }} for HLS streaming? This is CPU-intensive and may take several minutes.')">
-                    @csrf
-                    <button type="submit"
-                      class="font-bold text-accent hover:text-accent/70 transition-colors text-xs uppercase cursor-pointer">↺ Stream</button>
-                  </form>
-                @endunless
                 <a href="{{ route('admin.movies.edit', $movie) }}"
                   class="font-bold text-gray-900 dark:text-white hover:text-accent dark:hover:text-accent transition-colors text-xs uppercase">Edit</a>
                 <form method="POST" action="{{ route('admin.movies.destroy', $movie) }}"
@@ -152,21 +136,6 @@
               </div>
             </td>
           </tr>
-          @unless ($movie->streaming_path)
-            <tr id="progress-row-{{ $movie->id }}" style="display:none">
-              <td colspan="6" class="pb-3 pt-0 px-0">
-                <div class="flex items-center gap-x-3 px-4">
-                  <div class="flex-1 bg-gray-200 dark:bg-gray-700 h-1.5 overflow-hidden rounded-full">
-                    <div id="progress-bar-{{ $movie->id }}"
-                         class="h-full bg-accent rounded-full transition-[width] duration-300 ease-out"
-                         style="width:0%"></div>
-                  </div>
-                  <span id="progress-pct-{{ $movie->id }}"
-                        class="text-xs text-gray-500 dark:text-gray-400 tabular-nums w-10 text-right shrink-0">0%</span>
-                </div>
-              </td>
-            </tr>
-          @endunless
         @endforeach
       </tbody>
     </table>
@@ -176,44 +145,3 @@
 @endif
 @endsection
 
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  function showProgress(movieId, pct) {
-    const row = document.getElementById('progress-row-' + movieId);
-    if (!row) return;
-    row.style.display = '';
-    const bar = document.getElementById('progress-bar-' + movieId);
-    const txt = document.getElementById('progress-pct-' + movieId);
-    if (bar) bar.style.width = pct + '%';
-    if (txt) txt.textContent = pct + '%';
-  }
-
-  function markDone(movieId) {
-    const row = document.getElementById('progress-row-' + movieId);
-    if (row) row.style.display = 'none';
-    const form = document.querySelector('form[data-reprocess-movie="' + movieId + '"]');
-    if (form) form.remove();
-  }
-
-  fetch('{{ route("admin.encoding-status") }}', { credentials: 'same-origin' })
-    .then(r => r.json())
-    .then(data => {
-      (data.jobs || []).forEach(job => {
-        if (job.film_type === 'movies') showProgress(job.model_id, job.percentage);
-      });
-    })
-    .catch(() => {});
-
-  document.addEventListener('encoding-progress', function (e) {
-    const d = e.detail;
-    if (d.filmType === 'movies') showProgress(d.modelId, d.percentage);
-  });
-
-  document.addEventListener('video-ready', function (e) {
-    const d = e.detail;
-    if (d.filmType === 'movies') markDone(d.modelId);
-  });
-});
-</script>
-@endpush

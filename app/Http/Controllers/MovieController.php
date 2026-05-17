@@ -46,7 +46,14 @@ class MovieController extends Controller
             ])->exists()
             : false;
 
-        return view('pages.movies.show', compact('movie', 'isWatchlisted'));
+        $related = Movie::where('status', 'published')
+            ->where('id', '!=', $movie->id)
+            ->when($movie->genre, fn ($q) => $q->where('genre', $movie->genre))
+            ->inRandomOrder()
+            ->limit(6)
+            ->get();
+
+        return view('pages.movies.show', compact('movie', 'isWatchlisted', 'related'));
     }
 
     public function watch(Movie $movie)

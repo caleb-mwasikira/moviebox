@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Traits\TriggersHlsEncoding;
 use App\Jobs\SendNewContentAlerts;
 use App\Models\Movie;
+use App\Models\Series;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -111,7 +112,8 @@ class MovieController extends Controller
     public function edit(Movie $movie)
     {
         $movie->load('posters');
-        return view('pages.admin.movies.edit', compact('movie'));
+        $allSeries = Series::with('seasons')->orderBy('title')->get();
+        return view('pages.admin.movies.edit', compact('movie', 'allSeries'));
     }
 
     public function update(Request $request, Movie $movie)

@@ -389,6 +389,98 @@
   </form>
 </section>
 
+{{-- Convert to Episode --}}
+<section class="mb-14" x-data="{ mode: 'existing', seriesId: '', seasonId: '', epNum: 1, newSeriesName: '{{ addslashes($movie->title) }}' }">
+  <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2 pb-3 border-b border-gray-200 dark:border-gray-600">
+    Convert to Episode
+  </h3>
+  <p class="text-sm text-gray-500 dark:text-gray mb-6">
+    Move this movie into a series as an episode. The movie record will be permanently deleted after conversion.
+  </p>
+
+  <form method="POST" action="{{ route('admin.movies.convert-to-episode', $movie) }}"
+    class="max-w-xl flex flex-col gap-y-5"
+    onsubmit="return confirm('Convert this movie to an episode? The movie will be permanently deleted.')">
+    @csrf
+
+    {{-- Mode toggle --}}
+    <div class="flex border-b border-gray-200 dark:border-gray-600">
+      <button type="button" @click="mode = 'existing'; seriesId = ''; seasonId = ''"
+        :class="mode === 'existing' ? 'border-accent text-accent' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
+        class="pb-2.5 px-1 mr-6 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors">
+        Existing Series
+      </button>
+      <button type="button" @click="mode = 'new'; seriesId = ''; seasonId = ''"
+        :class="mode === 'new' ? 'border-accent text-accent' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
+        class="pb-2.5 px-1 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors">
+        New Series
+      </button>
+    </div>
+
+    {{-- Existing series panel --}}
+    <div x-show="mode === 'existing'" class="flex flex-col gap-y-4">
+      @if ($allSeries->isEmpty())
+        <p class="text-sm text-gray-400">No series exist yet — use <strong>New Series</strong> above.</p>
+      @else
+        <div>
+          <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Target Series</label>
+          <select class="w-full border-base bg-white/40 px-4 h-12.5 font-medium text-gray-900 bg-caret bg-[length:10px_6px] bg-[position:right_18px_center] focus:border-accent focus:outline-0 focus:ring-0 hover:cursor-pointer dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:bg-caret-white dark:focus:bg-gray-900"
+            x-model="seriesId" @change="seasonId = ''; epNum = 1">
+            <option value="">— Select series —</option>
+            @foreach ($allSeries as $s)
+              <option value="{{ $s->id }}">{{ $s->title }}</option>
+            @endforeach
+          </select>
+        </div>
+
+        <template x-if="seriesId">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Season</label>
+              <select name="season_id" x-model="seasonId"
+                class="w-full border-base bg-white/40 px-4 h-12.5 font-medium text-gray-900 bg-caret bg-[length:10px_6px] bg-[position:right_18px_center] focus:border-accent focus:outline-0 focus:ring-0 hover:cursor-pointer dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:bg-caret-white dark:focus:bg-gray-900">
+                <option value="">— Select season —</option>
+                @foreach ($allSeries as $s)
+                  @foreach ($s->seasons as $season)
+                    <option value="{{ $season->id }}" x-show="seriesId == '{{ $s->id }}'">{{ $season->label() }}</option>
+                  @endforeach
+                @endforeach
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Episode Number</label>
+              <input class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 focus:border-accent focus:bg-white focus:outline-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white w-full"
+                type="number" name="episode_number" x-model.number="epNum" min="1">
+            </div>
+          </div>
+        </template>
+      @endif
+    </div>
+
+    {{-- New series panel --}}
+    <div x-show="mode === 'new'" style="display:none" class="flex flex-col gap-y-4">
+      <div>
+        <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Series Name</label>
+        <input class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 focus:border-accent focus:bg-white focus:outline-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white w-full"
+          type="text" name="new_series_name" x-model="newSeriesName" placeholder="Series title">
+        <p class="mt-1 text-xs text-gray-500">A new series will be created (Season 1) and the movie added as Episode 1. Saved as hidden — publish when ready.</p>
+      </div>
+      <div class="max-w-xs">
+        <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Episode Number</label>
+        <input class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 focus:border-accent focus:bg-white focus:outline-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white w-full"
+          type="number" name="episode_number" x-show="mode === 'new'" x-model.number="epNum" min="1">
+      </div>
+    </div>
+
+    <div x-show="(mode === 'existing' && seasonId) || (mode === 'new' && newSeriesName.trim())" style="display:none">
+      <button type="submit"
+        class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-3 px-6 text-sm text-white bg-red-600 hover:bg-red-700">
+        Convert to Episode
+      </button>
+    </div>
+  </form>
+</section>
+
 <div>
   <a href="{{ route('admin.movies.index') }}"
     class="text-sm font-bold text-gray-500 hover:text-accent dark:hover:text-accent transition-colors uppercase">
