@@ -85,6 +85,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/mpesa/initiate', [MpesaController::class, 'initiate'])->name('mpesa.initiate');
     Route::get('/mpesa/status/{checkoutRequestId}', [MpesaController::class, 'status'])->name('mpesa.status');
     Route::get('/payment/{packageUuid}', [PaymentController::class, 'show'])->name('payment.show');
+    Route::post('/payment/{packageUuid}/activate-free', [PaymentController::class, 'activateFree'])->name('payment.activate-free');
 });
 
 Route::view('/about', 'pages.about')->name('about');
@@ -176,6 +177,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::patch('users/{user}/extend-subscription', [AdminUserController::class, 'extendSubscription'])->name('users.extend-subscription');
 
     Route::resource('packages', AdminSubscriptionController::class);
+    Route::post('packages/{uuid}/restore', [AdminSubscriptionController::class, 'restore'])->name('packages.restore');
 
     Route::get('coming-soon', [AdminComingSoonController::class, 'index'])->name('coming-soon.index');
     Route::get('coming-soon/create', [AdminComingSoonController::class, 'create'])->name('coming-soon.create');

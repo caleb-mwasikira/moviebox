@@ -49,9 +49,9 @@
           <a href="{{ route('admin.packages.edit', $package) }}"
             class="text-xs font-bold uppercase text-accent hover:underline transition-colors">Edit</a>
           <form action="{{ route('admin.packages.destroy', $package) }}" method="POST" class="inline"
-            onsubmit="return confirm('Delete {{ addslashes($package->name) }}?')">
+            onsubmit="return confirm('Archive {{ addslashes($package->name) }}? It will no longer be available to customers.')">
             @csrf @method('DELETE')
-            <button type="submit" class="text-xs font-bold uppercase text-gray-500 hover:text-red-500 transition-colors">Delete</button>
+            <button type="submit" class="text-xs font-bold uppercase text-gray-500 hover:text-red-500 transition-colors">Archive</button>
           </form>
         </div>
       </div>
@@ -102,9 +102,9 @@
                 <a href="{{ route('admin.packages.edit', $package) }}"
                   class="text-xs font-bold uppercase text-gray-900 dark:text-white hover:text-accent dark:hover:text-accent transition-colors">Edit</a>
                 <form action="{{ route('admin.packages.destroy', $package) }}" method="POST" class="inline"
-                  onsubmit="return confirm('Delete {{ addslashes($package->name) }}?')">
+                  onsubmit="return confirm('Archive {{ addslashes($package->name) }}? It will no longer be available to customers.')">
                   @csrf @method('DELETE')
-                  <button type="submit" class="text-xs font-bold uppercase text-gray-500 hover:text-red-500 transition-colors">Delete</button>
+                  <button type="submit" class="text-xs font-bold uppercase text-gray-500 hover:text-red-500 transition-colors">Archive</button>
                 </form>
               </div>
             </td>
@@ -115,4 +115,37 @@
   </div>
 
 @endif
+
+{{-- ── Archived packages ── --}}
+@if ($archived->isNotEmpty())
+<div class="mt-12">
+  <h3 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-4">Archived Packages</h3>
+
+  <div class="border border-dashed border-gray-200 dark:border-gray-600 divide-y divide-gray-100 dark:divide-gray-700">
+    @foreach ($archived as $package)
+      <div class="flex items-center justify-between gap-x-4 px-5 py-4">
+        <div>
+          <p class="font-bold text-sm text-gray-500 dark:text-gray-400">{{ $package->name }}</p>
+          <p class="text-xs text-gray-400 mt-0.5">
+            @if ($package->price == 0)
+              Free
+            @else
+              {{ strtoupper($package->currency) }} {{ number_format($package->price, 2) }} / {{ $package->interval }}
+            @endif
+            · Archived {{ $package->deleted_at->diffForHumans() }}
+          </p>
+        </div>
+        <form action="{{ route('admin.packages.restore', $package->uuid) }}" method="POST" class="shrink-0">
+          @csrf
+          <button type="submit"
+            class="text-xs font-bold uppercase text-gray-500 hover:text-accent transition-colors">
+            Restore
+          </button>
+        </form>
+      </div>
+    @endforeach
+  </div>
+</div>
+@endif
+
 @endsection

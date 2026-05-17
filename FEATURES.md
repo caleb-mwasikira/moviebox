@@ -12,7 +12,7 @@
 ## Monetization
 - [✅] Payment integration (Mpesa)
 - [ ] Coupon / promo codes for subscription discounts
-- [ ] Trial period for new subscribers (e.g. 7-day free trial)
+- [✅] Trial period for new subscribers (e.g. 7-day free trial)
 
 ## User Experience
 - [✅] Email notifications — welcome email, subscription expiry reminder, new content alerts

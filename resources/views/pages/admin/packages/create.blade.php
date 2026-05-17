@@ -53,31 +53,68 @@
       </div>
 
       {{-- ── Pricing ── --}}
-      <div class="bg-white dark:bg-gray-700 p-6 md:p-8">
-        <h3 class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-6">Pricing</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Currency</label>
-            <input type="text" name="currency" value="{{ old('currency', $p?->currency ?? 'KSH') }}" required maxlength="3"
-              class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors @error('currency') border-red-400 @enderror"
-              placeholder="KSH">
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Price</label>
-            <input type="number" name="price" value="{{ old('price', $p?->price) }}" required min="0"
-              class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors @error('price') border-red-400 @enderror"
-              placeholder="0">
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Billing Interval</label>
-            <select name="interval"
-              class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors">
-              @foreach (['week' => 'Weekly', 'month' => 'Monthly', 'year' => 'Yearly'] as $val => $label)
-                <option value="{{ $val }}" {{ old('interval', $p?->interval) === $val ? 'selected' : '' }}>{{ $label }}</option>
-              @endforeach
-            </select>
-          </div>
+      @php $isFree = (int) old('price', $p?->price ?? 1) === 0; @endphp
+      <div class="bg-white dark:bg-gray-700 p-6 md:p-8"
+        x-data="{ free: {{ $isFree ? 'true' : 'false' }} }">
+
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Pricing</h3>
+
+          <label class="flex items-center gap-x-2.5 cursor-pointer select-none">
+            <div @click="free = !free"
+              :class="free ? 'bg-accent' : 'bg-gray-200 dark:bg-gray-600'"
+              class="relative w-9 h-5 rounded-full transition-colors shrink-0">
+              <div :class="free ? 'translate-x-4' : 'translate-x-0.5'"
+                class="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-150"></div>
+            </div>
+            <span class="text-xs font-bold text-gray-500 dark:text-gray-400">Free Package</span>
+          </label>
         </div>
+
+        {{-- Paid fields --}}
+        <template x-if="!free">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            <div>
+              <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Currency</label>
+              <input type="text" name="currency" value="{{ old('currency', $p?->currency ?? 'KES') }}" maxlength="3"
+                class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors @error('currency') border-red-400 @enderror"
+                placeholder="KES">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Price</label>
+              <input type="number" name="price" value="{{ old('price', $p?->price) }}" min="1"
+                class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors @error('price') border-red-400 @enderror"
+                placeholder="0">
+            </div>
+            <div>
+              <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Billing Interval</label>
+              <select name="interval"
+                class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors">
+                @foreach (['week' => 'Weekly', 'month' => 'Monthly', 'year' => 'Yearly'] as $val => $label)
+                  <option value="{{ $val }}" {{ old('interval', $p?->interval) === $val ? 'selected' : '' }}>{{ $label }}</option>
+                @endforeach
+              </select>
+            </div>
+          </div>
+        </template>
+
+        {{-- Free fields — price hidden as 0, currency omitted, interval kept --}}
+        <template x-if="free">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <input type="hidden" name="price" value="0">
+            <div>
+              <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Access Duration</label>
+              <select name="interval"
+                class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors">
+                @foreach (['week' => 'Weekly', 'month' => 'Monthly', 'year' => 'Yearly'] as $val => $label)
+                  <option value="{{ $val }}" {{ old('interval', $p?->interval) === $val ? 'selected' : '' }}>{{ $label }}</option>
+                @endforeach
+              </select>
+              <p class="mt-1 text-[11px] text-gray-400">How long access lasts before expiring.</p>
+            </div>
+          </div>
+        </template>
+
       </div>
 
       {{-- ── Limits ── --}}
