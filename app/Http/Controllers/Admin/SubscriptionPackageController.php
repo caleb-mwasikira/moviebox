@@ -24,17 +24,18 @@ class SubscriptionPackageController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'           => 'required|string|max:255',
-            'price'          => 'required|integer|min:0',
-            'interval'       => 'required|in:week,month,year',
-            'currency'       => 'nullable|string|max:3',
-            'description'    => 'nullable|string',
-            'max_screens'    => 'required|integer|min:1',
-            'max_resolution' => 'required|string',
-            'has_ads'        => 'boolean',
+            'name'             => 'required|string|max:255',
+            'price'            => 'required|integer|min:0',
+            'interval'         => 'required|in:week,month,year',
+            'currency'         => 'nullable|string|max:3',
+            'description'      => 'nullable|string',
+            'max_screens'      => 'required|integer|min:1',
+            'max_shared_links' => 'required|integer|min:0',
+            'max_resolution'   => 'required|string',
+            'has_ads'          => 'boolean',
             'download_enabled' => 'boolean',
-            'is_active'      => 'boolean',
-            'sort_order'     => 'nullable|integer',
+            'is_active'        => 'boolean',
+            'sort_order'       => 'nullable|integer',
         ]);
 
         $data['slug']             = Str::slug($request->input('name'));
@@ -56,17 +57,18 @@ class SubscriptionPackageController extends Controller
     public function update(Request $request, SubscriptionPackage $package)
     {
         $data = $request->validate([
-            'name'           => 'required|string|max:255',
-            'price'          => 'required|integer|min:0',
-            'interval'       => 'required|in:week,month,year',
-            'currency'       => 'nullable|string|max:3',
-            'description'    => 'nullable|string',
-            'max_screens'    => 'required|integer|min:1',
-            'max_resolution' => 'required|string',
-            'has_ads'        => 'boolean',
+            'name'             => 'required|string|max:255',
+            'price'            => 'required|integer|min:0',
+            'interval'         => 'required|in:week,month,year',
+            'currency'         => 'nullable|string|max:3',
+            'description'      => 'nullable|string',
+            'max_screens'      => 'required|integer|min:1',
+            'max_shared_links' => 'required|integer|min:0',
+            'max_resolution'   => 'required|string',
+            'has_ads'          => 'boolean',
             'download_enabled' => 'boolean',
-            'is_active'      => 'boolean',
-            'sort_order'     => 'nullable|integer',
+            'is_active'        => 'boolean',
+            'sort_order'       => 'nullable|integer',
         ]);
 
         $data['slug']             = Str::slug($request->input('name'));

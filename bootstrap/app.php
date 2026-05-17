@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CheckBanned;
+use App\Http\Middleware\EnsureNotSharedGuest;
 use App\Http\Middleware\RequireActiveSubscription;
 use App\Http\Middleware\RequireAuthModal;
 use Illuminate\Foundation\Application;
@@ -17,9 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'admin'        => AdminMiddleware::class,
-            'auth.modal'   => RequireAuthModal::class,
-            'subscription' => RequireActiveSubscription::class,
+            'admin'            => AdminMiddleware::class,
+            'auth.modal'       => RequireAuthModal::class,
+            'subscription'     => RequireActiveSubscription::class,
+            'not.shared.guest' => EnsureNotSharedGuest::class,
         ]);
         $middleware->appendToGroup('web', CheckBanned::class);
         $middleware->preventRequestForgery([

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Episode;
 use App\Models\Movie;
+use App\Models\Series;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Date;
@@ -29,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
         Relation::morphMap([
             'movie'   => Movie::class,
             'episode' => Episode::class,
+            'series'  => Series::class,
         ]);
 
         $this->configureDefaults();

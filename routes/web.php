@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\TestEmailController as AdminTestEmailController;
 use App\Http\Controllers\Admin\ConvertController as AdminConvertController;
 use App\Http\Controllers\ComingSoonController;
+use App\Http\Controllers\SharedLinkController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
@@ -98,6 +99,9 @@ Route::get('/coming-soon/{comingSoon}', [ComingSoonController::class, 'show'])->
 Route::view('/shop', 'pages.shop')->name('shop');
 Route::get('/browse', [BrowseController::class, 'index'])->name('browse');
 Route::get('/search/suggestions', [BrowseController::class, 'suggestions'])->name('search.suggestions');
+Route::get('/s/{sharedLink}', [SharedLinkController::class, 'show'])->name('share.show');
+Route::post('/share', [SharedLinkController::class, 'store'])->middleware('auth')->name('share.store');
+
 Route::get('/movies', [MovieController::class, 'index'])->name('movies');
 Route::get('/movies/{movie}', [MovieController::class, 'show'])->name('movies.show');
 Route::get('/series', [SeriesController::class, 'index'])->name('series');
@@ -122,7 +126,7 @@ Route::middleware('auth')->post('/watch/progress', [WatchProgressController::cla
 
 Route::middleware(['auth', 'verified'])->post('/watchlist/{type}/{id}', [WatchlistController::class, 'toggle'])->name('watchlist.toggle');
 
-Route::middleware(['auth', 'verified'])->prefix('account')->name('account.')->group(function () {
+Route::middleware(['auth', 'verified', 'not.shared.guest'])->prefix('account')->name('account.')->group(function () {
     Route::view('/', 'pages.account.index')->name('dashboard');
     Route::get('profile', [AccountController::class, 'profile'])->name('profile');
     Route::post('profile/avatar', [AccountController::class, 'updateAvatar'])->name('profile.avatar');

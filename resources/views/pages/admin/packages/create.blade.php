@@ -49,6 +49,12 @@
               class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors">
             <p class="mt-1 text-[11px] text-gray-400">Lower numbers appear first on the pricing page.</p>
           </div>
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Description</label>
+            <textarea name="description" rows="3"
+              class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors resize-none @error('description') border-red-400 @enderror"
+              placeholder="Briefly describe what's included in this package…">{{ old('description', $p?->description) }}</textarea>
+          </div>
         </div>
       </div>
 
@@ -135,6 +141,12 @@
             <input type="number" name="max_screens" value="{{ old('max_screens', $p?->max_screens ?? 1) }}" required min="1"
               class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors @error('max_screens') border-red-400 @enderror">
             <p class="mt-1 text-[11px] text-gray-400">Profiles that can stream at the same time.</p>
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Max Shared Links</label>
+            <input type="number" name="max_shared_links" value="{{ old('max_shared_links', $p?->max_shared_links ?? 5) }}" required min="0"
+              class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors @error('max_shared_links') border-red-400 @enderror">
+            <p class="mt-1 text-[11px] text-gray-400">Shared links a subscriber can create. Set to 0 for unlimited.</p>
           </div>
         </div>
       </div>

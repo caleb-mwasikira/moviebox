@@ -29,7 +29,13 @@ class RequireAuthModal
             return $next($request);
         }
 
+        // Allow guests who arrived via a shared link and have a valid temporary grant
+        if ($this->hasSharedAccess($request)) {
+            return $next($request);
+        }
+
         // Preserve the intended URL so post-login redirect works
+
         session()->put('url.intended', $request->url());
 
         // Use the HTTP Referer header for the back URL.
@@ -45,5 +51,25 @@ class RequireAuthModal
         }
 
         return redirect($back)->with('show_auth_modal', true);
+    }
+
+    private function hasSharedAccess(Request $request): bool
+    {
+        $now = time();
+
+        $movie = $request->route('movie');
+        if ($movie instanceof \App\Models\Movie) {
+            $exp = session('shared_access.movie.' . $movie->id);
+            return $exp && $exp > $now;
+        }
+
+        $episode = $request->route('episode');
+        if ($episode instanceof \App\Models\Episode) {
+            $series = $episode->season->series;
+            $exp = session('shared_access.series.' . $series->id);
+            return $exp && $exp > $now;
+        }
+
+        return false;
     }
 }

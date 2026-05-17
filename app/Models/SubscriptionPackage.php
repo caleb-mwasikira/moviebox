@@ -17,6 +17,7 @@ class SubscriptionPackage extends Model
         'interval',
         'trial_period_days',
         'max_screens',
+        'max_shared_links',
         'max_resolution',
         'has_ads',
         'download_enabled',

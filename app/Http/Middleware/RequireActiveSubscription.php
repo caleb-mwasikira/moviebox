@@ -52,10 +52,15 @@ class RequireActiveSubscription
         }
 
         if (! $subscription) {
-            if ($this->isFreeContent($request)) {
+            if ($this->isFreeContent($request) || $this->hasSharedAccess($request)) {
                 return $next($request);
             }
             return redirect()->route('subscription.expired');
+        }
+
+        // Shared guests are logged in as the owner but may only watch the one shared title.
+        if (session('shared_guest') && ! $this->isFreeContent($request) && ! $this->hasSharedAccess($request)) {
+            return $this->redirectToSharedContent();
         }
 
         return $next($request);
@@ -71,6 +76,55 @@ class RequireActiveSubscription
         $episode = $request->route('episode');
         if ($episode instanceof Episode && $episode->is_free) {
             return true;
+        }
+
+        return false;
+    }
+
+    private function redirectToSharedContent(): \Illuminate\Http\RedirectResponse
+    {
+        $now    = time();
+        $grants = session('shared_access', []);
+
+        foreach ($grants['movie'] ?? [] as $id => $exp) {
+            if ($exp > $now) {
+                $movie = Movie::find($id);
+                if ($movie) {
+                    return redirect()->route('movies.show', $movie)
+                        ->with('info', "Your guest pass only covers \"{$movie->title}\" — you've been brought back so you can enjoy it.");
+                }
+            }
+        }
+
+        foreach ($grants['series'] ?? [] as $id => $exp) {
+            if ($exp > $now) {
+                $series = \App\Models\Series::find($id);
+                if ($series) {
+                    return redirect()->route('series.show', $series)
+                        ->with('info', "Your guest pass only covers \"{$series->title}\" — you've been brought back so you can enjoy it.");
+                }
+            }
+        }
+
+        return redirect()->route('home')
+            ->with('error', 'Your guest session has expired or the shared content is no longer available.');
+    }
+
+    private function hasSharedAccess(Request $request): bool
+    {
+        $now = time();
+
+        $movie = $request->route('movie');
+        if ($movie instanceof Movie) {
+            $exp = session('shared_access.movie.' . $movie->id);
+            return $exp && $exp > $now;
+        }
+
+        $episode = $request->route('episode');
+        if ($episode instanceof Episode) {
+            $series = $episode->season->series;
+            $exp = session('shared_access.series.' . $series->id);
+            return $exp && $exp > $now;
         }
 
         return false;
