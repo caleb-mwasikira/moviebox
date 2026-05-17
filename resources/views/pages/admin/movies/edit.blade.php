@@ -291,6 +291,104 @@
   </form>
 </section>
 
+{{-- Subtitles --}}
+<section class="mb-14">
+  <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6 pb-3 border-b border-gray-200 dark:border-gray-600">
+    Subtitle Tracks
+  </h3>
+
+  @if ($movie->subtitles->isNotEmpty())
+    <div class="mb-6 flex flex-col gap-y-2 max-w-xl">
+      @foreach ($movie->subtitles as $subtitle)
+        <div class="flex items-center justify-between px-4 py-2.5 border border-gray-200 dark:border-gray-600">
+          <div class="flex items-center gap-x-3">
+            <span class="text-sm font-bold text-gray-900 dark:text-white">{{ $subtitle->language }}</span>
+            <code class="text-[10px] uppercase text-gray-400 tracking-widest">{{ $subtitle->language_code }}</code>
+            @if ($subtitle->is_default)
+              <span class="text-[10px] font-bold uppercase px-1.5 py-0.5 bg-accent/20 text-accent tracking-widest">Default</span>
+            @endif
+          </div>
+          <form method="POST" action="{{ route('admin.subtitles.destroy', $subtitle) }}">
+            @csrf @method('DELETE')
+            <button type="submit" class="text-xs font-bold uppercase text-gray-400 hover:text-red-500 transition-colors">
+              Remove
+            </button>
+          </form>
+        </div>
+      @endforeach
+    </div>
+  @else
+    <p class="text-sm text-gray-400 mb-6">No subtitle tracks yet.</p>
+  @endif
+
+  <form method="POST" action="{{ route('admin.movies.subtitles.store', $movie) }}" enctype="multipart/form-data"
+    x-data="{ subTab: 'upload' }" class="flex flex-col gap-y-4 max-w-xl">
+    @csrf
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Language</label>
+        <input class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 focus:border-accent focus:bg-white focus:outline-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white w-full"
+          type="text" name="language" placeholder="English" required>
+      </div>
+      <div>
+        <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Language Code</label>
+        <input class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 focus:border-accent focus:bg-white focus:outline-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white w-full"
+          type="text" name="language_code" placeholder="en" maxlength="10" required>
+      </div>
+    </div>
+
+    {{-- Tab nav --}}
+    <div class="flex border-b border-gray-200 dark:border-gray-600">
+      <button type="button" @click="subTab = 'upload'"
+        :class="subTab === 'upload' ? 'border-accent text-accent' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
+        class="inline-flex items-center gap-x-2 pb-3 px-1 mr-6 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors">
+        <svg class="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+        Upload File
+      </button>
+      <button type="button" @click="subTab = 'url'"
+        :class="subTab === 'url' ? 'border-accent text-accent' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
+        class="inline-flex items-center gap-x-2 pb-3 px-1 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors">
+        <svg class="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
+        Enter URL
+      </button>
+    </div>
+
+    {{-- Upload panel --}}
+    <div x-show="subTab === 'upload'">
+      <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer"
+        type="file" name="subtitle_file" accept=".vtt,.srt">
+      <p class="mt-1 text-xs text-gray-500">WebVTT (.vtt) or SubRip (.srt) — SRT is auto-converted to VTT</p>
+    </div>
+
+    {{-- URL panel --}}
+    <div x-show="subTab === 'url'" style="display:none">
+      <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Subtitle URL</label>
+      <div class="flex items-stretch border border-gray-300 dark:border-gray-600 focus-within:border-accent transition-colors">
+        <div class="flex items-center px-3 bg-gray-50 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-600 shrink-0">
+          <svg class="h-4 w-4 fill-gray-400" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
+        </div>
+        <input class="flex-1 px-3 py-2.5 bg-white dark:bg-gray-900 font-medium text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none"
+          type="text" name="subtitle_url" placeholder="/subtitles/en.vtt or https://cdn.example.com/en.vtt" autocomplete="off">
+      </div>
+      <p class="mt-1.5 text-xs text-gray-500">Relative path (e.g. <code>/subtitles/en.vtt</code>) or absolute URL to a WebVTT file.</p>
+    </div>
+
+    <div class="flex items-center gap-x-3">
+      <input type="checkbox" name="is_default" id="sub_default_movie" value="1"
+        class="w-4 h-4 accent-accent cursor-pointer">
+      <label for="sub_default_movie" class="text-xs font-bold text-gray-700 dark:text-gray-300 cursor-pointer">
+        Set as default track
+      </label>
+    </div>
+    <div>
+      <button type="submit"
+        class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-2 py-3 px-6 text-sm text-gray-900 bg-accent hover:bg-accent/90">
+        Add Subtitle Track
+      </button>
+    </div>
+  </form>
+</section>
+
 <div>
   <a href="{{ route('admin.movies.index') }}"
     class="text-sm font-bold text-gray-500 hover:text-accent dark:hover:text-accent transition-colors uppercase">

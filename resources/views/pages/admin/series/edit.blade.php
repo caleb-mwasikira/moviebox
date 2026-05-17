@@ -357,6 +357,99 @@
                       </form>
                     </div>
 
+                    {{-- ── Subtitle tracks ── --}}
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                      <p class="text-xs font-bold uppercase text-gray-500 tracking-wider mb-4">Subtitle Tracks</p>
+
+                      @if ($episode->subtitles->isNotEmpty())
+                        <div class="mb-4 flex flex-col gap-y-1.5">
+                          @foreach ($episode->subtitles as $subtitle)
+                            <div class="flex items-center justify-between px-3 py-2 border border-gray-200 dark:border-gray-600">
+                              <div class="flex items-center gap-x-2.5">
+                                <span class="text-xs font-bold text-gray-900 dark:text-white">{{ $subtitle->language }}</span>
+                                <code class="text-[10px] uppercase text-gray-400 tracking-widest">{{ $subtitle->language_code }}</code>
+                                @if ($subtitle->is_default)
+                                  <span class="text-[10px] font-bold uppercase px-1.5 py-0.5 bg-accent/20 text-accent">Default</span>
+                                @endif
+                              </div>
+                              <form method="POST" action="{{ route('admin.subtitles.destroy', $subtitle) }}">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="text-[10px] font-bold uppercase text-gray-400 hover:text-red-500 transition-colors">
+                                  Remove
+                                </button>
+                              </form>
+                            </div>
+                          @endforeach
+                        </div>
+                      @endif
+
+                      <form method="POST" action="{{ route('admin.episodes.subtitles.store', $episode) }}"
+                        enctype="multipart/form-data" x-data="{ subTab: 'upload' }" class="flex flex-col gap-y-3">
+                        @csrf
+                        <div class="grid grid-cols-2 gap-3">
+                          <div>
+                            <label class="block text-xs font-bold uppercase text-gray-500 mb-1.5">Language</label>
+                            <input class="px-3 py-2 border-base bg-white/40 font-medium text-gray-900 focus:border-accent focus:bg-white focus:outline-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white w-full text-sm"
+                              type="text" name="language" placeholder="English">
+                          </div>
+                          <div>
+                            <label class="block text-xs font-bold uppercase text-gray-500 mb-1.5">Code</label>
+                            <input class="px-3 py-2 border-base bg-white/40 font-medium text-gray-900 focus:border-accent focus:bg-white focus:outline-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white w-full text-sm"
+                              type="text" name="language_code" placeholder="en" maxlength="10">
+                          </div>
+                        </div>
+
+                        {{-- Tab nav --}}
+                        <div class="flex border-b border-gray-200 dark:border-gray-600">
+                          <button type="button" @click="subTab = 'upload'"
+                            :class="subTab === 'upload' ? 'border-accent text-accent' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
+                            class="inline-flex items-center gap-x-1.5 pb-2 px-1 mr-5 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors">
+                            <svg class="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+                            Upload File
+                          </button>
+                          <button type="button" @click="subTab = 'url'"
+                            :class="subTab === 'url' ? 'border-accent text-accent' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
+                            class="inline-flex items-center gap-x-1.5 pb-2 px-1 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors">
+                            <svg class="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
+                            Enter URL
+                          </button>
+                        </div>
+
+                        {{-- Upload panel --}}
+                        <div x-show="subTab === 'upload'">
+                          <input class="w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer"
+                            type="file" name="subtitle_file" accept=".vtt,.srt">
+                          <p class="mt-1 text-[11px] text-gray-500">VTT or SRT — SRT is auto-converted</p>
+                        </div>
+
+                        {{-- URL panel --}}
+                        <div x-show="subTab === 'url'" style="display:none">
+                          <div class="flex items-stretch border border-gray-300 dark:border-gray-600 focus-within:border-accent transition-colors">
+                            <div class="flex items-center px-2.5 bg-gray-50 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-600 shrink-0">
+                              <svg class="h-3.5 w-3.5 fill-gray-400" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>
+                            </div>
+                            <input class="flex-1 px-3 py-2 bg-white dark:bg-gray-900 text-sm font-medium text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none"
+                              type="text" name="subtitle_url" placeholder="/subtitles/en.vtt or https://cdn.example.com/en.vtt" autocomplete="off">
+                          </div>
+                          <p class="mt-1 text-[11px] text-gray-500">Relative path or absolute URL to a WebVTT file.</p>
+                        </div>
+
+                        <div class="flex items-center gap-x-2">
+                          <input type="checkbox" name="is_default" id="sub_default_{{ $episode->id }}" value="1"
+                            class="w-4 h-4 accent-accent cursor-pointer">
+                          <label for="sub_default_{{ $episode->id }}" class="text-xs font-bold text-gray-700 dark:text-gray-300 cursor-pointer">
+                            Set as default track
+                          </label>
+                        </div>
+                        <div>
+                          <button type="submit"
+                            class="inline-flex text-center font-bold leading-none uppercase justify-center gap-x-2 py-2 px-5 text-xs text-gray-900 bg-accent hover:bg-accent/90 transition-colors">
+                            Add Subtitle
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+
                   </div>
                 </td>
               </tr>

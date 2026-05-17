@@ -45,6 +45,11 @@ class Movie extends Model
         return $this->morphMany(Poster::class, 'posterable')->orderBy('sort_order');
     }
 
+    public function subtitles(): MorphMany
+    {
+        return $this->morphMany(Subtitle::class, 'subtitleable')->orderBy('language');
+    }
+
     public function isPublished(): bool
     {
         return $this->status === 'published';

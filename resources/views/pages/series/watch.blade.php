@@ -231,6 +231,39 @@
 @push('scripts')
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <script>
+    function subtitlePicker(videoId, defaultIndex) {
+      return {
+        open: false,
+        trackIndex: defaultIndex,
+        get active() { return this.trackIndex !== null && this.trackIndex !== false; },
+        init() {
+          const idx = (this.trackIndex !== null && this.trackIndex !== false) ? this.trackIndex : -1;
+          const vid = document.getElementById(videoId);
+          const apply = function () {
+            const t = vid.textTracks;
+            // Set every track to at least 'hidden' so the browser fetches the VTT
+            // files. 'disabled' (the browser default) suppresses all network requests.
+            for (let i = 0; i < t.length; i++) t[i].mode = i === idx ? 'showing' : 'hidden';
+          };
+          apply();
+          vid.addEventListener('loadedmetadata', apply, { once: true });
+        },
+        setTrack(index) {
+          const t = document.getElementById(videoId).textTracks;
+          for (let i = 0; i < t.length; i++) t[i].mode = i === index ? 'showing' : 'hidden';
+          this.trackIndex = index;
+          this.open = false;
+        },
+        off() {
+          const t = document.getElementById(videoId).textTracks;
+          for (let i = 0; i < t.length; i++) t[i].mode = 'hidden';
+          this.trackIndex = null;
+          this.open = false;
+        },
+      };
+    }
+  </script>
+  <script>
     (function () {
       // ── SIDEBAR CONTROLS ──
       const sidebar = document.querySelector('.watch-sidebar');
@@ -349,7 +382,15 @@
       <div class="watch-sidebar-overlay"></div>
 
       <div class="watch-video-col">
-        <video id="episode-player" controls autoplay preload="auto"></video>
+        <video id="episode-player" controls autoplay preload="auto" crossorigin="anonymous">
+          @foreach ($episode->subtitles as $subtitle)
+            <track kind="subtitles"
+              src="{{ $subtitle->fileUrl() }}"
+              srclang="{{ $subtitle->language_code }}"
+              label="{{ $subtitle->language }}"
+              {{ $subtitle->is_default ? 'default' : '' }}>
+          @endforeach
+        </video>
 
         <div class="watch-meta">
           <div style="min-width:0; flex:1;">
@@ -366,6 +407,39 @@
                 <path d="M21 3H3C1.9 3 1 3.88 1 4.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V4.98C23 3.88 22.1 3 21 3zm-2 16.02H5V5h14v14.02zM11 11H7v4h4v-4z"/>
               </svg>
             </button>
+
+            {{-- Subtitle picker --}}
+            @if ($episode->subtitles->isNotEmpty())
+            @php $defaultSubIdx = $episode->subtitles->search(fn($s) => $s->is_default); @endphp
+            <div x-data="subtitlePicker('episode-player', {{ $defaultSubIdx !== false ? $defaultSubIdx : 'null' }})" class="relative">
+              <button @click="open = !open"
+                :class="active ? 'border-accent text-accent' : 'border-transparent text-white'"
+                class="watch-nav-btn border hover:bg-white/20 transition-colors"
+                title="Subtitles">
+                <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M19 4H5c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H5V6h14v12zM7 15h4v-2H9v-2h2V9H7v6zm6 0h4v-2h-2v-2h2V9h-4v6z"/>
+                </svg>
+              </button>
+              <div x-show="open" @click.away="open = false"
+                x-transition:enter="transition ease-out duration-100"
+                x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
+                class="absolute bottom-full right-0 mb-2 w-44 bg-gray-900 border border-gray-700 shadow-2xl z-50"
+                style="display:none">
+                <button @click="off()"
+                  :class="!active ? 'text-accent' : 'text-gray-300 hover:text-white'"
+                  class="w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-wide hover:bg-white/10 transition-colors">
+                  Off
+                </button>
+                @foreach ($episode->subtitles as $i => $subtitle)
+                <button @click="setTrack({{ $i }})"
+                  :class="trackIndex === {{ $i }} ? 'text-accent' : 'text-gray-300 hover:text-white'"
+                  class="w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-wide hover:bg-white/10 transition-colors border-t border-gray-800">
+                  {{ $subtitle->language }}
+                </button>
+                @endforeach
+              </div>
+            </div>
+            @endif
 
             {{-- Toggle Button for all screen sizes --}}
             <button id="toggle-episodes" class="watch-menu-toggle">

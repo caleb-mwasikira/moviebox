@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\PosterController as AdminPosterController;
 use App\Http\Controllers\Admin\StreamingStatusController as AdminStreamingStatusController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\AnalyticsController as AdminAnalyticsController;
+use App\Http\Controllers\Admin\SubtitleController as AdminSubtitleController;
 use App\Http\Controllers\Admin\SubscriptionPackageController as AdminSubscriptionController;
 use App\Http\Controllers\Admin\ComingSoonController as AdminComingSoonController;
 use App\Http\Controllers\Admin\ContactController as AdminContactController;
@@ -175,6 +176,10 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::patch('users/{user}/ban', [AdminUserController::class, 'ban'])->name('users.ban');
     Route::patch('users/{user}/unban', [AdminUserController::class, 'unban'])->name('users.unban');
     Route::patch('users/{user}/extend-subscription', [AdminUserController::class, 'extendSubscription'])->name('users.extend-subscription');
+
+    Route::post('movies/{movie}/subtitles', [AdminSubtitleController::class, 'storeForMovie'])->name('movies.subtitles.store');
+    Route::post('episodes/{episode}/subtitles', [AdminSubtitleController::class, 'storeForEpisode'])->name('episodes.subtitles.store');
+    Route::delete('subtitles/{subtitle}', [AdminSubtitleController::class, 'destroy'])->name('subtitles.destroy');
 
     Route::resource('packages', AdminSubscriptionController::class);
     Route::post('packages/{uuid}/restore', [AdminSubscriptionController::class, 'restore'])->name('packages.restore');
