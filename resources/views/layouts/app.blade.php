@@ -137,6 +137,12 @@
               </li>
               <li class="">
                 <a class="group text-gray-900 dark:text-white relative inline-flex items-center gap-x-3 leading-10 px-3.5 xl:px-4.5 after:absolute after:top-[15px] after:left-0 after:bg-current-marker-dark after:transition-transform after:w-1.5 after:h-[9px] dark:after:bg-current-marker after:origin-right hover:after:origin-left after:scale-x-0 hover:after:scale-x-100"
+                  href="{{ route('pricing') }}">
+                  Pricing
+                </a>
+              </li>
+              <li class="">
+                <a class="group text-gray-900 dark:text-white relative inline-flex items-center gap-x-3 leading-10 px-3.5 xl:px-4.5 after:absolute after:top-[15px] after:left-0 after:bg-current-marker-dark after:transition-transform after:w-1.5 after:h-[9px] dark:after:bg-current-marker after:origin-right hover:after:origin-left after:scale-x-0 hover:after:scale-x-100"
                   href="{{ route('contact') }}">
                   Contact
                 </a>
@@ -439,6 +445,10 @@
               <a class="flex-grow py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
                 href="{{ route('coming-soon') }}">Coming Soon</a>
             </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
+                href="{{ route('pricing') }}">Pricing</a>
+            </li>
             <li class="flex items-center">
               <a class="flex-grow py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
                 href="{{ route('contact') }}">Contact</a>
@@ -630,46 +640,6 @@
       }
     })();
     </script>
-
-    @php
-      $__sub = auth()->check() ? auth()->user()->currentSubscription : null;
-      $__daysLeft = $__sub?->expires_at ? (int) now()->diffInDays($__sub->expires_at, false) : null;
-      $__showExpiry = $__daysLeft !== null && $__daysLeft >= 0 && $__daysLeft <= 10
-                      && !auth()->user()->isAdmin();
-      $__bannerKey  = $__sub ? 'mvbox_sub_warn_' . $__sub->expires_at?->timestamp : null;
-    @endphp
-
-    @if ($__showExpiry)
-      <div id="sub-expiry-banner"
-           data-key="{{ $__bannerKey }}"
-           class="relative z-50 border border-yellow-500 bg-yellow-500/10 px-4 py-2.5 flex items-center justify-between gap-x-4 text-sm font-medium text-yellow-700 dark:text-yellow-400">
-        <div class="flex items-center gap-x-2">
-          <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-          </svg>
-          @if ($__daysLeft === 0)
-            Your subscription expires <strong>today</strong>.
-          @else
-            Your subscription expires in <strong>{{ $__daysLeft }} day{{ $__daysLeft !== 1 ? 's' : '' }}</strong>.
-          @endif
-          <a href="{{ route('account.billing') }}" class="underline hover:no-underline ml-1">Renew now</a>
-        </div>
-        <button onclick="
-          localStorage.setItem(this.closest('[data-key]').dataset.key, '1');
-          this.closest('#sub-expiry-banner').remove();
-        " class="shrink-0 p-1 hover:opacity-70 transition-opacity" aria-label="Dismiss">
-          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-          </svg>
-        </button>
-      </div>
-      <script>
-        (function () {
-          var b = document.getElementById('sub-expiry-banner');
-          if (b && localStorage.getItem(b.dataset.key)) b.remove();
-        })();
-      </script>
-    @endif
 
     @if (session('error'))
     <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 6000)"

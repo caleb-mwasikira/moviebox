@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Episode;
+use App\Models\MpesaPayment;
 use App\Models\Movie;
 use App\Models\User;
 use App\Models\UserSubscriptions;
@@ -42,25 +43,20 @@ class AnalyticsController extends Controller
             ->groupBy('subscription_package_id')
             ->get();
 
-        // ── Revenue ───────────────────────────────────────────────────
-        // Each user_subscriptions row = one sale. Sub-accounts never have their
-        // own rows, so only paying account holders are counted.
-        $currency = DB::table('subscription_packages')->value('currency') ?? 'KSH';
+        // ── Revenue — sourced from actual M-Pesa payments ─────────────
+        $currency = DB::table('subscription_packages')->value('currency') ?? 'KES';
 
-        $revenueAllTime = (int) DB::table('user_subscriptions')
-            ->join('subscription_packages', 'user_subscriptions.subscription_package_id', '=', 'subscription_packages.id')
-            ->sum('subscription_packages.price');
+        $revenueAllTime = (int) MpesaPayment::where('status', 'paid')->sum('amount');
 
-        $revenueThisMonth = (int) DB::table('user_subscriptions')
-            ->join('subscription_packages', 'user_subscriptions.subscription_package_id', '=', 'subscription_packages.id')
-            ->where('user_subscriptions.starts_at', '>=', now()->startOfMonth())
-            ->sum('subscription_packages.price');
+        $revenueThisMonth = (int) MpesaPayment::where('status', 'paid')
+            ->where('created_at', '>=', now()->startOfMonth())
+            ->sum('amount');
 
         // Monthly revenue for the last 12 months
-        $revenueMonthRows = DB::table('user_subscriptions')
-            ->join('subscription_packages', 'user_subscriptions.subscription_package_id', '=', 'subscription_packages.id')
-            ->where('user_subscriptions.starts_at', '>=', now()->subMonths(11)->startOfMonth())
-            ->selectRaw("TO_CHAR(user_subscriptions.starts_at, 'YYYY-MM') as month, SUM(subscription_packages.price) as revenue")
+        $revenueMonthRows = DB::table('mpesa_payments')
+            ->where('status', 'paid')
+            ->where('created_at', '>=', now()->subMonths(11)->startOfMonth())
+            ->selectRaw("TO_CHAR(created_at, 'YYYY-MM') as month, SUM(amount) as revenue")
             ->groupBy('month')
             ->orderBy('month')
             ->pluck('revenue', 'month');
@@ -73,10 +69,11 @@ class AnalyticsController extends Controller
             $revenueData[]   = (int) ($revenueMonthRows[$key] ?? 0);
         }
 
-        // Revenue by plan (all time)
-        $revenueByPlan = DB::table('user_subscriptions')
-            ->join('subscription_packages', 'user_subscriptions.subscription_package_id', '=', 'subscription_packages.id')
-            ->select('subscription_packages.name', DB::raw('SUM(subscription_packages.price) as revenue'), DB::raw('COUNT(*) as sales'))
+        // Revenue by plan (all time, from actual payments)
+        $revenueByPlan = DB::table('mpesa_payments')
+            ->join('subscription_packages', 'mpesa_payments.subscription_package_id', '=', 'subscription_packages.id')
+            ->where('mpesa_payments.status', 'paid')
+            ->select('subscription_packages.name', DB::raw('SUM(mpesa_payments.amount) as revenue'), DB::raw('COUNT(*) as sales'))
             ->groupBy('subscription_packages.id', 'subscription_packages.name')
             ->orderByDesc('revenue')
             ->get();

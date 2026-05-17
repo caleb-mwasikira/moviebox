@@ -10,7 +10,7 @@
 - [ ] Rating & reviews — users rate and review movies after watching
 
 ## Monetization
-- [ ] Payment gateway integration (Stripe, M-Pesa, PayPal) — subscriptions are currently manually managed
+- [✅] Payment integration (Mpesa)
 - [ ] Coupon / promo codes for subscription discounts
 - [ ] Trial period for new subscribers (e.g. 7-day free trial)
 

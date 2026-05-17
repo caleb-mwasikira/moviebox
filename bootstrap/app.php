@@ -23,7 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->appendToGroup('web', CheckBanned::class);
         $middleware->preventRequestForgery([
-            '/callbacks/*'
+            '/callbacks/*',
+            '/mpesa/callback',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

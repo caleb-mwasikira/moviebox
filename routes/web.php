@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\AnalyticsController as AdminAnalyticsController;
 use App\Http\Controllers\Admin\SubscriptionPackageController as AdminSubscriptionController;
 use App\Http\Controllers\Admin\ComingSoonController as AdminComingSoonController;
 use App\Http\Controllers\Admin\ContactController as AdminContactController;
+use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\ComingSoonController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
@@ -34,6 +35,9 @@ use App\Http\Controllers\ProfileSelectionController;
 use App\Http\Controllers\WatchlistController;
 use App\Http\Controllers\WatchProgressController;
 use App\Http\Controllers\DownloadController;
+use App\Http\Controllers\MpesaController;
+use App\Http\Controllers\PricingController;
+use App\Http\Controllers\PaymentController;
 use Illuminate\Support\Facades\Route;
 
 // Auth routes
@@ -72,6 +76,16 @@ Route::post('/callbacks/video-ready', [VideoCallbackController::class, 'videoRea
 Route::post('/callbacks/mkv-converted', [VideoCallbackController::class, 'mkvConverted'])->name('callbacks.mkv-converted');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
+
+// M-Pesa — callback is CSRF-exempt via bootstrap/app.php
+Route::post('/mpesa/callback', [MpesaController::class, 'callback'])->name('mpesa.callback');
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/mpesa/initiate', [MpesaController::class, 'initiate'])->name('mpesa.initiate');
+    Route::get('/mpesa/status/{checkoutRequestId}', [MpesaController::class, 'status'])->name('mpesa.status');
+    Route::get('/payment/{packageUuid}', [PaymentController::class, 'show'])->name('payment.show');
+});
+
 Route::view('/about', 'pages.about')->name('about');
 Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
@@ -172,6 +186,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::post('coming-soon/{comingSoon}/video', [AdminComingSoonController::class, 'uploadVideo'])->name('coming-soon.video');
     Route::post('coming-soon/{comingSoon}/promote-series', [AdminComingSoonController::class, 'promoteToSeries'])->name('coming-soon.promote-series');
     Route::delete('coming-soon/{comingSoon}', [AdminComingSoonController::class, 'destroy'])->name('coming-soon.destroy');
+
+    Route::get('payments', [AdminPaymentController::class, 'index'])->name('payments.index');
 
     Route::get('contacts', [AdminContactController::class, 'index'])->name('contacts.index');
     Route::get('contacts/{contact}', [AdminContactController::class, 'show'])->name('contacts.show');
