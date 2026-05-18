@@ -48,5 +48,5 @@
 - [ ] Skip intro button for series episodes
 - [ ] Skip recap button — skip the "previously on…" segment at the start of an episode
 - [ ] Chapter markers — clickable timestamps on the seek bar for movies
-- [ ] 10-second skip forward / back buttons
-- [ ] Keyboard shortcuts — space to pause, arrow keys to seek, F for fullscreen
+- [✅] 10-second skip forward / back buttons
+- [✅] Keyboard shortcuts — space to pause, arrow keys to seek, F for fullscreen
