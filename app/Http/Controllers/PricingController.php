@@ -12,10 +12,12 @@ class PricingController extends Controller
             ->orderBy('sort_order')
             ->get();
 
-        $currentPackage = auth()->check()
-            ? auth()->user()->currentSubscription?->package
-            : null;
+        $user           = auth()->user();
+        $currentPackage = $user?->currentSubscription?->package;
+        $hasEverSubscribed = $user && !$currentPackage
+            ? $user->userSubscriptions()->exists()
+            : false;
 
-        return view('pages.pricing', compact('packages', 'currentPackage'));
+        return view('pages.pricing', compact('packages', 'currentPackage', 'hasEverSubscribed'));
     }
 }

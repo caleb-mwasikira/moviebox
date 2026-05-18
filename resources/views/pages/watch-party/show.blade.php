@@ -1103,6 +1103,70 @@
 @section('content')
   @php $user = auth()->user(); @endphp
 
+  {{-- ── Continue Watching Alone modal ──────────────────────────────────── --}}
+  @if ($watchAloneUrl || $isSeries)
+    <div id="wp-alone-modal"
+      style="display:none;position:fixed;inset:0;z-index:10000;align-items:center;justify-content:center;padding:1rem;background:rgba(0,0,0,.88);"
+      onclick="if(event.target===this) wpAloneClose()">
+      <div style="background:#0f172a;border:1px solid #1e293b;box-shadow:0 24px 60px rgba(0,0,0,.8);max-width:380px;width:100%;padding:2rem 2rem 1.5rem;text-align:center;position:relative;">
+        <button onclick="wpAloneClose()"
+          style="position:absolute;top:.75rem;right:.75rem;background:none;border:none;cursor:pointer;color:#475569;padding:.25rem;line-height:1;"
+          onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#475569'"
+          title="Close">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+        <p style="font-size:.52rem;font-weight:800;text-transform:uppercase;letter-spacing:.18em;color:#475569;margin-bottom:.75rem;">
+          Continue Watching Alone
+        </p>
+        <h2 style="font-size:1.1rem;font-weight:800;color:#f1f5f9;line-height:1.3;margin-bottom:.5rem;">
+          {{ $party->title() }}
+        </h2>
+        <p style="font-size:.72rem;color:#475569;margin-bottom:1.5rem;">
+          Watch this on your own account.<br>A subscription is required.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:.5rem;margin-bottom:1.25rem;">
+          <a id="wp-alone-login-link" href="{{ $watchAloneUrl ?? '#' }}"
+            style="display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.8rem 1.5rem;background:#facc15;color:#111827;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;text-decoration:none;transition:background .15s;"
+            onmouseover="this.style.background='#fde047'" onmouseout="this.style.background='#facc15'">
+            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+            I have an account — Log In
+          </a>
+          <a href="{{ route('register') }}"
+            style="display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.8rem 1.5rem;background:transparent;border:1px solid #1e293b;color:#94a3b8;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;text-decoration:none;transition:border-color .15s,color .15s;"
+            onmouseover="this.style.borderColor='#334155';this.style.color='#e2e8f0'" onmouseout="this.style.borderColor='#1e293b';this.style.color='#94a3b8'">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+            </svg>
+            I'm new — Create Account
+          </a>
+        </div>
+        <button onclick="wpAloneClose()"
+          style="font-size:.62rem;color:#64748b;text-decoration:underline;background:none;border:none;cursor:pointer;padding:.25rem;"
+          onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">
+          Stay in party
+        </button>
+      </div>
+    </div>
+    <script>
+      function wpAloneOpen(url) {
+        const modal = document.getElementById('wp-alone-modal');
+        const link  = document.getElementById('wp-alone-login-link');
+        if (url && link) link.href = url;
+        modal.style.display = 'flex';
+      }
+      function wpAloneClose() {
+        document.getElementById('wp-alone-modal').style.display = 'none';
+      }
+      window.addEventListener('wp:continue-alone', function (e) {
+        wpAloneOpen(e.detail?.url || null);
+      });
+    </script>
+  @endif
+
   {{-- ── Non-room states ─────────────────────────────────────────────────── --}}
 
   @if ($party->isEnded())
@@ -1123,8 +1187,8 @@
       </div>
     </div>
 
-  @elseif (!$user)
-    <div class="flex items-center justify-center min-h-[70vh] px-6 mb-12">
+  @elseif (!$user && !$isMember)
+    <div class="flex items-center justify-center min-h-[70vh] px-6 py-12" x-data>
       <div class="text-center max-w-sm">
         <div class="inline-flex items-center justify-center w-16 h-16 bg-accent/10 mb-6">
           <svg class="w-7 h-7 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1138,14 +1202,48 @@
           <strong class="text-white">{{ $party->host->name }}</strong> is watching
           <strong class="text-white">{{ $party->title() }}</strong>.
         </p>
-        <p class="text-sm text-gray-400 mb-8">Sign in to join the party.</p>
-        <div class="flex flex-col sm:flex-row gap-3 justify-center">
-          <a href="{{ route('watch-party.join', $party->token) }}"
-            class="inline-flex justify-center font-bold uppercase py-3 px-8 text-sm bg-accent text-gray-900 hover:bg-accent/90 transition-colors">
-            Sign In to Join
+        <p class="text-sm text-gray-400 mb-6">
+          {{ $party->members->count() }} {{ Str::plural('person', $party->members->count()) }} already watching.
+        </p>
+
+        {{-- Guest join form --}}
+        <form method="POST" action="{{ route('watch-party.guest-join', $party->token) }}"
+              class="max-w-xs mx-auto"
+              x-data x-init="$nextTick(() => $el.querySelector('[name=name]')?.focus())">
+          @csrf
+          <input type="text" name="name" placeholder="Your name (shows in chat)"
+            required minlength="2" maxlength="50"
+            class="w-full mb-3 bg-gray-900 border {{ $errors->has('name') ? 'border-red-500' : 'border-gray-700' }} text-white placeholder-gray-600 px-4 py-3 text-sm focus:border-accent focus:outline-none"
+            value="{{ old('name') }}"
+            @keydown.stop>
+          @error('name')
+            <p class="text-xs text-red-400 mb-3 text-left">{{ $message }}</p>
+          @enderror
+          <button type="submit"
+            class="w-full inline-flex justify-center font-bold uppercase py-3 px-8 text-sm bg-accent text-gray-900 hover:bg-accent/90 transition-colors">
+            Join as Guest
+          </button>
+        </form>
+
+        @if ($watchAloneUrl)
+          <button @click="$dispatch('wp:continue-alone')"
+            class="mt-4 text-xs text-gray-600 hover:text-gray-400 underline transition-colors cursor-pointer">
+            Continue watching alone instead
+          </button>
+        @endif
+
+        <div class="flex items-center gap-3 mt-6 mb-4 max-w-xs mx-auto">
+          <div class="flex-1 h-px bg-gray-800"></div>
+          <span class="text-xs text-gray-700">have an account?</span>
+          <div class="flex-1 h-px bg-gray-800"></div>
+        </div>
+        <div class="flex gap-3 max-w-xs mx-auto">
+          <a href="{{ route('login') }}"
+            class="flex-1 inline-flex justify-center font-bold uppercase py-2.5 text-xs border border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300 transition-colors">
+            Log In
           </a>
           <a href="{{ route('register') }}"
-            class="inline-flex justify-center font-bold uppercase py-3 px-8 text-sm border border-gray-700 text-gray-300 hover:border-white hover:text-white transition-colors">
+            class="flex-1 inline-flex justify-center font-bold uppercase py-2.5 text-xs border border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300 transition-colors">
             Create Account
           </a>
         </div>
@@ -1174,7 +1272,7 @@
     </div>
 
   @elseif (!$isMember)
-    <div class="flex items-center justify-center min-h-[70vh] px-6">
+    <div class="flex items-center justify-center min-h-[70vh] px-6" x-data>
       <div class="text-center max-w-sm">
         <div class="inline-flex items-center justify-center w-16 h-16 bg-accent/10 mb-6">
           <svg class="w-7 h-7 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1197,6 +1295,14 @@
           class="inline-flex font-bold uppercase py-3 px-8 text-sm bg-accent text-gray-900 hover:bg-accent/90 transition-colors">
           Join Party
         </a>
+        @if ($watchAloneUrl)
+          <div class="mt-4">
+            <button @click="$dispatch('wp:continue-alone')"
+              class="text-xs text-gray-600 hover:text-gray-400 underline transition-colors cursor-pointer">
+              Continue watching alone instead
+            </button>
+          </div>
+        @endif
       </div>
     </div>
 
@@ -1217,10 +1323,17 @@
           <p class="text-xs font-bold uppercase tracking-widest text-red-400 mb-2">Removed</p>
           <h1 class="text-xl font-bold text-white mb-3">You were removed from this party</h1>
           <p class="text-sm text-gray-400 mb-8">The host removed you. Contact them to get back in.</p>
-          <a href="{{ route('account.watch-party.index') }}"
-            class="inline-flex font-bold uppercase py-3 px-8 text-xs bg-accent text-gray-900 hover:bg-accent/90 transition-colors">
-            Back to Parties
-          </a>
+          @if ($isGuest)
+            <a href="{{ route('browse') }}"
+              class="inline-flex font-bold uppercase py-3 px-8 text-xs bg-accent text-gray-900 hover:bg-accent/90 transition-colors">
+              Browse Content
+            </a>
+          @else
+            <a href="{{ route('account.watch-party.index') }}"
+              class="inline-flex font-bold uppercase py-3 px-8 text-xs bg-accent text-gray-900 hover:bg-accent/90 transition-colors">
+              Back to Parties
+            </a>
+          @endif
         </div>
       </div>
 
@@ -1287,8 +1400,12 @@
                 @foreach ($episodePlaylist as $i => $ep)
                   <div class="wp-ep-row" x-bind:class="{
                           'ep-active': currentEpisodeId === {{ $ep['id'] }},
-                          'ep-clickable': {{ $isHost ? 'true' : 'false' }} && currentEpisodeId !== {{ $ep['id'] }},
-                        }" @if ($isHost) @click="currentEpisodeId !== {{ $ep['id'] }} && jumpToEpisode({{ $ep['id'] }})"
+                          'ep-clickable': {{ ($isHost || $isGuest) ? 'true' : 'false' }} && currentEpisodeId !== {{ $ep['id'] }},
+                        }"
+                        @if ($isHost)
+                          @click="currentEpisodeId !== {{ $ep['id'] }} && jumpToEpisode({{ $ep['id'] }})"
+                        @elseif ($isGuest)
+                          @click="currentEpisodeId !== {{ $ep['id'] }} && $dispatch('wp:continue-alone', { url: {{ Js::from($ep['url'] ?? '') }} })"
                         @endif>
                     <div class="wp-ep-num" :class="currentEpisodeId === {{ $ep['id'] }} ? 'now' : ''">
                       <span x-show="currentEpisodeId === {{ $ep['id'] }}">▶</span>
@@ -1303,7 +1420,7 @@
                         <p x-show="currentEpisodeId === {{ $ep['id'] }}" class="text-[10px] text-gray-600 mt-0.5">Now playing</p>
                       @endif
                     </div>
-                    @if ($isHost)
+                    @if ($isHost || $isGuest)
                       <svg x-show="currentEpisodeId !== {{ $ep['id'] }}"
                         class="w-3.5 h-3.5 text-gray-700 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                         fill="currentColor" viewBox="0 0 24 24">
@@ -1426,6 +1543,12 @@
                   Watch Trailer
                 </button>
               @endif
+              @if ($watchAloneUrl)
+                <button @click="$dispatch('wp:continue-alone')" class="wp-lobby-trailer-btn"
+                  style="border-color:rgba(148,163,184,.15);color:#475569;font-size:.6rem;">
+                  Watch Alone
+                </button>
+              @endif
             @endif
           </div>
         </div>
@@ -1484,6 +1607,15 @@
             @endif
           </div>
 
+          {{-- Guest badge --}}
+          @if ($isGuest)
+            <a href="{{ route('login') }}" class="wp-go-live"
+              style="border-color:rgba(148,163,184,.2);color:#475569;font-size:.5rem;"
+              title="You're watching as a guest. Log in to save your history.">
+              Guest · {{ $guestName }}
+            </a>
+          @endif
+
           {{-- Go Live: snap member to host position --}}
           @if (!$isHost)
             <button x-show="!isLive" @click="goLive()" class="wp-go-live" x-cloak title="Jump to host's position">
@@ -1517,13 +1649,13 @@
           {{-- Episode prev / next (series) --}}
           @if ($isSeries)
             <div class="wp-bar-btns">
-              <button @click="prevEpisodeAction()" :disabled="{{ $isHost ? '!hasPrevEpisode' : 'true' }}" class="wp-btn"
+              <button @click="prevEpisodeAction()" :disabled="{{ ($isHost || $isGuest) ? '!hasPrevEpisode' : 'true' }}" class="wp-btn"
                 title="Previous episode">
                 <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" />
                 </svg>
               </button>
-              <button @click="nextEpisodeAction()" :disabled="{{ $isHost ? '!hasNextEpisode' : 'true' }}" class="wp-btn"
+              <button @click="nextEpisodeAction()" :disabled="{{ ($isHost || $isGuest) ? '!hasNextEpisode' : 'true' }}" class="wp-btn"
                 title="Next episode">
                 <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 3.9V8.1L8.5 12zM16 6h2v12h-2z" />
@@ -1660,6 +1792,15 @@
                 </svg>
               </button>
             </form>
+          @elseif ($isGuest)
+            {{-- Guests just navigate away — no server-side leave record --}}
+            <a href="{{ route('home') }}" class="wp-btn-leave" title="Leave party"
+              onclick="return confirm('Leave this watch party?')">
+              <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24">
+                <path
+                  d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
+              </svg>
+            </a>
           @else
             <form method="POST" action="{{ route('watch-party.leave', $party->token) }}" x-data
               @submit.prevent="if(confirm('Leave this watch party?')) $el.submit()">
@@ -1686,9 +1827,10 @@
     <script>
       (function () {
         const IS_HOST = @json($isHost);
+        const IS_GUEST = @json($isGuest);
         const IS_SERIES = @json($isSeries);
         const PARTY_TOKEN = @json($party->token);
-        const MY_USER_ID = @json($user->id);
+        const MY_USER_ID = @json($isGuest ? $guestId : $user?->id);
         const HOST_USER_ID = @json($party->host_id);
         const HLS_TOKEN = @json($hlsToken);
         const MAIN_SRC = @json($videoSrc ?? '');
@@ -2079,6 +2221,12 @@
             onHostSeeked() { pushSync(); },
 
             nextEpisodeAction() {
+              const idx = playlist.findIndex(e => e.id === this.currentEpisodeId);
+              if (idx === -1 || idx >= playlist.length - 1) return;
+              if (IS_GUEST) {
+                window.dispatchEvent(new CustomEvent('wp:continue-alone', { detail: { url: playlist[idx + 1].url } }));
+                return;
+              }
               if (!ws || ws.readyState !== WebSocket.OPEN) return;
               ws.send(JSON.stringify({ type: 'episode.next' }));
             },
@@ -2086,10 +2234,19 @@
             prevEpisodeAction() {
               const idx = playlist.findIndex(e => e.id === this.currentEpisodeId);
               if (idx <= 0) return;
+              if (IS_GUEST) {
+                window.dispatchEvent(new CustomEvent('wp:continue-alone', { detail: { url: playlist[idx - 1].url } }));
+                return;
+              }
               this.jumpToEpisode(playlist[idx - 1].id);
             },
 
             jumpToEpisode(episodeId) {
+              if (IS_GUEST) {
+                const ep = playlist.find(e => e.id === episodeId);
+                if (ep?.url) window.dispatchEvent(new CustomEvent('wp:continue-alone', { detail: { url: ep.url } }));
+                return;
+              }
               if (!ws || ws.readyState !== WebSocket.OPEN) return;
               ws.send(JSON.stringify({ type: 'episode.jump', episode_id: episodeId }));
             },

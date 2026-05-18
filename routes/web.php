@@ -34,7 +34,6 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\VerifyOtpController;
 use App\Http\Controllers\ContactController;
-use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\VideoCallbackController;
 use App\Http\Controllers\AccountProfileController;
 use App\Http\Controllers\ProfileInviteController;
@@ -125,8 +124,6 @@ Route::get('/movies/{movie}', [MovieController::class, 'show'])->name('movies.sh
 Route::get('/series', [SeriesController::class, 'index'])->name('series');
 Route::get('/series/{series}', [SeriesController::class, 'show'])->name('series.show');
 
-Route::middleware(['auth', 'verified'])->get('/subscription/expired', [SubscriptionController::class, 'expired'])->name('subscription.expired');
-
 Route::middleware(['auth.modal', 'subscription'])->group(function () {
     Route::get('/movies/{movie}/watch', [MovieController::class, 'watch'])->name('movies.watch');
     Route::get('/series/{series}/watch/{episode}', [SeriesController::class, 'watch'])->name('series.watch');
@@ -144,8 +141,11 @@ Route::middleware('auth')->post('/watch/progress', [WatchProgressController::cla
 
 Route::middleware(['auth', 'verified'])->post('/watchlist/{type}/{id}', [WatchlistController::class, 'toggle'])->name('watchlist.toggle');
 
-// Watch party — public show, auth-gated join/sync/state
+// Watch party — public show + guest join; state/message open to session guests; actions auth-gated
 Route::get('/watch-party/{token}', [WatchPartyController::class, 'show'])->name('watch-party.show');
+Route::post('/watch-party/{token}/guest-join', [WatchPartyController::class, 'guestJoin'])->name('watch-party.guest-join');
+Route::get('/watch-party/{token}/state', [WatchPartyController::class, 'state'])->name('watch-party.state');
+Route::post('/watch-party/{token}/message', [WatchPartyController::class, 'sendMessage'])->name('watch-party.message');
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/watch-party/{token}/join', [WatchPartyController::class, 'join'])->name('watch-party.join');
     Route::post('/watch-party/{token}/leave', [WatchPartyController::class, 'leave'])->name('watch-party.leave');
@@ -154,8 +154,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/watch-party/{token}/countdown', [WatchPartyController::class, 'setCountdown'])->name('watch-party.countdown');
     Route::patch('/watch-party/{token}/next-episode', [WatchPartyController::class, 'nextEpisode'])->name('watch-party.next-episode');
     Route::patch('/watch-party/{token}/jump-to-episode', [WatchPartyController::class, 'jumpToEpisode'])->name('watch-party.jump-to-episode');
-    Route::post('/watch-party/{token}/message', [WatchPartyController::class, 'sendMessage'])->name('watch-party.message');
-    Route::get('/watch-party/{token}/state', [WatchPartyController::class, 'state'])->name('watch-party.state');
     Route::patch('/watch-party/{token}/lobby', [WatchPartyController::class, 'toggleLobby'])->name('watch-party.lobby');
     Route::patch('/watch-party/{token}/kick', [WatchPartyController::class, 'kick'])->name('watch-party.kick');
     Route::patch('/watch-party/{token}/unkick', [WatchPartyController::class, 'unkick'])->name('watch-party.unkick');

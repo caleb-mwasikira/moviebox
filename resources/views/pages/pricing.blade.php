@@ -9,13 +9,26 @@
 
       {{-- Header --}}
       <div class="text-center mb-14">
-        <p class="text-xs font-bold uppercase tracking-widest text-accent mb-3">Plans & Pricing</p>
-        <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-          Stream without limits
-        </h1>
-        <p class="text-gray-500 dark:text-gray-400 max-w-md mx-auto text-sm leading-relaxed">
-          Pick a plan and start watching movies and series today. Cancel or switch at any time.
-        </p>
+        @if ($hasEverSubscribed)
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-500/10 mb-6">
+            <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+            </svg>
+          </div>
+          <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">Your subscription has ended</h1>
+          <p class="text-gray-500 dark:text-gray-400 max-w-md mx-auto text-sm leading-relaxed">
+            Renew your plan to continue watching movies and series without interruption.
+          </p>
+        @else
+          <p class="text-xs font-bold uppercase tracking-widest text-accent mb-3">Plans & Pricing</p>
+          <h1 class="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            Stream without limits
+          </h1>
+          <p class="text-gray-500 dark:text-gray-400 max-w-md mx-auto text-sm leading-relaxed">
+            Pick a plan and start watching movies and series today. Cancel or switch at any time.
+          </p>
+        @endif
       </div>
 
       @if ($packages->isEmpty())
@@ -84,17 +97,17 @@
                 @endif
               </ul>
 
+              @if ($isCurrent)
+                <div class="w-full text-center font-bold uppercase py-3 px-4 text-xs bg-gray-100 text-gray-400 dark:bg-gray-600 dark:text-gray-400 cursor-not-allowed">
+                  Active Plan
+                </div>
+              @else
+                <a href="{{ route('payment.show', $package->uuid) }}"
+                  class="w-full inline-flex justify-center font-bold uppercase py-3 px-4 text-xs bg-gray-900 hover:bg-accent hover:text-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-accent transition-colors">
+                  @auth {{ $currentPackage ? 'Switch Plan' : 'Subscribe' }} @else Get Started @endauth
+                </a>
+              @endif
               @auth
-                @if ($isCurrent)
-                  <div class="w-full text-center font-bold uppercase py-3 px-4 text-xs bg-gray-100 text-gray-400 dark:bg-gray-600 dark:text-gray-400 cursor-not-allowed">
-                    Active Plan
-                  </div>
-                @else
-                  <a href="{{ route('payment.show', $package->uuid) }}"
-                    class="w-full inline-flex justify-center font-bold uppercase py-3 px-4 text-xs bg-gray-900 hover:bg-accent hover:text-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-accent transition-colors">
-                    {{ $currentPackage ? 'Switch Plan' : 'Subscribe' }}
-                  </a>
-                @endif
                 @if ($package->is_giftable)
                 <a href="{{ route('gift.show', $package->uuid) }}"
                   class="mt-2 w-full inline-flex justify-center gap-x-1.5 font-bold uppercase py-2.5 px-4 text-xs border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-accent hover:text-accent transition-colors">
@@ -104,11 +117,6 @@
                   Gift this plan
                 </a>
                 @endif
-              @else
-                <a href="{{ route('login') }}"
-                  class="w-full inline-flex justify-center font-bold uppercase py-3 px-4 text-xs bg-gray-900 hover:bg-accent hover:text-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-accent transition-colors">
-                  Get Started
-                </a>
               @endauth
 
             </div>

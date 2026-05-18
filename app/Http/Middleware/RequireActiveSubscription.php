@@ -70,7 +70,7 @@ class RequireActiveSubscription
             if ($this->isFreeContent($request) || $this->hasSharedAccess($request)) {
                 return $next($request);
             }
-            return redirect()->route('subscription.expired');
+            return redirect()->route('pricing');
         }
 
         // Shared guests are logged in as the owner but may only watch the one shared title.

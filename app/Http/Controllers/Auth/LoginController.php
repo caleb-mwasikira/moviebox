@@ -37,6 +37,6 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('profiles.select'));
+        return redirect()->route('profiles.select');
     }
 }

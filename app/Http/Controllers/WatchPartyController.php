@@ -132,16 +132,32 @@ class WatchPartyController extends Controller
             ->with(['host', 'watchable', 'members.user', 'episodes.episode'])
             ->firstOrFail();
 
-        $user     = Auth::user();
+        $user  = Auth::user();
+        $guest = !$user ? session('watch_party_guest') : null;
+
         $isHost   = $user && $user->id === $party->host_id;
-        $isMember = $user && $party->members->contains(
-            fn($m) => $m->user_id === $user->id && is_null($m->kicked_at)
-        );
-        $canAccess = $user && $user->canUseWatchParty();
+        $isMember = $user
+            ? $party->members->contains(fn($m) => $m->user_id === $user->id && is_null($m->kicked_at))
+            : (bool) $guest;
+        $canAccess = $user ? $user->canUseWatchParty() : (bool) $guest;
+        $isGuest   = (bool) $guest;
+        $guestName = $guest['name'] ?? null;
+        $guestId   = $guest['id'] ?? null;
 
         $watchable = $party->watchable;
         $isMovie   = $watchable instanceof Movie;
         $isSeries  = $watchable instanceof Series;
+
+        // "Watch alone" URL — carry the party's current position into the standalone player
+        $watchAloneUrl = null;
+        if ($isMovie) {
+            $watchAloneUrl = route('movies.watch', $watchable) . '?t=' . floor($party->playback_position ?? 0);
+        } elseif ($isSeries && $party->current_episode_id) {
+            $ep = $party->currentEpisode;
+            if ($ep) {
+                $watchAloneUrl = route('series.watch', [$watchable, $ep]) . '?t=' . floor($party->playback_position ?? 0);
+            }
+        }
 
         // HLS auth token (valid 2 hours from page load)
         $uid      = $user?->id ?? 0;
@@ -174,6 +190,7 @@ class WatchPartyController extends Controller
             ? $party->episodes->map(fn($e) => [
                 'id'    => $e->episode_id,
                 'label' => $e->episode?->label() ?? '—',
+                'url'   => $e->episode ? route('series.watch', [$watchable, $e->episode]) : null,
             ])->values()
             : collect();
 
@@ -193,11 +210,33 @@ class WatchPartyController extends Controller
 
         return view('pages.watch-party.show', compact(
             'party', 'isHost', 'isMember', 'canAccess',
+            'isGuest', 'guestName', 'guestId',
             'isMovie', 'isSeries',
             'hlsToken', 'videoSrc', 'useHls',
             'trailerSrc', 'episodePlaylist', 'currentEpisodeId', 'startsAt',
-            'streamingWsUrl', 'lobbyActive'
+            'streamingWsUrl', 'lobbyActive', 'watchAloneUrl'
         ));
+    }
+
+    // ── Guest join (session only, no account) ────────────────────────────────
+
+    public function guestJoin(Request $request, string $token)
+    {
+        $party = WatchParty::where('token', $token)->firstOrFail();
+
+        if ($party->isEnded()) {
+            return redirect()->route('watch-party.show', $token)
+                ->withErrors(['name' => 'This watch party has ended.']);
+        }
+
+        $request->validate(['name' => ['required', 'string', 'min:2', 'max:50']]);
+
+        session(['watch_party_guest' => [
+            'name' => trim($request->name),
+            'id'   => 'g_' . Str::random(20),
+        ]]);
+
+        return redirect()->route('watch-party.show', $token);
     }
 
     // ── Join ─────────────────────────────────────────────────────────────────
@@ -508,41 +547,62 @@ class WatchPartyController extends Controller
     {
         $party = WatchParty::where('token', $token)->firstOrFail();
         $user  = Auth::user();
+        $guest = !$user ? session('watch_party_guest') : null;
 
-        $activeMember = $party->members->first(
-            fn($m) => $m->user_id === $user->id && is_null($m->kicked_at)
-        );
-
-        if (! $activeMember) {
-            return response()->json(['error' => 'Not a member.'], 403);
+        if (!$user && !$guest) {
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
 
         $request->validate(['message' => ['required', 'string', 'max:500']]);
 
-        $msg = WatchPartyMessage::create([
-            'watch_party_id' => $party->id,
-            'user_id'        => $user->id,
-            'message'        => $request->input('message'),
-        ]);
+        if ($user) {
+            $activeMember = $party->members->first(
+                fn($m) => $m->user_id === $user->id && is_null($m->kicked_at)
+            );
 
-        $msg->setRelation('user', $user);
+            if (!$activeMember) {
+                return response()->json(['error' => 'Not a member.'], 403);
+            }
 
-        // Sender adds their message locally; WS listener deduplicates by id
-        $this->pushToWS($party->token, 'WatchPartyChatMessage', $this->formatMessage($msg, $party->host_id));
+            $msg = WatchPartyMessage::create([
+                'watch_party_id' => $party->id,
+                'user_id'        => $user->id,
+                'message'        => $request->input('message'),
+            ]);
+            $msg->setRelation('user', $user);
 
-        return response()->json([
-            'ok'      => true,
-            'message' => [
-                'id'        => $msg->id,
-                'user_id'   => $user->id,
-                'name'      => $user->name,
-                'message'   => $msg->message,
-                'is_host'   => $user->id === $party->host_id,
-                'time'      => $msg->created_at->format('H:i'),
-                'is_mine'   => true,
-                'is_system' => false,
-            ],
-        ]);
+            $this->pushToWS($party->token, 'WatchPartyChatMessage', $this->formatMessage($msg, $party->host_id));
+
+            return response()->json([
+                'ok'      => true,
+                'message' => [
+                    'id'        => $msg->id,
+                    'user_id'   => $user->id,
+                    'name'      => $user->name,
+                    'message'   => $msg->message,
+                    'is_host'   => $user->id === $party->host_id,
+                    'time'      => $msg->created_at->format('H:i'),
+                    'is_mine'   => true,
+                    'is_system' => false,
+                ],
+            ]);
+        }
+
+        // Guest: push directly to WS — no DB record
+        $msgId   = 'g_' . uniqid();
+        $payload = [
+            'id'        => $msgId,
+            'user_id'   => $guest['id'],
+            'name'      => $guest['name'],
+            'message'   => $request->input('message'),
+            'is_host'   => false,
+            'time'      => now()->format('H:i'),
+            'is_mine'   => false,
+            'is_system' => false,
+        ];
+        $this->pushToWS($party->token, 'WatchPartyChatMessage', $payload);
+
+        return response()->json(['ok' => true, 'message' => array_merge($payload, ['is_mine' => true])]);
     }
 
     // ── State (server → participants, polled every 2.5s) ─────────────────────
@@ -551,18 +611,25 @@ class WatchPartyController extends Controller
     {
         $party = WatchParty::where('token', $token)->firstOrFail();
         $user  = Auth::user();
+        $guest = !$user ? session('watch_party_guest') : null;
 
-        $myMembership = WatchPartyMember::where('watch_party_id', $party->id)
-            ->where('user_id', $user->id)
-            ->first();
-
-        if ($myMembership && $myMembership->kicked_at) {
-            return response()->json(['status' => 'kicked']);
+        if (!$user && !$guest) {
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        WatchPartyMember::where('watch_party_id', $party->id)
-            ->where('user_id', $user->id)
-            ->update(['last_seen_at' => now()]);
+        if ($user) {
+            $myMembership = WatchPartyMember::where('watch_party_id', $party->id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if ($myMembership && $myMembership->kicked_at) {
+                return response()->json(['status' => 'kicked']);
+            }
+
+            WatchPartyMember::where('watch_party_id', $party->id)
+                ->where('user_id', $user->id)
+                ->update(['last_seen_at' => now()]);
+        }
 
         $online = WatchPartyMember::where('watch_party_id', $party->id)
             ->whereNull('kicked_at')
@@ -597,7 +664,7 @@ class WatchPartyController extends Controller
                 'message'   => $m->message,
                 'is_host'   => $m->user_id === $party->host_id,
                 'time'      => $m->created_at->format('H:i'),
-                'is_mine'   => $m->user_id === $user->id,
+                'is_mine'   => $user && $m->user_id === $user->id,
                 'is_system' => (bool) $m->is_system,
             ])
             ->values();
