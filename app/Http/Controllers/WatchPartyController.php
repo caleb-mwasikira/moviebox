@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\WatchPartySync;
+use Illuminate\Support\Facades\Http;
 use App\Models\Episode;
 use App\Models\Movie;
 use App\Models\Series;
@@ -178,11 +178,21 @@ class WatchPartyController extends Controller
         $currentEpisodeId = $party->current_episode_id;
         $startsAt         = $party->starts_at?->timestamp;
 
+        // Upgrade the STREAMING_SERVICE_URL HTTP endpoint to a WebSocket URL:
+        // http:// → ws://   https:// → wss://
+        $streamingWsUrl = rtrim(
+            str_replace(['https://', 'http://'], ['wss://', 'ws://'],
+                env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090')
+            ),
+            '/'
+        );
+
         return view('pages.watch-party.show', compact(
             'party', 'isHost', 'isMember', 'canAccess',
             'isMovie', 'isSeries',
             'hlsToken', 'videoSrc', 'useHls',
-            'trailerSrc', 'episodePlaylist', 'currentEpisodeId', 'startsAt'
+            'trailerSrc', 'episodePlaylist', 'currentEpisodeId', 'startsAt',
+            'streamingWsUrl'
         ));
     }
 
@@ -249,6 +259,8 @@ class WatchPartyController extends Controller
 
         $party->update(['status' => 'ended', 'ended_at' => now()]);
 
+        $this->pushToWS($party->token, 'WatchPartyEnded', []);
+
         return redirect()->route('account.watch-party.index')
             ->with('success', 'Watch party ended.');
     }
@@ -277,11 +289,10 @@ class WatchPartyController extends Controller
             ->where('user_id', Auth::id())
             ->update(['last_seen_at' => now()]);
 
-        broadcast(new WatchPartySync(
-            token: $party->token,
-            position: (float) $request->input('position'),
-            isPlaying: $request->boolean('is_playing'),
-        ))->toOthers();
+        $this->pushToWS($party->token, 'WatchPartySync', [
+            'position'   => (float) $request->input('position'),
+            'is_playing' => $request->boolean('is_playing'),
+        ], Auth::id()); // exclude the host — they triggered the sync
 
         return response()->json(['ok' => true]);
     }
@@ -331,6 +342,16 @@ class WatchPartyController extends Controller
             'playback_updated_at' => now(),
         ]);
 
+        $this->pushToWS($party->token, 'WatchPartyEpisodeChanged', [
+            'current_episode_id' => $episode->id,
+            'episode' => [
+                'id'      => $episode->id,
+                'label'   => $episode->label(),
+                'src'     => $episode->streamingUrl() ?? $episode->videoUrl(),
+                'use_hls' => (bool) $episode->streaming_path,
+            ],
+        ]);
+
         return response()->json([
             'current_episode_id' => $next->episode_id,
             'episode' => [
@@ -365,6 +386,16 @@ class WatchPartyController extends Controller
             'playback_position'   => 0,
             'is_playing'          => false,
             'playback_updated_at' => now(),
+        ]);
+
+        $this->pushToWS($party->token, 'WatchPartyEpisodeChanged', [
+            'current_episode_id' => $episode->id,
+            'episode' => [
+                'id'      => $episode->id,
+                'label'   => $episode->label(),
+                'src'     => $episode->streamingUrl() ?? $episode->videoUrl(),
+                'use_hls' => (bool) $episode->streaming_path,
+            ],
         ]);
 
         return response()->json([
@@ -405,12 +436,17 @@ class WatchPartyController extends Controller
 
         $member->update(['kicked_at' => now(), 'last_seen_at' => null]);
 
-        WatchPartyMessage::create([
+        $this->pushToWS($party->token, 'WatchPartyKicked', ['user_id' => $member->user_id]);
+
+        $msg = WatchPartyMessage::create([
             'watch_party_id' => $party->id,
             'user_id'        => Auth::id(),
             'message'        => $member->user->name . ' was removed from the party.',
             'is_system'      => true,
         ]);
+        $msg->load('user');
+
+        $this->pushToWS($party->token, 'WatchPartyChatMessage', $this->formatMessage($msg, $party->host_id));
 
         return response()->json(['ok' => true, 'username' => $member->user->name]);
     }
@@ -435,12 +471,15 @@ class WatchPartyController extends Controller
 
         $member->update(['kicked_at' => null]);
 
-        WatchPartyMessage::create([
+        $msg = WatchPartyMessage::create([
             'watch_party_id' => $party->id,
             'user_id'        => Auth::id(),
             'message'        => $member->user->name . ' can rejoin the party.',
             'is_system'      => true,
         ]);
+        $msg->load('user');
+
+        $this->pushToWS($party->token, 'WatchPartyChatMessage', $this->formatMessage($msg, $party->host_id));
 
         return response()->json(['ok' => true, 'username' => $member->user->name]);
     }
@@ -468,10 +507,16 @@ class WatchPartyController extends Controller
             'message'        => $request->input('message'),
         ]);
 
+        $msg->setRelation('user', $user);
+
+        // Sender adds their message locally; WS listener deduplicates by id
+        $this->pushToWS($party->token, 'WatchPartyChatMessage', $this->formatMessage($msg, $party->host_id));
+
         return response()->json([
             'ok'      => true,
             'message' => [
                 'id'        => $msg->id,
+                'user_id'   => $user->id,
                 'name'      => $user->name,
                 'message'   => $msg->message,
                 'is_host'   => $user->id === $party->host_id,
@@ -550,5 +595,36 @@ class WatchPartyController extends Controller
             'members'            => $online,
             'messages'           => $messages,
         ]);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private function formatMessage(WatchPartyMessage $msg, int $hostId): array
+    {
+        return [
+            'id'        => $msg->id,
+            'user_id'   => $msg->user_id,
+            'name'      => $msg->user->name,
+            'message'   => $msg->message,
+            'is_host'   => $msg->user_id === $hostId,
+            'time'      => $msg->created_at->format('H:i'),
+            'is_system' => (bool) $msg->is_system,
+        ];
+    }
+
+    private function pushToWS(string $token, string $event, array $data, int $excludeUserId = 0): void
+    {
+        $payload = ['event' => $event, 'data' => $data];
+        if ($excludeUserId) {
+            $payload['exclude_user_id'] = $excludeUserId;
+        }
+
+        try {
+            Http::withHeaders(['X-Api-Key' => env('APP_SECRET')])
+                ->timeout(3)
+                ->post(env('STREAMING_SERVICE_URL', 'http://localhost:9090') . '/watch-party/' . $token . '/broadcast', $payload);
+        } catch (\Throwable $e) {
+            \Log::warning('Watch party WS push failed: ' . $e->getMessage());
+        }
     }
 }

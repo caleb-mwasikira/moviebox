@@ -6,7 +6,14 @@
 <style>
   .wp-wrap {
     position: relative;
-    overflow-x: hidden;
+    overflow: hidden;
+    height: calc(100svh - 64px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  @media (min-width: 1024px) {
+    .wp-wrap { height: calc(100vh - 90px); }
   }
 
   .wp-video-col {
@@ -14,31 +21,29 @@
     width: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .wp-video-col video {
     display: block;
     width: 100%;
     background: #000;
-    max-height: calc(100svh - 64px - 60px);
-  }
-
-  @media (min-width: 768px) {
-    .wp-video-col video {
-      aspect-ratio: 16/9;
-      max-height: calc(100vh - 90px - 60px);
-    }
+    flex: 1;
+    min-height: 0;
+    object-fit: contain;
   }
 
   /* ── Bottom bar ─────────────────────────────────────────────── */
   .wp-bar {
     width: 100%;
-    height: 60px;
-    padding: 0 14px;
+    min-height: 72px;
+    padding: 12px 16px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     background: #080e1a;
     border-top: 1px solid #1e293b;
     flex-shrink: 0;
@@ -73,7 +78,7 @@
   }
   .wp-status-label { font-size: .58rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 
-  .wp-bar-sep { width: 1px; height: 24px; background: #1e293b; flex-shrink: 0; }
+  .wp-bar-sep { width: 1px; height: 28px; background: #1e293b; flex-shrink: 0; }
 
   /* ── Icon buttons ───────────────────────────────────────────── */
   .wp-btn {
@@ -148,6 +153,7 @@
     transition: transform .28s cubic-bezier(.4,0,.2,1);
     display: flex; flex-direction: column;
     border-left: 1px solid #1e293b;
+    overflow: hidden;
   }
   .wp-sidebar.open { transform: translateX(0); }
 
@@ -197,11 +203,11 @@
     overflow: hidden;
   }
 
-  .wp-panel-scroll { flex: 1; overflow-y: auto; }
+  .wp-panel-scroll { flex: 1; overflow-y: auto; min-height: 0; }
 
   /* ── Chat ───────────────────────────────────────────────────── */
   .wp-chat-list {
-    flex: 1; overflow-y: auto;
+    flex: 1; overflow-y: auto; min-height: 0;
     padding: 12px 14px;
     display: flex; flex-direction: column; gap: 8px;
   }
@@ -398,8 +404,6 @@
 
 @section('content')
 @php $user = auth()->user(); @endphp
-
-<main class="grow bg-gray-950">
 
   {{-- ── Non-room states ─────────────────────────────────────────────────── --}}
 
@@ -675,6 +679,14 @@
           <p class="wp-bar-title">{{ $party->title() }}</p>
           @if ($isSeries)
           <p class="wp-bar-episode" x-text="currentEpisodeLabel || ''">&nbsp;</p>
+          @if (! $isHost)
+          <div class="wp-bar-status">
+            <span class="wp-status-dot" x-cloak :class="isLive ? 'live' : 'syncing'"></span>
+            <span class="wp-status-label" x-cloak
+              :style="isLive ? 'color:#4ade80' : 'color:#facc15'"
+              x-text="isLive ? 'Watching' : 'Behind'"></span>
+          </div>
+          @endif
           @else
           <div class="wp-bar-status">
             @if ($isHost)
@@ -835,7 +847,6 @@
   </div>
   @endif
 
-</main>
 @endsection
 
 @if ($isMember && ! $party->isEnded())
@@ -843,24 +854,24 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>
 (function () {
-  const IS_HOST      = @json($isHost);
-  const IS_SERIES    = @json($isSeries);
-  const PARTY_TOKEN  = @json($party->token);
-  const HLS_TOKEN    = @json($hlsToken);
-  const MAIN_SRC     = @json($videoSrc ?? '');
-  const USE_HLS      = @json($useHls);
+  const IS_HOST          = @json($isHost);
+  const IS_SERIES        = @json($isSeries);
+  const PARTY_TOKEN      = @json($party->token);
+  const MY_USER_ID       = @json($user->id);
+  const HLS_TOKEN        = @json($hlsToken);
+  const MAIN_SRC         = @json($videoSrc ?? '');
+  const USE_HLS          = @json($useHls);
   const EPISODE_PLAYLIST = @json($episodePlaylist);
+
+  const WS_URL    = @json($streamingWsUrl);
 
   const video     = document.getElementById('party-video');
   const stateUrl  = '/watch-party/' + PARTY_TOKEN + '/state';
-  const syncUrl   = '/watch-party/' + PARTY_TOKEN + '/sync';
-  const nextEpUrl = '/watch-party/' + PARTY_TOKEN + '/next-episode';
-  const jumpEpUrl = '/watch-party/' + PARTY_TOKEN + '/jump-to-episode';
-  const msgUrl    = '/watch-party/' + PARTY_TOKEN + '/message';
   const csrf      = document.querySelector('meta[name="csrf-token"]').content;
 
-  let hlsInst  = null;
-  let _wpComp  = null; // set by Alpine init(), used by Echo listener
+  let hlsInst = null;
+  let _wpComp = null;
+  const STORAGE_KEY = 'wp_pos_' + PARTY_TOKEN;
 
   function loadVideo(src, useHls, autoplay) {
     if (!src) return;
@@ -884,7 +895,6 @@
 
     if (document.pictureInPictureEnabled) {
       pipBtn.style.removeProperty('display');
-
       pipBtn.addEventListener('click', function () {
         if (document.pictureInPictureElement) {
           document.exitPictureInPicture();
@@ -892,12 +902,10 @@
           video.requestPictureInPicture();
         }
       });
-
       video.addEventListener('enterpictureinpicture', function () {
         pipIconEnter.style.display = 'none';
         pipIconExit.style.display  = '';
       });
-
       video.addEventListener('leavepictureinpicture', function () {
         pipIconEnter.style.display = '';
         pipIconExit.style.display  = 'none';
@@ -905,41 +913,87 @@
     }
   })();
 
-  // Host: push sync to server (broadcasts via WebSocket to members)
+  // Host: push sync to Go over the existing WebSocket connection.
   function pushSync() {
-    fetch(syncUrl, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': csrf,
-        'Accept': 'application/json',
-        'X-Socket-ID': window.Echo ? (window.Echo.socketId() ?? '') : '',
-      },
-      body: JSON.stringify({ position: video.currentTime, is_playing: !video.paused }),
-    }).catch(() => {});
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify({ type: 'sync', position: video.currentTime, is_playing: !video.paused }));
   }
 
   if (IS_HOST) {
     setInterval(pushSync, 4000);
   }
 
-  // Non-host: receive host playback via WebSocket
-  if (!IS_HOST && window.Echo) {
-    window.Echo.private('watch-party.' + PARTY_TOKEN)
-      .listen('WatchPartySync', function (data) {
-        if (!_wpComp) return;
+  // Native WebSocket → Go streaming service
+  let ws = null;
+  let wsReconnectDelay = 1000;
+
+  function connectWS() {
+    const url = WS_URL + '/ws/watch-party/' + PARTY_TOKEN + '?auth=' + encodeURIComponent(HLS_TOKEN);
+    ws = new WebSocket(url);
+
+    ws.addEventListener('open', () => { wsReconnectDelay = 1000; });
+
+    ws.addEventListener('message', (e) => {
+      let msg;
+      try { msg = JSON.parse(e.data); } catch { return; }
+      const data = msg.data;
+
+      if (msg.event === 'presence.here') {
+        if (_wpComp) _wpComp.members = data;
+      } else if (msg.event === 'presence.joining') {
+        if (_wpComp && !_wpComp.members.some(m => m.id === data.id))
+          _wpComp.members.push(data);
+      } else if (msg.event === 'presence.leaving') {
+        if (_wpComp) _wpComp.members = _wpComp.members.filter(m => m.id !== data.id);
+      } else if (msg.event === 'WatchPartySync') {
+        if (!_wpComp || IS_HOST) return;
         _wpComp.hostPosition  = data.position;
         _wpComp.hostIsPlaying = !!data.is_playing;
         _wpComp._hostSyncedAt = Date.now();
-      });
+      } else if (msg.event === 'WatchPartyChatMessage') {
+        if (!_wpComp) return;
+        if (_wpComp.messages.some(m => m.id === data.id)) return;
+        const chatMsg = { ...data, is_mine: data.user_id === MY_USER_ID };
+        _wpComp.messages.push(chatMsg);
+        if (_wpComp.activeSidebar === 'chat') {
+          _wpComp.$nextTick(() => _wpComp.scrollChat());
+        } else if (!chatMsg.is_mine && !chatMsg.is_system) {
+          _wpComp.unreadChat++;
+        }
+      } else if (msg.event === 'WatchPartyEnded') {
+        localStorage.removeItem(STORAGE_KEY);
+        window.location.reload();
+      } else if (msg.event === 'WatchPartyKicked') {
+        if (!_wpComp) return;
+        if (data.user_id === MY_USER_ID) {
+          _wpComp.kicked = true;
+        } else {
+          _wpComp.members = _wpComp.members.filter(m => m.id !== data.user_id);
+        }
+      } else if (msg.event === 'WatchPartyEpisodeChanged') {
+        if (!_wpComp) return;
+        _wpComp.currentEpisodeId = data.current_episode_id;
+        loadVideo(data.episode.src, data.episode.use_hls, IS_HOST);
+        video.currentTime = 0;
+      }
+    });
+
+    ws.addEventListener('close', () => {
+      if (_wpComp && _wpComp.kicked) return; // don't reconnect after kick
+      setTimeout(connectWS, wsReconnectDelay);
+      wsReconnectDelay = Math.min(wsReconnectDelay * 2, 30_000);
+    });
+
+    ws.addEventListener('error', () => { ws.close(); });
   }
+
+  connectWS();
 
   window.watchParty = function () {
     const playlist = EPISODE_PLAYLIST;
 
     return {
-      members:          @json($party->members->filter(fn($m) => !$m->kicked_at)->map(fn($m) => ['name' => $m->user->name, 'is_host' => $m->user_id === $party->host_id])->values()),
-      syncing:          false,
+      members:          @json($party->members->filter(fn($m) => !$m->kicked_at)->map(fn($m) => ['id' => $m->user_id, 'name' => $m->user->name, 'is_host' => $m->user_id === $party->host_id])->values()),
       kicked:           false,
       myPosition:       0,
       myProgressPct:    0,
@@ -947,22 +1001,17 @@
       hostIsPlaying:    false,
       _hostSyncedAt:    0,
       hostProgressPct:  0,
+      isLive:           true,
       currentEpisodeId: @json($currentEpisodeId),
       activeSidebar:    null,
       messages:         [],
       chatMessage:      '',
       unreadChat:       0,
-      _lastMsgId:       0,
-      _pollTimer:       null,
 
       get _hostLivePosition() {
         if (this._hostSyncedAt === 0) return this.hostPosition;
         const elapsed = this.hostIsPlaying ? (Date.now() - this._hostSyncedAt) / 1000 : 0;
         return this.hostPosition + elapsed;
-      },
-
-      get isLive() {
-        return (this._hostLivePosition - this.myPosition) < 10;
       },
 
       get hasNextEpisode() {
@@ -985,33 +1034,60 @@
       init() {
         _wpComp = this;
         loadVideo(MAIN_SRC, USE_HLS, false);
-        this._pollTimer = setInterval(() => this.poll(), 2500);
+        this.loadInitialState();
         const self = this;
 
+        let _lastSavedAt = 0;
         video.addEventListener('timeupdate', function () {
           self.myPosition = video.currentTime;
           const dur = video.duration;
           self.myProgressPct = (dur > 0) ? Math.min(100, (video.currentTime / dur) * 100) : 0;
           if (!IS_HOST && dur > 0) {
             self.hostProgressPct = Math.min(100, (self._hostLivePosition / dur) * 100);
+            const diff = self._hostLivePosition - self.myPosition;
+            if (self.isLive && diff > 12) self.isLive = false;
+            else if (!self.isLive && diff < 8) self.isLive = true;
+          }
+          const now = Date.now();
+          if (now - _lastSavedAt > 5000 && video.currentTime > 1) {
+            localStorage.setItem(STORAGE_KEY, video.currentTime);
+            _lastSavedAt = now;
           }
         });
 
-        if (!IS_HOST) {
-          let _clamping = false;
-          function clampToHost() {
-            if (_clamping || self._hostSyncedAt === 0) return;
-            const elapsed = self.hostIsPlaying ? (Date.now() - self._hostSyncedAt) / 1000 : 0;
-            const cap = self.hostPosition + elapsed;
-            if (video.currentTime > cap) {
-              _clamping = true;
-              video.currentTime = cap;
-              setTimeout(() => { _clamping = false; }, 200);
-            }
+        // Restore saved position once metadata is ready
+        let _posRestored = false;
+        function tryRestorePosition() {
+          if (_posRestored) return;
+          const saved = parseFloat(localStorage.getItem(STORAGE_KEY) || '0');
+          if (saved > 1) {
+            _posRestored = true;
+            video.currentTime = saved;
           }
-          video.addEventListener('seeking', clampToHost);
-          video.addEventListener('seeked',  clampToHost);
         }
+        video.addEventListener('loadedmetadata', tryRestorePosition);
+        video.addEventListener('canplay', tryRestorePosition);
+
+        window.addEventListener('pagehide', function () {
+          if (video.currentTime > 1) localStorage.setItem(STORAGE_KEY, video.currentTime);
+        });
+
+      },
+
+      // One-time fetch on join: loads chat history + initial host position
+      async loadInitialState() {
+        try {
+          const res  = await fetch(stateUrl + '?since=0', { headers: { 'Accept': 'application/json' } });
+          const data = await res.json();
+          if (data.messages && data.messages.length) {
+            this.messages = data.messages.map(m => ({ ...m, is_mine: m.user_id === MY_USER_ID }));
+          }
+          if (!IS_HOST && data.position != null) {
+            this.hostPosition  = data.position;
+            this.hostIsPlaying = !!data.is_playing;
+            this._hostSyncedAt = Date.now();
+          }
+        } catch (_) {}
       },
 
       switchToChat() {
@@ -1029,96 +1105,34 @@
 
       goLive() {
         const target = this._hostLivePosition;
-        if (target > 0) video.currentTime = target;
+        if (target > 0) {
+          video.currentTime = target;
+        }
+        if (this.hostIsPlaying) {
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
       },
 
-      async poll() {
-        try {
-          const res  = await fetch(stateUrl + '?since=' + this._lastMsgId, { headers: { 'Accept': 'application/json' } });
-          const data = await res.json();
-
-          this.members = data.members;
-
-          if (data.status === 'kicked') {
-            clearInterval(this._pollTimer);
-            this.kicked = true;
-            return;
-          }
-
-          if (data.status === 'ended') {
-            clearInterval(this._pollTimer);
-            window.location.reload();
-            return;
-          }
-
-          // Episode switch (series)
-          if (data.current_episode_id && data.current_episode_id !== this.currentEpisodeId) {
-            this.currentEpisodeId = data.current_episode_id;
-            if (data.episode && !IS_HOST) {
-              loadVideo(data.episode.src, data.episode.use_hls, false);
-              video.currentTime = 0;
-            }
-          }
-
-          // Fallback: apply position from poll only if WebSocket hasn't updated recently
-          if (!IS_HOST && data.position != null && (Date.now() - this._hostSyncedAt) > 6000) {
-            this.hostPosition  = data.position;
-            this.hostIsPlaying = !!data.is_playing;
-            this._hostSyncedAt = Date.now();
-          }
-
-          // Non-host members control their own playback freely
-
-          // Incoming chat messages
-          if (data.messages && data.messages.length) {
-            const newMsgs = data.messages.filter(m => m.id > this._lastMsgId);
-            if (newMsgs.length) {
-              this._lastMsgId = newMsgs[newMsgs.length - 1].id;
-              this.messages.push(...newMsgs);
-              if (this.activeSidebar === 'chat') {
-                this.$nextTick(() => this.scrollChat());
-              } else {
-                this.unreadChat += newMsgs.filter(m => !m.is_mine).length;
-              }
-            }
-          }
-        } catch (_) { /* keep polling */ }
-      },
-
-      // Host play/pause/seek → push sync immediately via WebSocket broadcast
       onHostPlay()   { pushSync(); },
       onHostPause()  { pushSync(); },
       onHostSeeked() { pushSync(); },
 
-      async nextEpisodeAction() {
-        const res  = await fetch(nextEpUrl, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        this.currentEpisodeId = data.current_episode_id;
-        loadVideo(data.episode.src, data.episode.use_hls, true);
-        video.currentTime = 0;
+      nextEpisodeAction() {
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+        ws.send(JSON.stringify({ type: 'episode.next' }));
       },
 
-      async prevEpisodeAction() {
+      prevEpisodeAction() {
         const idx = playlist.findIndex(e => e.id === this.currentEpisodeId);
         if (idx <= 0) return;
-        await this.jumpToEpisode(playlist[idx - 1].id);
+        this.jumpToEpisode(playlist[idx - 1].id);
       },
 
-      async jumpToEpisode(episodeId) {
-        const res = await fetch(jumpEpUrl, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-          body: JSON.stringify({ episode_id: episodeId }),
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        this.currentEpisodeId = data.current_episode_id;
-        loadVideo(data.episode.src, data.episode.use_hls, true);
-        video.currentTime = 0;
+      jumpToEpisode(episodeId) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+        ws.send(JSON.stringify({ type: 'episode.jump', episode_id: episodeId }));
       },
 
       async sendChat() {
@@ -1157,17 +1171,9 @@
           return;
         }
 
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
         this.chatMessage = '';
-        const res = await fetch(msgUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-          body: JSON.stringify({ message: msg }),
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        this.messages.push(data.message);
-        this._lastMsgId = Math.max(this._lastMsgId, data.message.id);
-        this.$nextTick(() => this.scrollChat());
+        ws.send(JSON.stringify({ type: 'chat', message: msg }));
       },
     };
   };
