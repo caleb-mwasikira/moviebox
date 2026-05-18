@@ -178,15 +178,18 @@
               </div>
 
               @auth
-              <div
+              <div x-data="{ mobileOpen: false }" @click.outside="mobileOpen = false"
                 class="relative hover:[&>.sub-menu]:lg:visible hover:[&>.sub-menu]:animate-popper-pop-in hover:[&>.sub-menu]:lg:opacity-100">
-                <a class="block py-4 px-2 xl:px-3" href="{{ route('account.dashboard') }}">
+                <a class="block py-4 px-2 xl:px-3" href="{{ route('account.dashboard') }}"
+                  @click="if (window.innerWidth < 1024) { $event.preventDefault(); mobileOpen = !mobileOpen; }">
                   <svg role="img" class="h-6 w-6 fill-gray-900 dark:fill-white">
                     <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#user"></use>
                   </svg>
                 </a>
 
-                <div class="sub-menu invisible absolute right-full z-20 -mr-9 w-60 origin-top-right bg-white dark:bg-gray-800 opacity-0 shadow-2xl ring-1 ring-black/[0.06] dark:ring-white/[0.08] transition-all flex flex-col">
+                <div class="sub-menu invisible absolute z-20 w-60 bg-white dark:bg-gray-800 opacity-0 shadow-2xl ring-1 ring-black/[0.06] dark:ring-white/[0.08] transition-all flex flex-col
+                  right-0 top-full lg:right-full lg:top-auto lg:-mr-9 lg:origin-top-right"
+                  :class="mobileOpen ? 'visible opacity-100' : ''">
 
                   {{-- User info --}}
                   <div class="px-4 py-3.5 border-b border-gray-600 dark:border-gray-700 flex items-center gap-x-3">

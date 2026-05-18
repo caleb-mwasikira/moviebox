@@ -16,7 +16,7 @@
 - [✅] Payment integration (Mpesa)
 - [✅] Trial period for new subscribers (e.g. 7-day free trial)
 - [ ] Coupon / promo codes for subscription discounts
-- [ ] Gift subscriptions — purchase and send a subscription to another user by email
+- [✅] Gift subscriptions — purchase and send a subscription to another user by email
 - [ ] Referral programme — users earn free days/credit for each friend who subscribes
 - [ ] Pay-per-view / rental — one-off payment to unlock a single title for 48 hours
 
@@ -28,7 +28,7 @@
 - [✅] Sharing of movies & series by paid user accounts
 - [ ] Autoplay next episode — countdown prompt before the next episode starts, with cancel option
 - [✅] Watch party — invite friends to a synchronised viewing session with live chat
-- [ ] Login with Google and Facebook
+- [✅] Login with Google and Facebook
 - [ ] Playback speed control — 0.5× to 2× in the video player
 - [✅] Picture-in-picture / mini player — keep watching while browsing the site
 
