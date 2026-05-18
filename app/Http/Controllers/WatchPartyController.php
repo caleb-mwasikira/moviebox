@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\WatchPartySync;
 use App\Models\Episode;
 use App\Models\Movie;
 use App\Models\Series;
@@ -275,6 +276,12 @@ class WatchPartyController extends Controller
         WatchPartyMember::where('watch_party_id', $party->id)
             ->where('user_id', Auth::id())
             ->update(['last_seen_at' => now()]);
+
+        broadcast(new WatchPartySync(
+            token: $party->token,
+            position: (float) $request->input('position'),
+            isPlaying: $request->boolean('is_playing'),
+        ))->toOthers();
 
         return response()->json(['ok' => true]);
     }

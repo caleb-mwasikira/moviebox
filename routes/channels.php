@@ -1,11 +1,18 @@
 <?php
 
+use App\Models\WatchParty;
+use App\Models\WatchPartyMember;
 use Illuminate\Support\Facades\Broadcast;
 
-Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
-    return (int) $user->id === (int) $id;
-});
+Broadcast::channel('App.Models.User.{id}', fn($user, $id) => (int) $user->id === (int) $id);
 
-Broadcast::channel('admin-notifications.{userId}', function ($user, $userId) {
-    return $user->isAdmin() && (int) $user->id === (int) $userId;
+Broadcast::channel('admin-notifications.{userId}', fn($user, $userId) => $user->isAdmin() && (int) $user->id === (int) $userId);
+
+Broadcast::channel('watch-party.{token}', function ($user, $token) {
+    $party = WatchParty::where('token', $token)->first();
+    if (! $party) return false;
+    return WatchPartyMember::where('watch_party_id', $party->id)
+        ->where('user_id', $user->id)
+        ->whereNull('kicked_at')
+        ->exists();
 });

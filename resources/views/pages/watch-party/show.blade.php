@@ -859,7 +859,8 @@
   const msgUrl    = '/watch-party/' + PARTY_TOKEN + '/message';
   const csrf      = document.querySelector('meta[name="csrf-token"]').content;
 
-  let hlsInst = null;
+  let hlsInst  = null;
+  let _wpComp  = null; // set by Alpine init(), used by Echo listener
 
   function loadVideo(src, useHls, autoplay) {
     if (!src) return;
@@ -904,15 +905,33 @@
     }
   })();
 
-  // Host periodic sync
+  // Host: push sync to server (broadcasts via WebSocket to members)
+  function pushSync() {
+    fetch(syncUrl, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrf,
+        'Accept': 'application/json',
+        'X-Socket-ID': window.Echo ? (window.Echo.socketId() ?? '') : '',
+      },
+      body: JSON.stringify({ position: video.currentTime, is_playing: !video.paused }),
+    }).catch(() => {});
+  }
+
   if (IS_HOST) {
-    setInterval(() => {
-      fetch(syncUrl, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-        body: JSON.stringify({ position: video.currentTime, is_playing: !video.paused }),
-      }).catch(() => {});
-    }, 4000);
+    setInterval(pushSync, 4000);
+  }
+
+  // Non-host: receive host playback via WebSocket
+  if (!IS_HOST && window.Echo) {
+    window.Echo.private('watch-party.' + PARTY_TOKEN)
+      .listen('WatchPartySync', function (data) {
+        if (!_wpComp) return;
+        _wpComp.hostPosition  = data.position;
+        _wpComp.hostIsPlaying = !!data.is_playing;
+        _wpComp._hostSyncedAt = Date.now();
+      });
   }
 
   window.watchParty = function () {
@@ -925,6 +944,8 @@
       myPosition:       0,
       myProgressPct:    0,
       hostPosition:     0,
+      hostIsPlaying:    false,
+      _hostSyncedAt:    0,
       hostProgressPct:  0,
       currentEpisodeId: @json($currentEpisodeId),
       activeSidebar:    null,
@@ -934,8 +955,14 @@
       _lastMsgId:       0,
       _pollTimer:       null,
 
+      get _hostLivePosition() {
+        if (this._hostSyncedAt === 0) return this.hostPosition;
+        const elapsed = this.hostIsPlaying ? (Date.now() - this._hostSyncedAt) / 1000 : 0;
+        return this.hostPosition + elapsed;
+      },
+
       get isLive() {
-        return (this.hostPosition - this.myPosition) < 10;
+        return (this._hostLivePosition - this.myPosition) < 10;
       },
 
       get hasNextEpisode() {
@@ -956,6 +983,7 @@
       },
 
       init() {
+        _wpComp = this;
         loadVideo(MAIN_SRC, USE_HLS, false);
         this._pollTimer = setInterval(() => this.poll(), 2500);
         const self = this;
@@ -964,6 +992,9 @@
           self.myPosition = video.currentTime;
           const dur = video.duration;
           self.myProgressPct = (dur > 0) ? Math.min(100, (video.currentTime / dur) * 100) : 0;
+          if (!IS_HOST && dur > 0) {
+            self.hostProgressPct = Math.min(100, (self._hostLivePosition / dur) * 100);
+          }
         });
 
         if (!IS_HOST) {
@@ -997,7 +1028,8 @@
       },
 
       goLive() {
-        if (this.hostPosition > 0) video.currentTime = this.hostPosition;
+        const target = this._hostLivePosition;
+        if (target > 0) video.currentTime = target;
       },
 
       async poll() {
@@ -1028,13 +1060,11 @@
             }
           }
 
-          // Update host position for non-host members
-          if (!IS_HOST && data.position != null) {
-            this.hostPosition = data.position;
-            const dur = video.duration;
-            this.hostProgressPct = (dur && dur > 0)
-              ? Math.min(100, (data.position / dur) * 100)
-              : 0;
+          // Fallback: apply position from poll only if WebSocket hasn't updated recently
+          if (!IS_HOST && data.position != null && (Date.now() - this._hostSyncedAt) > 6000) {
+            this.hostPosition  = data.position;
+            this.hostIsPlaying = !!data.is_playing;
+            this._hostSyncedAt = Date.now();
           }
 
           // Non-host members control their own playback freely
@@ -1055,18 +1085,10 @@
         } catch (_) { /* keep polling */ }
       },
 
-      // Host play/pause/seek → push sync
-      onHostPlay()   { this._pushSync(); },
-      onHostPause()  { this._pushSync(); },
-      onHostSeeked() { this._pushSync(); },
-
-      _pushSync() {
-        fetch(syncUrl, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
-          body: JSON.stringify({ position: video.currentTime, is_playing: !video.paused }),
-        }).catch(() => {});
-      },
+      // Host play/pause/seek → push sync immediately via WebSocket broadcast
+      onHostPlay()   { pushSync(); },
+      onHostPause()  { pushSync(); },
+      onHostSeeked() { pushSync(); },
 
       async nextEpisodeAction() {
         const res  = await fetch(nextEpUrl, {
