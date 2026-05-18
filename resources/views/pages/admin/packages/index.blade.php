@@ -41,6 +41,8 @@
           {{ $package->max_resolution }} · {{ $package->max_screens }} screen{{ $package->max_screens !== 1 ? 's' : '' }}
           @if (!$package->has_ads) · No ads @endif
           @if ($package->download_enabled) · Downloads @endif
+          @if ($package->watch_party_enabled) · Watch Party @endif
+          @if ($package->is_giftable) · Giftable @endif
         </p>
         @if ($package->description)
           <p class="text-xs text-gray-400 mt-1">{{ $package->description }}</p>
@@ -89,6 +91,8 @@
                 <span>{{ $package->max_screens }} screen{{ $package->max_screens !== 1 ? 's' : '' }}</span>
                 @if (!$package->has_ads)<span class="text-accent">No ads</span>@endif
                 @if ($package->download_enabled)<span>Downloads</span>@endif
+                @if ($package->watch_party_enabled)<span>Watch Party</span>@endif
+                @if ($package->is_giftable)<span>Giftable</span>@endif
                 @if ($package->trial_period_days > 0)<span>{{ $package->trial_period_days }}d trial</span>@endif
               </div>
             </td>

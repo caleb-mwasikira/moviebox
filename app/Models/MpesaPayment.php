@@ -10,6 +10,7 @@ class MpesaPayment extends Model
     protected $fillable = [
         'user_id',
         'subscription_package_id',
+        'gift_subscription_id',
         'phone',
         'merchant_request_id',
         'checkout_request_id',
@@ -28,5 +29,10 @@ class MpesaPayment extends Model
     public function package(): BelongsTo
     {
         return $this->belongsTo(SubscriptionPackage::class, 'subscription_package_id');
+    }
+
+    public function gift(): BelongsTo
+    {
+        return $this->belongsTo(GiftSubscription::class, 'gift_subscription_id');
     }
 }

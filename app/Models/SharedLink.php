@@ -8,7 +8,14 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class SharedLink extends Model
 {
-    protected $fillable = ['user_id', 'shareable_type', 'shareable_id', 'token'];
+    protected $fillable = ['user_id', 'shareable_type', 'shareable_id', 'token', 'expires_at'];
+
+    protected $casts = ['expires_at' => 'datetime'];
+
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && $this->expires_at->isPast();
+    }
 
     public function getRouteKeyName(): string
     {

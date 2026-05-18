@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\GiftReceived;
 use App\Mail\PaymentConfirmed;
 use App\Mail\SubscriptionUpdated;
+use App\Models\GiftSubscription;
 use App\Models\MpesaPayment;
 use App\Models\SubscriptionPackage;
 use App\Models\User;
@@ -27,6 +29,7 @@ class TestEmailController extends Controller
         'subscription_extended' => 'Subscription Extended (by Admin)',
         'subscription_expiring' => 'Subscription Expiring Soon',
         'profile_invite'        => 'Profile Invitation',
+        'gift_received'         => 'Gift Subscription Received',
     ];
 
     public function show()
@@ -77,6 +80,7 @@ class TestEmailController extends Controller
                 'payment_confirmed'     => $this->makePaymentConfirmed($user, $fakePackage),
                 'subscription_renewed'  => $this->makeSubscriptionUpdated($user, $fakePackage, 'renewed'),
                 'subscription_extended' => $this->makeSubscriptionUpdated($user, $fakePackage, 'extended', 30),
+                'gift_received'         => $this->makeGiftReceived($user, $fakePackage),
             };
 
             Mail::to($recipient)->send($mailable);
@@ -110,6 +114,21 @@ class TestEmailController extends Controller
     private function makeSubscriptionUpdated(User $user, SubscriptionPackage $package, string $action, ?int $days = null): SubscriptionUpdated
     {
         return new SubscriptionUpdated($user, $this->makeFakeSub($package), $action, $days);
+    }
+
+    private function makeGiftReceived(User $sender, SubscriptionPackage $package): GiftReceived
+    {
+        $gift = new GiftSubscription([
+            'recipient_email' => 'friend@example.com',
+            'token'           => 'PREVIEW_TOKEN',
+            'message'         => 'Hey! I thought you\'d love this — enjoy streaming on me. 🎬',
+            'status'          => 'sent',
+        ]);
+        $gift->expires_at = Carbon::now()->addDays(30);
+        $gift->setRelation('sender', $sender);
+        $gift->setRelation('package', $package);
+
+        return new GiftReceived($gift);
     }
 
     private function makeFakeSub(SubscriptionPackage $package, int $daysUntilExpiry = 30): UserSubscriptions

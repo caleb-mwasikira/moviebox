@@ -360,7 +360,7 @@
         </a>
       </div>
     @else
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      <div class="divide-y divide-gray-100 dark:divide-gray-700">
         @foreach ($recentlyWatched as $item)
           @php
             $isMovie = $item->watchable_type === 'movie';
@@ -379,25 +379,37 @@
             }
             $pct = $item->percentComplete();
           @endphp
-          <a href="{{ $watchRoute }}" class="group block">
-            <div class="relative aspect-[2/3] bg-gray-100 dark:bg-gray-800 overflow-hidden mb-2">
+          <a href="{{ $watchRoute }}" class="group flex items-center gap-x-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 -mx-2 px-2 transition-colors">
+
+            {{-- Thumbnail --}}
+            <div class="relative shrink-0 w-14 h-20 bg-gray-100 dark:bg-gray-800 overflow-hidden">
               @if ($thumb)
-                <img src="{{ $thumb }}" alt="{{ $title }}" class="w-full h-full object-cover transition-opacity group-hover:opacity-75">
+                <img src="{{ $thumb }}" alt="{{ $title }}" class="w-full h-full object-cover">
               @endif
-              <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <div class="w-10 h-10 rounded-full bg-black/60 flex items-center justify-center">
-                  <svg class="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                </div>
-              </div>
-              <div class="absolute bottom-0 left-0 right-0 h-1 bg-black/30">
-                <div class="h-full bg-accent" style="width:{{ $pct }}%"></div>
+              <div class="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">
+                <svg class="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
               </div>
             </div>
-            <p class="text-xs font-bold text-gray-900 dark:text-white truncate group-hover:text-accent transition-colors">{{ $title }}</p>
-            @if ($subtitle)
-              <p class="text-[11px] text-gray-400 truncate mt-0.5">{{ $subtitle }}</p>
-            @endif
-            <p class="text-[11px] text-gray-400 mt-0.5">{{ $item->watched_at->diffForHumans() }}</p>
+
+            {{-- Info --}}
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-bold text-gray-900 dark:text-white truncate group-hover:text-accent transition-colors">{{ $title }}</p>
+              @if ($subtitle)
+                <p class="text-xs text-gray-400 truncate mt-0.5">{{ $subtitle }}</p>
+              @endif
+              <div class="mt-2 flex items-center gap-x-2">
+                <div class="flex-1 max-w-[120px] h-0.5 bg-gray-200 dark:bg-gray-600">
+                  <div class="h-full bg-accent" style="width:{{ $pct }}%"></div>
+                </div>
+                <span class="text-[11px] text-gray-400 tabular-nums">{{ $pct }}%</span>
+              </div>
+            </div>
+
+            {{-- Time --}}
+            <p class="shrink-0 text-[11px] text-gray-400">{{ $item->watched_at->diffForHumans() }}</p>
+
           </a>
         @endforeach
       </div>

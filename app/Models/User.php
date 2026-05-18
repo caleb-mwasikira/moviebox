@@ -97,6 +97,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return (int) ($this->currentSubscription?->package?->max_shared_links ?? 5);
     }
 
+    public function canUseWatchParty(): bool
+    {
+        return (bool) $this->currentSubscription?->package?->watch_party_enabled;
+    }
+
     public function watchlistItems(): HasMany
     {
         return $this->hasMany(WatchlistItem::class);

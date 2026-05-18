@@ -21,6 +21,8 @@ class SubscriptionPackage extends Model
         'max_resolution',
         'has_ads',
         'download_enabled',
+        'watch_party_enabled',
+        'is_giftable',
         'is_active',
         'sort_order',
     ];

@@ -46,6 +46,12 @@
                   Billing Details
                 </a>
               </li>
+              <li>
+                <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.watch-party.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                  href="{{ route('account.watch-party.index') }}">
+                  Watch Party
+                </a>
+              </li>
               <li class="lg:mt-4 lg:pt-4 lg:border-t lg:border-gray-200 lg:dark:border-gray-600">
                 @if (auth()->user()->isAdmin())
                 <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"

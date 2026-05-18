@@ -181,6 +181,52 @@
             </div>
           </label>
 
+          {{-- Watch Party --}}
+          @php $wpChecked = (bool) old('watch_party_enabled', $p?->watch_party_enabled ?? false); @endphp
+          <label x-data="{ on: {{ $wpChecked ? 'true' : 'false' }} }"
+            :class="on ? 'border-accent bg-accent/5 dark:bg-accent/10' : 'border-gray-200 dark:border-gray-600'"
+            class="relative flex flex-col gap-y-4 p-5 border-2 cursor-pointer select-none transition-colors">
+            <input type="checkbox" name="watch_party_enabled" value="1" x-model="on" class="sr-only">
+            <div class="flex items-start justify-between gap-x-3">
+              <div :class="on ? 'bg-accent/10 dark:bg-accent/20 text-accent' : 'bg-gray-100 dark:bg-gray-600 text-gray-400'"
+                class="p-2 transition-colors">
+                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+              </div>
+              <div :class="on ? 'bg-accent border-accent' : 'border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800'"
+                class="w-5 h-5 border-2 flex items-center justify-center shrink-0 transition-colors mt-0.5">
+                <svg x-show="on" class="w-3 h-3 fill-gray-900" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              </div>
+            </div>
+            <div>
+              <p :class="on ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
+                class="font-bold text-sm transition-colors">Watch Party</p>
+              <p class="text-xs text-gray-400 mt-0.5 leading-snug">Subscribers can create and join synchronised watch parties.</p>
+            </div>
+          </label>
+
+          {{-- Giftable --}}
+          @php $giftableChecked = (bool) old('is_giftable', $p?->is_giftable ?? true); @endphp
+          <label x-data="{ on: {{ $giftableChecked ? 'true' : 'false' }} }"
+            :class="on ? 'border-accent bg-accent/5 dark:bg-accent/10' : 'border-gray-200 dark:border-gray-600'"
+            class="relative flex flex-col gap-y-4 p-5 border-2 cursor-pointer select-none transition-colors">
+            <input type="checkbox" name="is_giftable" value="1" x-model="on" class="sr-only">
+            <div class="flex items-start justify-between gap-x-3">
+              <div :class="on ? 'bg-accent/10 dark:bg-accent/20 text-accent' : 'bg-gray-100 dark:bg-gray-600 text-gray-400'"
+                class="p-2 transition-colors">
+                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M20 6h-2.18c.07-.26.18-.52.18-.83C18 3.42 16.58 2 14.83 2c-1.19 0-2.04.69-2.83 1.72C11.21 2.69 10.36 2 9.17 2 7.42 2 6 3.42 6 5.17c0 .31.1.57.18.83H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5.17-2.83c.55 0 .83.28.83.83S15.38 4.83 14.83 4.83 14 4.55 14 4s.28-.83.83-.83zM9.17 4.83c-.55 0-.83-.28-.83-.83s.28-.83.83-.83S10 3.45 10 4s-.28.83-.83.83zM11 19H4V8h6.17L11 9.22V19zm-2-9H8v2H6v-2H4V8h5v2zm6 9h-7V9.22L14.83 8H20v11h-3v-2h-2v2zm3-9h-2v2h-2v-2h-2V8h5v2z"/></svg>
+              </div>
+              <div :class="on ? 'bg-accent border-accent' : 'border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800'"
+                class="w-5 h-5 border-2 flex items-center justify-center shrink-0 transition-colors mt-0.5">
+                <svg x-show="on" class="w-3 h-3 fill-gray-900" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              </div>
+            </div>
+            <div>
+              <p :class="on ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
+                class="font-bold text-sm transition-colors">Giftable</p>
+              <p class="text-xs text-gray-400 mt-0.5 leading-snug">Allow subscribers to gift this plan to others.</p>
+            </div>
+          </label>
+
           {{-- Ads --}}
           @php $adsChecked = (bool) old('has_ads', $p?->has_ads ?? false); @endphp
           <label x-data="{ on: {{ $adsChecked ? 'true' : 'false' }} }"

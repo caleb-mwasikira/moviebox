@@ -47,6 +47,7 @@ class SharedLinkController extends Controller
             'shareable_type' => $request->shareable_type,
             'shareable_id'   => $model->id,
             'token'          => Str::random(12),
+            'expires_at'     => now()->addDays(7),
         ]);
 
         return response()->json(['url' => route('share.show', $shared->token)]);
@@ -54,6 +55,12 @@ class SharedLinkController extends Controller
 
     public function show(SharedLink $sharedLink)
     {
+        // Hard-stop: the link URL itself has expired.
+        if ($sharedLink->isExpired()) {
+            return redirect()->route('home')
+                ->with('error', 'This shared link has expired and is no longer valid.');
+        }
+
         $type   = $sharedLink->shareable_type;
         $sharer = $sharedLink->user()->with('currentSubscription')->first();
 
@@ -65,20 +72,25 @@ class SharedLinkController extends Controller
         };
 
         if ($sharer && $sharer->currentSubscription) {
-            $expiresAt = now()->addHours(6);
+            // Grant expires at the link's own expiry — never extend beyond it.
+            $expiresAt = $sharedLink->expires_at ?? now()->addHours(6);
 
+            // Only set up the guest session once. If the user is already a shared
+            // guest we must NOT reset the expiry clock — that is what kept access
+            // alive indefinitely before this fix.
             if (! Auth::check()) {
-                // Log the guest in as the sharer so they can watch using the sharer's subscription.
                 Auth::login($sharer, false);
                 session([
                     'shared_guest'         => true,
                     'shared_guest_expires' => $expiresAt->timestamp,
                     'shared_guest_name'    => $sharer->name,
                 ]);
+                session(['shared_access.' . $type . '.' . $model->id => $expiresAt->timestamp]);
+            } elseif (! session('shared_guest')) {
+                // Logged-in non-subscriber who followed the link — grant content access only.
+                session(['shared_access.' . $type . '.' . $model->id => $expiresAt->timestamp]);
             }
-
-            // Keep the session grant so already-logged-in non-subscribers also get access.
-            session(['shared_access.' . $type . '.' . $model->id => $expiresAt->timestamp]);
+            // If already a shared_guest: do nothing — honour the original grant as-is.
         }
 
         return match ($type) {

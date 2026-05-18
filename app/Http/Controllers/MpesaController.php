@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\GiftReceived;
 use App\Mail\PaymentConfirmed;
 use App\Mail\SubscriptionUpdated;
+use App\Models\GiftSubscription;
 use App\Models\MpesaPayment;
 use App\Models\SubscriptionPackage;
 use App\Services\MpesaService;
@@ -23,6 +25,7 @@ class MpesaController extends Controller
         $request->validate([
             'phone'        => ['required', 'string'],
             'package_uuid' => ['required', 'string', 'exists:subscription_packages,uuid'],
+            'gift_id'      => ['nullable', 'integer', 'exists:gift_subscriptions,id'],
         ]);
 
         $phone = $this->normalizePhone($request->input('phone'));
@@ -39,6 +42,14 @@ class MpesaController extends Controller
 
         $user = $request->user();
 
+        $giftId = $request->input('gift_id');
+        if ($giftId) {
+            $gift = GiftSubscription::where('id', $giftId)
+                ->where('sender_id', $user->id)
+                ->where('status', 'pending')
+                ->firstOrFail();
+        }
+
         // Cancel any previous pending attempt for this package
         $user->mpesaPayments()
             ->where('status', 'pending')
@@ -47,6 +58,7 @@ class MpesaController extends Controller
 
         $payment = $user->mpesaPayments()->create([
             'subscription_package_id' => $package->id,
+            'gift_subscription_id'    => $giftId ?? null,
             'phone'  => $phone,
             'amount' => $package->price,
             'status' => 'pending',
@@ -150,6 +162,13 @@ class MpesaController extends Controller
 
     private function activateSubscription(MpesaPayment $payment): void
     {
+        $payment->load('gift');
+
+        if ($payment->gift_subscription_id && $payment->gift) {
+            $this->activateGift($payment);
+            return;
+        }
+
         $user    = $payment->user;
         $package = $payment->package;
 
@@ -162,7 +181,6 @@ class MpesaController extends Controller
                     ->first();
 
                 if ($existing) {
-                    // Stack the new period on top of whatever time is left.
                     $base      = $existing->expires_at->isFuture() ? $existing->expires_at->copy() : now();
                     $expiresAt = match ($interval) {
                         'week'  => $base->addWeek(),
@@ -180,7 +198,6 @@ class MpesaController extends Controller
                     return $existing;
                 }
 
-                // No active subscription — create a fresh one from now.
                 $expiresAt = match ($interval) {
                     'week'  => now()->addWeek(),
                     'month' => now()->addMonth(),
@@ -199,11 +216,30 @@ class MpesaController extends Controller
                 return $sub;
             });
 
-            // Mail is outside the transaction so a send failure cannot roll back the subscription.
             Mail::to($user->email, $user->name)->queue(new PaymentConfirmed($user, $payment));
             Mail::to($user->email, $user->name)->queue(new SubscriptionUpdated($user, $sub, 'renewed'));
         } catch (\Exception $e) {
             Log::error("Failed to activate subscription for user {$user->id} after payment {$payment->id}: " . $e->getMessage());
+        }
+    }
+
+    private function activateGift(MpesaPayment $payment): void
+    {
+        $gift    = $payment->gift;
+        $package = $payment->package;
+
+        try {
+            DB::transaction(function () use ($gift) {
+                $gift->update([
+                    'status'     => 'sent',
+                    'expires_at' => now()->addDays(30),
+                ]);
+            });
+
+            Mail::to($gift->recipient_email)->queue(new GiftReceived($gift->load('sender', 'package')));
+            Mail::to($payment->user->email, $payment->user->name)->queue(new PaymentConfirmed($payment->user, $payment));
+        } catch (\Exception $e) {
+            Log::error("Failed to activate gift {$gift->id} after payment {$payment->id}: " . $e->getMessage());
         }
     }
 

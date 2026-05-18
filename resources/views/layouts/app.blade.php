@@ -724,7 +724,7 @@
     </div>
     @endif
 
-    <main id="main-content" class="grow lg:pt-0">
+    <main id="main-content" class="grow lg:pt-0 mb-8">
       @yield('content')
     </main>
 

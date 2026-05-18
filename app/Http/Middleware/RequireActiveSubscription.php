@@ -18,6 +18,21 @@ class RequireActiveSubscription
             return $next($request);
         }
 
+        // Enforce shared-guest session expiry. The session stores a hard deadline
+        // set when the guest first visited the link. Check it here so that even if
+        // the content-specific shared_access keys are somehow still present, access
+        // is fully revoked once the original grant window has closed.
+        if (session('shared_guest')) {
+            $guestExpires = session('shared_guest_expires', 0);
+            if ($guestExpires && time() > $guestExpires) {
+                \Illuminate\Support\Facades\Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                return redirect()->route('home')
+                    ->with('error', 'Your guest access has expired. Ask the link owner to share again.');
+            }
+        }
+
         // Determine whose subscription governs access.
         // If the active profile belongs to another account, use that account owner's subscription.
         $profileId    = session('active_profile_id');

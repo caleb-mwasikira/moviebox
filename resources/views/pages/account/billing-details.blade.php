@@ -23,6 +23,11 @@
           ->with('package')
           ->orderByDesc('starts_at')
           ->get();
+
+      $giftsSent = \App\Models\GiftSubscription::where('sender_id', $user->id)
+          ->with('package', 'claimedBy')
+          ->orderByDesc('created_at')
+          ->get();
     @endphp
 
     <div class="bg-white shadow-3xl p-8 md:p-10 lg:p-14 xl:p-[60px] dark:bg-gray-700">
@@ -132,6 +137,14 @@
                 Download your movies anytime
               </li>
               @endif
+              @if ($package->watch_party_enabled)
+              <li class="flex items-center gap-x-2 text-sm text-gray-600 dark:text-gray">
+                <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                </svg>
+                Watch Party
+              </li>
+              @endif
             </ul>
 
             @if ($isCurrent)
@@ -143,6 +156,15 @@
                 class="w-full inline-flex text-center font-bold leading-none transition-colors uppercase justify-center py-3 px-4 text-xs bg-gray-900 hover:bg-accent hover:text-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-accent">
                 Switch Plan
               </a>
+            @endif
+            @if ($package->is_giftable)
+            <a href="{{ route('gift.show', $package->uuid) }}"
+              class="mt-2 w-full inline-flex justify-center gap-x-1.5 font-bold uppercase py-2 px-4 text-xs border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-accent hover:text-accent transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112.83 0L12 8zm0 0V6a2 2 0 10-2.83 0L12 8zm-7 4h14M5 12a2 2 0 01-2-2V6h3.5m10 6a2 2 0 002-2V6h-3.5"/>
+              </svg>
+              Gift
+            </a>
             @endif
           </div>
         @endforeach
@@ -209,6 +231,57 @@
 
         </div>
       @endif
+    </div>
+    @endif
+
+    {{-- Gifts Sent — own accounts only --}}
+    @if (! $sharingAccount && $giftsSent->isNotEmpty())
+    <div class="bg-white shadow-3xl p-8 md:p-10 lg:p-14 xl:p-[60px] dark:bg-gray-700">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-1">Gifts Sent</h2>
+      <p class="text-sm text-gray-500 dark:text-gray mb-8">Subscriptions you've gifted to others.</p>
+
+      <div class="border border-gray-200 dark:border-gray-600 divide-y divide-gray-100 dark:divide-gray-700">
+
+        <div class="hidden sm:grid grid-cols-12 px-5 py-3 bg-gray-50 dark:bg-gray-800">
+          <span class="col-span-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">Plan</span>
+          <span class="col-span-4 text-[10px] font-bold uppercase tracking-widest text-gray-400">Recipient</span>
+          <span class="col-span-4 text-[10px] font-bold uppercase tracking-widest text-gray-400 text-right">Status</span>
+        </div>
+
+        @foreach ($giftsSent as $gift)
+          <div class="grid grid-cols-2 sm:grid-cols-12 items-start gap-y-1 gap-x-4 px-5 py-4">
+
+            <div class="col-span-2 sm:col-span-4">
+              <p class="font-bold text-sm text-gray-900 dark:text-white">{{ $gift->package?->name ?? 'Unknown Plan' }}</p>
+              <p class="text-xs text-gray-400 mt-0.5">{{ $gift->created_at->format('M j, Y') }}</p>
+            </div>
+
+            <div class="sm:col-span-4">
+              <p class="text-sm text-gray-600 dark:text-gray-300 truncate">{{ $gift->recipient_email }}</p>
+              @if ($gift->status === 'claimed' && $gift->claimedBy)
+                <p class="text-xs text-gray-400 mt-0.5">by {{ $gift->claimedBy->name }}</p>
+              @endif
+            </div>
+
+            <div class="sm:col-span-4 sm:text-right">
+              @if ($gift->status === 'claimed')
+                <span class="inline-flex px-2 py-0.5 text-[10px] font-bold uppercase bg-accent/10 text-accent border border-accent">Claimed</span>
+              @elseif ($gift->status === 'sent' && ! $gift->isExpired())
+                <div class="inline-flex flex-col items-end gap-y-1">
+                  <span class="inline-flex px-2 py-0.5 text-[10px] font-bold uppercase bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-700 dark:text-blue-400">Pending Claim</span>
+                  <a href="{{ route('gift.sent', $gift->token) }}" class="text-[10px] text-gray-400 hover:text-accent transition-colors underline">View / Edit</a>
+                </div>
+              @elseif ($gift->status === 'sent' && $gift->isExpired())
+                <span class="inline-flex px-2 py-0.5 text-[10px] font-bold uppercase bg-gray-100 text-gray-400 border border-gray-200 dark:bg-gray-800 dark:border-gray-600">Expired</span>
+              @else
+                <span class="inline-flex px-2 py-0.5 text-[10px] font-bold uppercase bg-gray-100 text-gray-400 border border-gray-200 dark:bg-gray-800 dark:border-gray-600">Pending Payment</span>
+              @endif
+            </div>
+
+          </div>
+        @endforeach
+
+      </div>
     </div>
     @endif
 

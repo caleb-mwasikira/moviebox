@@ -74,6 +74,14 @@
                     Offline Downloads
                   </li>
                 @endif
+                @if ($package->watch_party_enabled)
+                  <li class="flex items-center gap-x-2 text-sm text-gray-600 dark:text-gray-300">
+                    <svg class="w-4 h-4 text-accent shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Watch Party
+                  </li>
+                @endif
               </ul>
 
               @auth
@@ -86,6 +94,15 @@
                     class="w-full inline-flex justify-center font-bold uppercase py-3 px-4 text-xs bg-gray-900 hover:bg-accent hover:text-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-accent transition-colors">
                     {{ $currentPackage ? 'Switch Plan' : 'Subscribe' }}
                   </a>
+                @endif
+                @if ($package->is_giftable)
+                <a href="{{ route('gift.show', $package->uuid) }}"
+                  class="mt-2 w-full inline-flex justify-center gap-x-1.5 font-bold uppercase py-2.5 px-4 text-xs border border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-accent hover:text-accent transition-colors">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112.83 0L12 8zm0 0V6a2 2 0 10-2.83 0L12 8zm-7 4h14M5 12a2 2 0 01-2-2V6h3.5m10 6a2 2 0 002-2V6h-3.5"/>
+                  </svg>
+                  Gift this plan
+                </a>
                 @endif
               @else
                 <a href="{{ route('login') }}"

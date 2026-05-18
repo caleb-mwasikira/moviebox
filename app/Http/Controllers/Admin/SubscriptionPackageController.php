@@ -32,17 +32,21 @@ class SubscriptionPackageController extends Controller
             'max_screens'      => 'required|integer|min:1',
             'max_shared_links' => 'required|integer|min:0',
             'max_resolution'   => 'required|string',
-            'has_ads'          => 'boolean',
-            'download_enabled' => 'boolean',
-            'is_active'        => 'boolean',
-            'sort_order'       => 'nullable|integer',
+            'has_ads'               => 'boolean',
+            'download_enabled'      => 'boolean',
+            'watch_party_enabled'   => 'boolean',
+            'is_giftable'           => 'boolean',
+            'is_active'             => 'boolean',
+            'sort_order'            => 'nullable|integer',
         ]);
 
-        $data['slug']             = Str::slug($request->input('name'));
-        $data['has_ads']          = $request->has('has_ads');
-        $data['download_enabled'] = $request->has('download_enabled');
-        $data['is_active']        = $request->has('is_active');
-        $data['currency']         = ($data['currency'] ?? null) ?: 'KES';
+        $data['slug']                 = Str::slug($request->input('name'));
+        $data['has_ads']              = $request->has('has_ads');
+        $data['download_enabled']     = $request->has('download_enabled');
+        $data['watch_party_enabled']  = $request->has('watch_party_enabled');
+        $data['is_giftable']          = $request->has('is_giftable');
+        $data['is_active']            = $request->has('is_active');
+        $data['currency']             = ($data['currency'] ?? null) ?: 'KES';
 
         SubscriptionPackage::create($data);
 
@@ -65,17 +69,21 @@ class SubscriptionPackageController extends Controller
             'max_screens'      => 'required|integer|min:1',
             'max_shared_links' => 'required|integer|min:0',
             'max_resolution'   => 'required|string',
-            'has_ads'          => 'boolean',
-            'download_enabled' => 'boolean',
-            'is_active'        => 'boolean',
-            'sort_order'       => 'nullable|integer',
+            'has_ads'               => 'boolean',
+            'download_enabled'      => 'boolean',
+            'watch_party_enabled'   => 'boolean',
+            'is_giftable'           => 'boolean',
+            'is_active'             => 'boolean',
+            'sort_order'            => 'nullable|integer',
         ]);
 
-        $data['slug']             = Str::slug($request->input('name'));
-        $data['has_ads']          = $request->has('has_ads');
-        $data['download_enabled'] = $request->has('download_enabled');
-        $data['is_active']        = $request->has('is_active');
-        $data['currency']         = ($data['currency'] ?? null) ?: 'KES';
+        $data['slug']                = Str::slug($request->input('name'));
+        $data['has_ads']             = $request->has('has_ads');
+        $data['download_enabled']    = $request->has('download_enabled');
+        $data['watch_party_enabled'] = $request->has('watch_party_enabled');
+        $data['is_giftable']         = $request->has('is_giftable');
+        $data['is_active']           = $request->has('is_active');
+        $data['currency']            = ($data['currency'] ?? null) ?: 'KES';
 
         $package->update($data);
 

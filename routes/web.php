@@ -23,6 +23,8 @@ use App\Http\Controllers\Admin\TestEmailController as AdminTestEmailController;
 use App\Http\Controllers\Admin\ConvertController as AdminConvertController;
 use App\Http\Controllers\ComingSoonController;
 use App\Http\Controllers\SharedLinkController;
+use App\Http\Controllers\GiftSubscriptionController;
+use App\Http\Controllers\WatchPartyController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
@@ -102,6 +104,16 @@ Route::get('/search/suggestions', [BrowseController::class, 'suggestions'])->nam
 Route::get('/s/{sharedLink}', [SharedLinkController::class, 'show'])->name('share.show');
 Route::post('/share', [SharedLinkController::class, 'store'])->middleware('auth')->name('share.store');
 
+// Gift subscriptions — accept is open to all, purchase requires auth
+Route::get('/gift/accept/{token}', [GiftSubscriptionController::class, 'accept'])->name('gift.accept');
+Route::middleware(['auth', 'verified', 'not.shared.guest'])->group(function () {
+    Route::get('/gift/{packageUuid}', [GiftSubscriptionController::class, 'show'])->name('gift.show');
+    Route::post('/gift/{packageUuid}', [GiftSubscriptionController::class, 'store'])->name('gift.store');
+    Route::get('/gift-sent/{token}', [GiftSubscriptionController::class, 'sent'])->name('gift.sent');
+    Route::post('/gift/accept/{token}', [GiftSubscriptionController::class, 'claim'])->name('gift.claim');
+    Route::patch('/gift/{gift}/email', [GiftSubscriptionController::class, 'updateEmail'])->name('gift.update-email');
+});
+
 Route::get('/movies', [MovieController::class, 'index'])->name('movies');
 Route::get('/movies/{movie}', [MovieController::class, 'show'])->name('movies.show');
 Route::get('/series', [SeriesController::class, 'index'])->name('series');
@@ -126,6 +138,22 @@ Route::middleware('auth')->post('/watch/progress', [WatchProgressController::cla
 
 Route::middleware(['auth', 'verified'])->post('/watchlist/{type}/{id}', [WatchlistController::class, 'toggle'])->name('watchlist.toggle');
 
+// Watch party — public show, auth-gated join/sync/state
+Route::get('/watch-party/{token}', [WatchPartyController::class, 'show'])->name('watch-party.show');
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/watch-party/{token}/join', [WatchPartyController::class, 'join'])->name('watch-party.join');
+    Route::post('/watch-party/{token}/leave', [WatchPartyController::class, 'leave'])->name('watch-party.leave');
+    Route::delete('/watch-party/{token}', [WatchPartyController::class, 'end'])->name('watch-party.end');
+    Route::patch('/watch-party/{token}/sync', [WatchPartyController::class, 'sync'])->name('watch-party.sync');
+    Route::patch('/watch-party/{token}/countdown', [WatchPartyController::class, 'setCountdown'])->name('watch-party.countdown');
+    Route::patch('/watch-party/{token}/next-episode', [WatchPartyController::class, 'nextEpisode'])->name('watch-party.next-episode');
+    Route::patch('/watch-party/{token}/jump-to-episode', [WatchPartyController::class, 'jumpToEpisode'])->name('watch-party.jump-to-episode');
+    Route::post('/watch-party/{token}/message', [WatchPartyController::class, 'sendMessage'])->name('watch-party.message');
+    Route::get('/watch-party/{token}/state', [WatchPartyController::class, 'state'])->name('watch-party.state');
+    Route::patch('/watch-party/{token}/kick', [WatchPartyController::class, 'kick'])->name('watch-party.kick');
+    Route::patch('/watch-party/{token}/unkick', [WatchPartyController::class, 'unkick'])->name('watch-party.unkick');
+});
+
 Route::middleware(['auth', 'verified', 'not.shared.guest'])->prefix('account')->name('account.')->group(function () {
     Route::view('/', 'pages.account.index')->name('dashboard');
     Route::get('profile', [AccountController::class, 'profile'])->name('profile');
@@ -138,6 +166,9 @@ Route::middleware(['auth', 'verified', 'not.shared.guest'])->prefix('account')->
     Route::post('update-subscription-plan/{newPackage}', [AccountController::class, 'updateSubscriptionPlan'])->name('update-plan');
     Route::get('watching', [WatchProgressController::class, 'index'])->name('watching');
     Route::get('watchlist', [WatchlistController::class, 'index'])->name('watchlist');
+    Route::get('watch-party', [WatchPartyController::class, 'index'])->name('watch-party.index');
+    Route::get('watch-party/create', [WatchPartyController::class, 'create'])->name('watch-party.create');
+    Route::post('watch-party', [WatchPartyController::class, 'store'])->name('watch-party.store');
     Route::get('profiles', fn() => redirect()->route('account.profile'))->name('profiles');
     Route::post('profiles', [AccountProfileController::class, 'store'])->name('profiles.store');
     Route::patch('profiles/{profile}/activate', [AccountProfileController::class, 'activate'])->name('profiles.activate');

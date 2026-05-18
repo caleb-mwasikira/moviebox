@@ -40,11 +40,13 @@
           'subscription_extended' => 'Sent when admin extends a subscription. Shows +30 days added.',
           'subscription_expiring' => 'Sent 3 days before expiry. Shows plan and days remaining.',
           'profile_invite'        => 'Sent when a user invites a family member to their profile.',
+          'gift_received'         => 'Sent to the recipient when someone purchases a gift subscription for them. Includes gift banner image, sender\'s message, plan details, and claim link.',
         ];
         $groups = [
           'Account'      => ['welcome', 'profile_invite'],
           'Payments'     => ['payment_confirmed'],
           'Subscription' => ['subscription_renewed', 'subscription_extended', 'subscription_expiring'],
+          'Gifts'        => ['gift_received'],
         ];
       @endphp
 
