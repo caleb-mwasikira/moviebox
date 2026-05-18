@@ -25,6 +25,7 @@
     flex: 1;
     min-height: 0;
     overflow: hidden;
+    position: relative;
   }
 
   .wp-video-col video {
@@ -398,6 +399,120 @@
   }
   .wp-share-wa:hover { background: #1ebe5d; }
 
+  /* ── Lobby ──────────────────────────────────────────────── */
+  .wp-lobby {
+    position: absolute; inset: 0; z-index: 20;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .wp-lobby-bg {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover; opacity: .2;
+  }
+  .wp-lobby-grad {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, #020408 0%, rgba(2,4,8,.8) 50%, rgba(2,4,8,.5) 100%);
+  }
+  .wp-lobby-body {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column;
+    align-items: center; text-align: center;
+    gap: 22px; padding: 28px 24px;
+    max-width: 460px; width: 100%;
+  }
+  .wp-lobby-label {
+    font-size: .58rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .18em; color: #facc15;
+  }
+  .wp-lobby-title {
+    font-size: clamp(1.1rem, 5vw, 1.75rem);
+    font-weight: 800; color: #fff; line-height: 1.2;
+    margin-top: -6px;
+  }
+  .wp-lobby-subtitle {
+    font-size: .7rem; color: #475569; margin-top: -10px;
+  }
+  .wp-lobby-avatars {
+    display: flex; align-items: center; justify-content: center;
+  }
+  .wp-lobby-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: #1e293b; border: 2px solid #020408;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .55rem; font-weight: 800; color: #facc15;
+    text-transform: uppercase; margin-left: -7px;
+    flex-shrink: 0;
+  }
+  .wp-lobby-avatar:first-child { margin-left: 0; }
+  .wp-lobby-count {
+    font-size: .62rem; color: #475569; margin-top: 4px;
+  }
+  .wp-lobby-start-btn {
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 11px 32px;
+    background: #facc15; color: #111827;
+    font-size: .75rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: .08em;
+    border: none; cursor: pointer; border-radius: 2px;
+    transition: background .15s, transform .1s;
+  }
+  .wp-lobby-start-btn:hover { background: #fde047; }
+  .wp-lobby-start-btn:active { transform: scale(.97); }
+  .wp-lobby-waiting {
+    display: flex; align-items: center; gap: 8px;
+    font-size: .68rem; color: #475569;
+  }
+  .wp-lobby-pulse {
+    width: 7px; height: 7px; border-radius: 50%; background: #facc15; flex-shrink: 0;
+    animation: wp-pulse 1.4s ease-in-out infinite;
+  }
+  .wp-lobby-host {
+    font-size: .58rem; color: #1e293b;
+  }
+  .wp-lobby-actions {
+    position: absolute; bottom: 14px; right: 14px;
+    display: flex; gap: 4px;
+  }
+  /* ── Panels pop-menu ────────────────────────────────────────── */
+  .wp-panels-pop {
+    position: absolute; bottom: calc(100% + 6px); right: 0;
+    background: #0a0f1a;
+    border: 1px solid #1e293b;
+    box-shadow: 0 8px 24px rgba(0,0,0,.6);
+    min-width: 130px;
+    z-index: 1000;
+  }
+  .wp-panels-pop-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 9px 14px;
+    font-size: .7rem; font-weight: 600;
+    color: #94a3b8; cursor: pointer;
+    border: none; background: none; width: 100%;
+    text-align: left; transition: background .1s, color .1s;
+  }
+  .wp-panels-pop-item:hover { background: rgba(255,255,255,.05); color: #e2e8f0; }
+  .wp-panels-pop-item.pop-active { color: #facc15; background: rgba(250,204,21,.08); }
+  .wp-panels-pop-item + .wp-panels-pop-item { border-top: 1px solid #1e293b; }
+  .wp-panels-pop-badge {
+    margin-left: auto; background: #ef4444; color: #fff;
+    border-radius: 4px; font-size: .5rem; font-weight: 800; padding: 1px 5px;
+  }
+
+  .wp-lobby-trailer-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 9px 22px;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,.18);
+    color: #e2e8f0;
+    font-size: .72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .07em;
+    cursor: pointer; border-radius: 2px;
+    transition: border-color .15s, background .15s;
+  }
+  .wp-lobby-trailer-btn:hover { border-color: rgba(255,255,255,.4); background: rgba(255,255,255,.06); }
+
   [x-cloak] { display: none !important; }
 </style>
 @endpush
@@ -659,6 +774,60 @@
     {{-- ── Video area ───────────────────────────────────────────────────── --}}
     <div class="wp-video-col" x-show="!kicked" x-cloak>
 
+      {{-- ── Lobby overlay ────────────────────────────────────────────────── --}}
+      <div class="wp-lobby" x-show="inLobby && !watchingTrailer" x-cloak>
+        @php $lobbyPoster = $party->watchable?->thumbnailUrl(); @endphp
+        @if ($lobbyPoster)
+        <img class="wp-lobby-bg" src="{{ $lobbyPoster }}" alt="">
+        @endif
+        <div class="wp-lobby-grad"></div>
+        <div class="wp-lobby-body">
+          <p class="wp-lobby-label">Watch Party · Lobby</p>
+          <h2 class="wp-lobby-title">{{ $party->title() }}</h2>
+          <p class="wp-lobby-subtitle" x-text="members.length + ' ' + (members.length === 1 ? 'person' : 'people') + ' in the lobby'"></p>
+
+          {{-- Stacked member avatars --}}
+          <div>
+            <div class="wp-lobby-avatars">
+              <template x-for="(m, i) in members.slice(0, 6)" :key="m.id">
+                <div class="wp-lobby-avatar" x-text="m.name.charAt(0)"></div>
+              </template>
+            </div>
+            <p class="wp-lobby-count" x-text="members.length + (members.length === 1 ? ' person' : ' people') + ' waiting'"></p>
+          </div>
+
+          @if ($isHost)
+          <button class="wp-lobby-start-btn" @click="toggleLobby()">
+            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Start Party
+          </button>
+          <p class="wp-lobby-host">You can return to lobby anytime from the controls bar</p>
+          @else
+          <div class="wp-lobby-waiting">
+            <span class="wp-lobby-pulse"></span>
+            Waiting for host to start…
+          </div>
+          @if ($trailerSrc)
+          <button class="wp-lobby-trailer-btn" @click="watchTrailer()">
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Watch Trailer
+          </button>
+          @endif
+          @endif
+        </div>
+      </div>
+
+      {{-- Back to lobby pill shown while trailer plays --}}
+      @if (! $isHost && $trailerSrc)
+      <div x-show="watchingTrailer" x-cloak
+        style="position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:25;display:flex;gap:8px;align-items:center;">
+        <button @click="stopTrailer()" class="wp-lobby-trailer-btn" style="padding:6px 14px;font-size:.6rem;">
+          <svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          Back to Lobby
+        </button>
+      </div>
+      @endif
+
       <video id="party-video" controls preload="metadata"
         @if ($isHost) @play="onHostPlay()" @pause="onHostPause()" @seeked="onHostSeeked()" @endif>
       </video>
@@ -733,6 +902,16 @@
         </div>
         @endif
 
+        {{-- Return to Lobby (host only, shown when lobby is off) --}}
+        @if ($isHost)
+        <button x-show="!inLobby" @click="toggleLobby()" class="wp-go-live" x-cloak title="Send everyone to lobby">
+          <svg width="9" height="9" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+          </svg>
+          Lobby
+        </button>
+        @endif
+
         <div class="wp-bar-sep"></div>
 
         {{-- Right: panel toggles --}}
@@ -748,31 +927,43 @@
             </svg>
           </button>
 
-          {{-- Chat --}}
-          <button @click="switchToChat()" :class="activeSidebar === 'chat' ? 'wp-active' : ''" class="wp-btn" title="Chat">
-            <span x-show="unreadChat > 0" class="wp-badge" x-text="unreadChat > 9 ? '9+' : unreadChat"></span>
-            <svg width="17" height="17" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
-            </svg>
-          </button>
-
-          {{-- Members --}}
-          <button @click="activeSidebar = activeSidebar === 'members' ? null : 'members'"
-            :class="activeSidebar === 'members' ? 'wp-active' : ''" class="wp-btn" title="Members">
-            <svg width="17" height="17" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
-            </svg>
-          </button>
-
-          {{-- Episodes (series) --}}
-          @if ($isSeries)
-          <button @click="activeSidebar = activeSidebar === 'episodes' ? null : 'episodes'"
-            :class="activeSidebar === 'episodes' ? 'wp-active' : ''" class="wp-btn" title="Episodes">
-            <svg width="17" height="17" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/>
-            </svg>
-          </button>
-          @endif
+          {{-- Panels (Chat + Members + Episodes collapsed) --}}
+          <div x-data="{ panelsOpen: false }" class="relative">
+            <button @click="panelsOpen = !panelsOpen"
+              :class="(activeSidebar === 'chat' || activeSidebar === 'members' || activeSidebar === 'episodes') ? 'wp-active' : ''"
+              class="wp-btn" title="Panels">
+              <span x-show="unreadChat > 0" class="wp-badge" x-text="unreadChat > 9 ? '9+' : unreadChat"></span>
+              <svg width="17" height="17" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/>
+              </svg>
+            </button>
+            <div x-show="panelsOpen" @click.away="panelsOpen = false" class="wp-panels-pop" style="display:none">
+              <button @click="switchToChat(); panelsOpen = false"
+                :class="activeSidebar === 'chat' ? 'pop-active' : ''" class="wp-panels-pop-item">
+                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+                </svg>
+                Chat
+                <span x-show="unreadChat > 0" class="wp-panels-pop-badge" x-text="unreadChat > 9 ? '9+' : unreadChat"></span>
+              </button>
+              <button @click="activeSidebar = activeSidebar === 'members' ? null : 'members'; panelsOpen = false"
+                :class="activeSidebar === 'members' ? 'pop-active' : ''" class="wp-panels-pop-item">
+                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                </svg>
+                Members
+              </button>
+              @if ($isSeries)
+              <button @click="activeSidebar = activeSidebar === 'episodes' ? null : 'episodes'; panelsOpen = false"
+                :class="activeSidebar === 'episodes' ? 'pop-active' : ''" class="wp-panels-pop-item">
+                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/>
+                </svg>
+                Episodes
+              </button>
+              @endif
+            </div>
+          </div>
 
           {{-- Share (host: popover; guest: copy) --}}
           @if ($isHost)
@@ -860,6 +1051,7 @@
   const MY_USER_ID       = @json($user->id);
   const HLS_TOKEN        = @json($hlsToken);
   const MAIN_SRC         = @json($videoSrc ?? '');
+  const TRAILER_SRC      = @json($trailerSrc ?? '');
   const USE_HLS          = @json($useHls);
   const EPISODE_PLAYLIST = @json($episodePlaylist);
 
@@ -970,6 +1162,12 @@
         } else {
           _wpComp.members = _wpComp.members.filter(m => m.id !== data.user_id);
         }
+      } else if (msg.event === 'WatchPartyLobbyChanged') {
+        if (!_wpComp) return;
+        const hadTrailer = _wpComp.watchingTrailer;
+        _wpComp.inLobby = !!data.active;
+        _wpComp.watchingTrailer = false;
+        if (hadTrailer) loadVideo(MAIN_SRC, USE_HLS, false);
       } else if (msg.event === 'WatchPartyEpisodeChanged') {
         if (!_wpComp) return;
         _wpComp.currentEpisodeId = data.current_episode_id;
@@ -995,6 +1193,8 @@
     return {
       members:          @json($party->members->filter(fn($m) => !$m->kicked_at)->map(fn($m) => ['id' => $m->user_id, 'name' => $m->user->name, 'is_host' => $m->user_id === $party->host_id])->values()),
       kicked:           false,
+      inLobby:          @json($lobbyActive),
+      watchingTrailer:  false,
       myPosition:       0,
       myProgressPct:    0,
       hostPosition:     0,
@@ -1087,6 +1287,9 @@
             this.hostIsPlaying = !!data.is_playing;
             this._hostSyncedAt = Date.now();
           }
+          if (data.lobby_active != null) {
+            this.inLobby = !!data.lobby_active;
+          }
         } catch (_) {}
       },
 
@@ -1113,6 +1316,29 @@
         } else {
           video.pause();
         }
+      },
+
+      async toggleLobby() {
+        try {
+          const res = await fetch('/watch-party/' + PARTY_TOKEN + '/lobby', {
+            method: 'PATCH',
+            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+          });
+          const data = await res.json();
+          this.inLobby = !!data.lobby_active;
+        } catch (_) {}
+      },
+
+      watchTrailer() {
+        if (!TRAILER_SRC) return;
+        this.watchingTrailer = true;
+        loadVideo(TRAILER_SRC, true, true);
+      },
+
+      stopTrailer() {
+        this.watchingTrailer = false;
+        video.pause();
+        loadVideo(MAIN_SRC, USE_HLS, false);
       },
 
       onHostPlay()   { pushSync(); },

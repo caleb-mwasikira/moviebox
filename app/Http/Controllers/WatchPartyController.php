@@ -187,12 +187,14 @@ class WatchPartyController extends Controller
             '/'
         );
 
+        $lobbyActive = (bool) $party->lobby_active;
+
         return view('pages.watch-party.show', compact(
             'party', 'isHost', 'isMember', 'canAccess',
             'isMovie', 'isSeries',
             'hlsToken', 'videoSrc', 'useHls',
             'trailerSrc', 'episodePlaylist', 'currentEpisodeId', 'startsAt',
-            'streamingWsUrl'
+            'streamingWsUrl', 'lobbyActive'
         ));
     }
 
@@ -295,6 +297,23 @@ class WatchPartyController extends Controller
         ], Auth::id()); // exclude the host — they triggered the sync
 
         return response()->json(['ok' => true]);
+    }
+
+    // ── Lobby (host only) ────────────────────────────────────────────────────
+
+    public function toggleLobby(string $token): JsonResponse
+    {
+        $party = WatchParty::where('token', $token)
+            ->where('host_id', Auth::id())
+            ->firstOrFail();
+
+        $party->update(['lobby_active' => ! $party->lobby_active]);
+
+        $this->pushToWS($party->token, 'WatchPartyLobbyChanged', [
+            'active' => $party->lobby_active,
+        ]);
+
+        return response()->json(['lobby_active' => $party->lobby_active]);
     }
 
     // ── Countdown (host only) ─────────────────────────────────────────────────
@@ -586,6 +605,7 @@ class WatchPartyController extends Controller
 
         return response()->json([
             'status'             => $party->status,
+            'lobby_active'       => (bool) $party->lobby_active,
             'is_playing'         => $party->is_playing,
             'position'           => $party->playback_position,
             'updated_at'         => $party->playback_updated_at?->timestamp,

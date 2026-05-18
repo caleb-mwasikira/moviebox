@@ -150,6 +150,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/watch-party/{token}/jump-to-episode', [WatchPartyController::class, 'jumpToEpisode'])->name('watch-party.jump-to-episode');
     Route::post('/watch-party/{token}/message', [WatchPartyController::class, 'sendMessage'])->name('watch-party.message');
     Route::get('/watch-party/{token}/state', [WatchPartyController::class, 'state'])->name('watch-party.state');
+    Route::patch('/watch-party/{token}/lobby', [WatchPartyController::class, 'toggleLobby'])->name('watch-party.lobby');
     Route::patch('/watch-party/{token}/kick', [WatchPartyController::class, 'kick'])->name('watch-party.kick');
     Route::patch('/watch-party/{token}/unkick', [WatchPartyController::class, 'unkick'])->name('watch-party.unkick');
 });

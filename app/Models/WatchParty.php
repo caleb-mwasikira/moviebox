@@ -22,10 +22,12 @@ class WatchParty extends Model
         'playback_position',
         'playback_updated_at',
         'ended_at',
+        'lobby_active',
     ];
 
     protected $casts = [
         'is_playing'          => 'boolean',
+        'lobby_active'        => 'boolean',
         'playback_position'   => 'float',
         'starts_at'           => 'datetime',
         'playback_updated_at' => 'datetime',
