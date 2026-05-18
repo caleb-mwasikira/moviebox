@@ -1382,7 +1382,7 @@
         </div>
 
         {{-- ── Lobby overlay ────────────────────────────────────────────────── --}}
-        <div class="wp-lobby" x-show="inLobby && !watchingTrailer" x-cloak>
+        <div class="wp-lobby" x-show="(inLobby || hostOnline === false) && !watchingTrailer" x-cloak>
           @php $lobbyPoster = $party->watchable?->thumbnailUrl(); @endphp
           @if ($lobbyPoster)
             <img class="wp-lobby-bg" src="{{ $lobbyPoster }}" alt="">
@@ -1689,6 +1689,7 @@
         const IS_SERIES = @json($isSeries);
         const PARTY_TOKEN = @json($party->token);
         const MY_USER_ID = @json($user->id);
+        const HOST_USER_ID = @json($party->host_id);
         const HLS_TOKEN = @json($hlsToken);
         const MAIN_SRC = @json($videoSrc ?? '');
         const TRAILER_SRC = @json($trailerSrc ?? '');
@@ -1791,12 +1792,20 @@
             const data = msg.data;
 
             if (msg.event === 'presence.here') {
-              if (_wpComp) _wpComp.members = data;
+              if (_wpComp) {
+                _wpComp.members = data;
+                if (!IS_HOST) _wpComp.hostOnline = data.some(m => m.id === HOST_USER_ID);
+              }
             } else if (msg.event === 'presence.joining') {
-              if (_wpComp && !_wpComp.members.some(m => m.id === data.id))
-                _wpComp.members.push(data);
+              if (_wpComp) {
+                if (!_wpComp.members.some(m => m.id === data.id)) _wpComp.members.push(data);
+                if (!IS_HOST && data.id === HOST_USER_ID) _wpComp.hostOnline = true;
+              }
             } else if (msg.event === 'presence.leaving') {
-              if (_wpComp) _wpComp.members = _wpComp.members.filter(m => m.id !== data.id);
+              if (_wpComp) {
+                _wpComp.members = _wpComp.members.filter(m => m.id !== data.id);
+                if (!IS_HOST && data.id === HOST_USER_ID) _wpComp.hostOnline = false;
+              }
             } else if (msg.event === 'WatchPartySync') {
               if (!_wpComp || IS_HOST) return;
               _wpComp.hostPosition = data.position;
@@ -1854,6 +1863,7 @@
             members: @json($party->members->filter(fn($m) => !$m->kicked_at)->map(fn($m) => ['id' => $m->user_id, 'name' => $m->user->name, 'is_host' => $m->user_id === $party->host_id])->values()),
             kicked: false,
             inLobby: @json($lobbyActive),
+            hostOnline: null,
             watchingTrailer: false,
             myPosition: 0,
             myProgressPct: 0,

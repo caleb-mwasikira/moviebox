@@ -89,6 +89,7 @@ class WatchPartyController extends Controller
                 'watchable_id'   => $model->id,
                 'token'          => Str::random(12),
                 'status'         => 'waiting',
+                'expires_at'     => now()->addDays(7),
             ]);
         } else {
             $seriesModel = Series::findOrFail($validated['series_id']);
@@ -101,6 +102,7 @@ class WatchPartyController extends Controller
                 'token'              => Str::random(12),
                 'status'             => 'waiting',
                 'current_episode_id' => $episodeIds[0],
+                'expires_at'         => now()->addDays(7),
             ]);
 
             foreach ($episodeIds as $order => $episodeId) {
@@ -242,12 +244,9 @@ class WatchPartyController extends Controller
         $party = WatchParty::where('token', $token)->firstOrFail();
         $user  = Auth::user();
 
-        WatchPartyMember::where('watch_party_id', $party->id)
-            ->where('user_id', $user->id)
-            ->delete();
-
         if ($user->id === $party->host_id) {
             $party->update(['status' => 'ended', 'ended_at' => now()]);
+            $this->pushToWS($party->token, 'WatchPartyEnded', []);
         }
 
         return redirect()->route('account.watch-party.index');

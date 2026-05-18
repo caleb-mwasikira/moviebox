@@ -22,6 +22,7 @@ class WatchParty extends Model
         'playback_position',
         'playback_updated_at',
         'ended_at',
+        'expires_at',
         'lobby_active',
     ];
 
@@ -32,6 +33,7 @@ class WatchParty extends Model
         'starts_at'           => 'datetime',
         'playback_updated_at' => 'datetime',
         'ended_at'            => 'datetime',
+        'expires_at'          => 'datetime',
     ];
 
     public function host(): BelongsTo
@@ -64,9 +66,14 @@ class WatchParty extends Model
         return $this->belongsTo(Episode::class, 'current_episode_id');
     }
 
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && $this->expires_at->isPast();
+    }
+
     public function isEnded(): bool
     {
-        return $this->status === 'ended';
+        return $this->status === 'ended' || $this->isExpired();
     }
 
     public function isLive(): bool
