@@ -219,12 +219,24 @@
     }
 
     @media (min-width: 1024px) {
-      .watch-sidebar {
-        width: 400px;
-      }
-
-      /* Wider on desktop */
+      .watch-sidebar { width: 400px; }
     }
+
+    /* ── Skip / play-pause flash indicators ── */
+    .watch-video-wrap { position: relative; width: 100%; }
+    .watch-flash {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 3px; padding: 14px 20px; border-radius: 50px;
+      background: rgba(0,0,0,.6); color: #fff;
+      font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+      pointer-events: none; opacity: 0; z-index: 20;
+    }
+    .watch-flash.skip-back  { left: 10%; }
+    .watch-flash.skip-fwd   { right: 10%; }
+    .watch-flash.pp         { left: 50%; transform: translate(-50%, -50%); }
+    @keyframes watch-flash-fade { 0%, 20% { opacity: 1; } 100% { opacity: 0; } }
+    .watch-flash.active { animation: watch-flash-fade .65s ease-out forwards; }
   </style>
 @endpush
 
@@ -372,6 +384,44 @@
           pipIconExit.style.display  = 'none';
         });
       }
+
+      // ── Skip & keyboard shortcuts ──
+      const PLAY_ICON  = '<svg width="34" height="34" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+      const PAUSE_ICON = '<svg width="34" height="34" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+
+      function showFlash(id, html) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (html !== undefined) el.innerHTML = html;
+        el.classList.remove('active');
+        void el.offsetWidth;
+        el.classList.add('active');
+      }
+
+      window.skipVideo = function (seconds) {
+        video.currentTime = Math.max(0, Math.min(video.duration || Infinity, video.currentTime + seconds));
+        showFlash(seconds < 0 ? 'flash-back' : 'flash-fwd');
+      };
+
+      document.addEventListener('keydown', function (e) {
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) || e.target.isContentEditable) return;
+        switch (e.key) {
+          case ' ': case 'k':
+            e.preventDefault();
+            if (video.paused) { video.play(); showFlash('flash-pp', PLAY_ICON); }
+            else { video.pause(); showFlash('flash-pp', PAUSE_ICON); }
+            break;
+          case 'ArrowLeft':
+            e.preventDefault(); skipVideo(-10); break;
+          case 'ArrowRight':
+            e.preventDefault(); skipVideo(10); break;
+          case 'f': case 'F':
+            e.preventDefault();
+            document.fullscreenElement ? document.exitFullscreen()
+              : (video.requestFullscreen && video.requestFullscreen().catch(() => {}));
+            break;
+        }
+      });
     })();
   </script>
 @endpush
@@ -382,15 +432,32 @@
       <div class="watch-sidebar-overlay"></div>
 
       <div class="watch-video-col">
-        <video id="episode-player" controls autoplay preload="auto" crossorigin="anonymous">
-          @foreach ($episode->subtitles as $subtitle)
-            <track kind="subtitles"
-              src="{{ $subtitle->fileUrl() }}"
-              srclang="{{ $subtitle->language_code }}"
-              label="{{ $subtitle->language }}"
-              {{ $subtitle->is_default ? 'default' : '' }}>
-          @endforeach
-        </video>
+        <div class="watch-video-wrap">
+          <video id="episode-player" controls autoplay preload="auto" crossorigin="anonymous">
+            @foreach ($episode->subtitles as $subtitle)
+              <track kind="subtitles"
+                src="{{ $subtitle->fileUrl() }}"
+                srclang="{{ $subtitle->language_code }}"
+                label="{{ $subtitle->language }}"
+                {{ $subtitle->is_default ? 'default' : '' }}>
+            @endforeach
+          </video>
+          <div id="flash-back" class="watch-flash skip-back">
+            <svg width="26" height="26" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M11.99 5V1l-5 5 5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6h-2c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+              <text x="7.5" y="15.5" font-size="5.5" font-weight="900" font-family="sans-serif" fill="currentColor" text-anchor="middle">10</text>
+            </svg>
+            −10s
+          </div>
+          <div id="flash-fwd" class="watch-flash skip-fwd">
+            <svg width="26" height="26" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12.01 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
+              <text x="16.5" y="15.5" font-size="5.5" font-weight="900" font-family="sans-serif" fill="currentColor" text-anchor="middle">10</text>
+            </svg>
+            +10s
+          </div>
+          <div id="flash-pp" class="watch-flash pp"></div>
+        </div>
 
         <div class="watch-meta">
           <div style="min-width:0; flex:1;">
@@ -440,6 +507,20 @@
               </div>
             </div>
             @endif
+
+            {{-- Skip buttons --}}
+            <button onclick="skipVideo(-10)" class="watch-nav-btn" title="Back 10s (←)">
+              <svg width="19" height="19" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M11.99 5V1l-5 5 5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6h-2c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+                <text x="7.5" y="15.5" font-size="5.5" font-weight="900" font-family="sans-serif" fill="currentColor" text-anchor="middle">10</text>
+              </svg>
+            </button>
+            <button onclick="skipVideo(10)" class="watch-nav-btn" title="Forward 10s (→)">
+              <svg width="19" height="19" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12.01 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
+                <text x="16.5" y="15.5" font-size="5.5" font-weight="900" font-family="sans-serif" fill="currentColor" text-anchor="middle">10</text>
+              </svg>
+            </button>
 
             {{-- Toggle Button for all screen sizes --}}
             <button id="toggle-episodes" class="watch-menu-toggle">

@@ -51,7 +51,7 @@
 
         {{-- Add profile shortcut --}}
         @if ($profiles->count() < auth()->user()->maxProfiles())
-          <a href="{{ route('account.profiles.create-invite') }}"
+          <a href="{{ route('account.profile') }}"
             class="flex flex-col items-center gap-y-1.5 group">
             <div class="w-12 h-12 rounded flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-300 dark:border-gray-600 group-hover:border-accent group-hover:text-accent transition-colors">
               <svg class="h-5 w-5 fill-current" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>

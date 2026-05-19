@@ -51,7 +51,7 @@
     @endif
     @if ($film->trailerIsReady())
       <button type="button" onclick="openTrailerModal('{{ $film->trailerUrl() }}')"
-        class="mt-2 inline-flex items-center gap-x-1.5 text-[10px] font-bold uppercase tracking-wide text-accent hover:underline">
+        class="mt-2 inline-flex items-center gap-x-1.5 text-[10px] font-bold uppercase tracking-wide text-accent hover:underline cursor-pointer">
         <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
         Watch Trailer
       </button>

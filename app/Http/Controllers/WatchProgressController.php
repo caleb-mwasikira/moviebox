@@ -56,8 +56,8 @@ class WatchProgressController extends Controller
 
         $items = $query
             ->where('position', '>=', 30)
-            ->orderByDesc('watched_at')
-            ->limit(24)
+            ->orderByDesc('position')
+            ->limit(300)
             ->get();
 
         $items->loadMorph('watchable', [
@@ -65,7 +65,13 @@ class WatchProgressController extends Controller
             Episode::class => ['season.series.posters'],
         ]);
 
-        $items = $items->filter(fn($item) => $item->watchable !== null)->values();
+        $items = $items
+            ->filter(fn($item) => $item->watchable !== null)
+            ->unique(fn($item) => $item->watchable_type === 'movie'
+                ? 'movie_' . $item->watchable_id
+                : 'series_' . $item->watchable->season->series->id)
+            ->sortByDesc('watched_at')
+            ->values();
 
         return view('pages.account.watching', compact('items'));
     }

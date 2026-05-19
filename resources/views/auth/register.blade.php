@@ -86,7 +86,7 @@
         </button>
       </form>
 
-      <div class="relative my-6">
+      <div class="relative my-6" style="margin: 20px 0px;">
         <div class="absolute inset-0 flex items-center">
           <div class="w-full border-t border-gray-200 dark:border-gray-700"></div>
         </div>

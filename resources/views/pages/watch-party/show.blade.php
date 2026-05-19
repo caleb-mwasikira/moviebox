@@ -1536,7 +1536,7 @@
                 Waiting for host to start…
               </div>
               @if ($trailerSrc)
-                <button class="wp-lobby-trailer-btn" @click="watchTrailer()">
+                <button class="wp-lobby-trailer-btn cursor-pointer" @click="watchTrailer()">
                   <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z" />
                   </svg>

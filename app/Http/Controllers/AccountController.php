@@ -42,8 +42,8 @@ class AccountController extends Controller
 
         $recentlyWatched = $query
             ->where('position', '>=', 30)
-            ->orderByDesc('watched_at')
-            ->limit(8)
+            ->orderByDesc('position')
+            ->limit(80)
             ->get();
 
         $recentlyWatched->loadMorph('watchable', [
@@ -51,7 +51,14 @@ class AccountController extends Controller
             Episode::class => ['season.series.posters'],
         ]);
 
-        $recentlyWatched = $recentlyWatched->filter(fn($item) => $item->watchable !== null)->values();
+        $recentlyWatched = $recentlyWatched
+            ->filter(fn($item) => $item->watchable !== null)
+            ->unique(fn($item) => $item->watchable_type === 'movie'
+                ? 'movie_' . $item->watchable_id
+                : 'series_' . $item->watchable->season->series->id)
+            ->sortByDesc('watched_at')
+            ->take(8)
+            ->values();
 
         return view('pages.account.profile', compact(
             'profiles', 'sharedProfiles', 'max', 'colors', 'recentlyWatched'

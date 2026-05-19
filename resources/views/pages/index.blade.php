@@ -62,7 +62,7 @@
                   @if ($f->trailerIsReady())
                   <button type="button"
                     onclick="openTrailerModal('{{ $f->trailerUrl() }}')"
-                    style="display:inline-flex; align-items:center; gap:10px; padding:14px 28px; border:2px solid rgba(255,255,255,.4); background:transparent; color:#fff; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; cursor:pointer; transition:border-color .2s;"
+                    style="display:inline-flex; align-items:center; gap:10px; padding:14px 28px; border:2px solid rgba(255,255,255,.4); background:transparent; color:#fff; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; cursor:pointer; transition:border-color .2s; cursor: pointer;"
                     onmouseover="this.style.borderColor='var(--color-accent,#f5c518)'"
                     onmouseout="this.style.borderColor='rgba(255,255,255,.4)'">
                     <svg style="width:14px; height:14px; fill:currentColor;" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
