@@ -26,7 +26,7 @@
 - [✅] Multiple profiles per account (like Netflix) — useful for family plan tiers
 - [✅] Download for offline viewing — `download_enabled` flag exists on subscription packages but is not yet implemented
 - [✅] Sharing of movies & series by paid user accounts
-- [ ] Autoplay next episode — countdown prompt before the next episode starts, with cancel option
+- [✅] Autoplay next episode — countdown prompt before the next episode starts, with cancel option
 - [✅] Watch party — invite friends to a synchronised viewing session with live chat
 - [✅] Login with Google and Facebook
 - [ ] Playback speed control — 0.5× to 2× in the video player

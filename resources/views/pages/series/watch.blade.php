@@ -222,6 +222,23 @@
       .watch-sidebar { width: 400px; }
     }
 
+    /* ── Autoplay countdown card ── */
+    .autoplay-card {
+      position: absolute;
+      bottom: 1rem;
+      right: 1rem;
+      width: 252px;
+      padding: 1rem;
+      background: rgba(9,11,20,.88);
+      border: 1px solid rgba(255,255,255,.1);
+      backdrop-filter: blur(8px);
+      z-index: 30;
+      transform: translateX(calc(100% + 1.25rem));
+      transition: transform .35s cubic-bezier(.4,0,.2,1);
+    }
+    .autoplay-card.show { transform: translateX(0); }
+    #autoplay-ring { transition: stroke-dashoffset .95s linear; }
+
     /* ── Skip / play-pause flash indicators ── */
     .watch-video-wrap { position: relative; width: 100%; }
     .watch-flash {
@@ -422,6 +439,46 @@
             break;
         }
       });
+
+      // ── Autoplay next episode ──
+      @if ($next)
+      const NEXT_URL      = @json(route('series.watch', [$series, $next]));
+      const COUNTDOWN     = 5;
+      const circumference = 2 * Math.PI * 18;
+      const apCard  = document.getElementById('autoplay-card');
+      const apCount = document.getElementById('autoplay-count');
+      const apRing  = document.getElementById('autoplay-ring');
+      let apTimer  = null;
+      let apActive = false;
+
+      function showAutoplay() {
+        if (apActive || !apCard) return;
+        apActive = true;
+        let secs = COUNTDOWN;
+        apCount.textContent = secs;
+        apRing.style.strokeDashoffset = '0';
+        apCard.classList.add('show');
+        apTimer = setInterval(function () {
+          secs--;
+          apCount.textContent = secs;
+          apRing.style.strokeDashoffset = String(circumference * (1 - secs / COUNTDOWN));
+          if (secs <= 0) { clearInterval(apTimer); window.location.href = NEXT_URL; }
+        }, 1000);
+      }
+
+      window.cancelAutoplay = function () {
+        clearInterval(apTimer); apTimer = null; apActive = false;
+        if (apCard) apCard.classList.remove('show');
+      };
+
+      video.addEventListener('timeupdate', function () {
+        if (!apActive && video.duration > 0 && video.duration - video.currentTime <= COUNTDOWN) showAutoplay();
+      });
+      video.addEventListener('ended', showAutoplay);
+      video.addEventListener('seeked', function () {
+        if (apActive && video.duration > 0 && video.duration - video.currentTime > COUNTDOWN) cancelAutoplay();
+      });
+      @endif
     })();
   </script>
 @endpush
@@ -457,6 +514,33 @@
             +10s
           </div>
           <div id="flash-pp" class="watch-flash pp"></div>
+          @if ($next)
+          <div id="autoplay-card" class="autoplay-card">
+            <p style="font-size:.55rem;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:rgba(255,255,255,.4);margin-bottom:.5rem;">Up Next</p>
+            <p style="font-size:.8rem;font-weight:700;color:#fff;margin-bottom:.9rem;line-height:1.3;">{{ $next->label() }}</p>
+            <div style="display:flex;align-items:center;gap:.75rem;">
+              <div style="position:relative;width:44px;height:44px;flex-shrink:0;">
+                <svg width="44" height="44" viewBox="0 0 44 44" style="transform:rotate(-90deg);">
+                  <circle cx="22" cy="22" r="18" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="3"/>
+                  <circle id="autoplay-ring" cx="22" cy="22" r="18" fill="none" stroke="#facc15" stroke-width="3"
+                    stroke-dasharray="113.1" stroke-dashoffset="0"/>
+                </svg>
+                <span id="autoplay-count" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:900;color:#fff;">5</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:.4rem;flex:1;">
+                <a href="{{ route('series.watch', [$series, $next]) }}"
+                  style="display:flex;justify-content:center;align-items:center;gap:.35rem;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;padding:.55rem 0;background:#facc15;color:#111;text-decoration:none;">
+                  <svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  Play Now
+                </a>
+                <button onclick="cancelAutoplay()"
+                  style="font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;padding:.5rem;background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);cursor:pointer;width:100%;">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+          @endif
         </div>
 
         <div class="watch-meta">
