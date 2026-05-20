@@ -98,6 +98,24 @@
     .watch-flash.pp         { left: 50%; transform: translate(-50%, -50%); }
     @keyframes watch-flash-fade { 0%, 20% { opacity: 1; } 100% { opacity: 0; } }
     .watch-flash.active { animation: watch-flash-fade .65s ease-out forwards; }
+
+    /* ── Speed picker ── */
+    .speed-picker { position: relative; }
+    .speed-menu {
+      display: none; position: absolute; bottom: calc(100% + 8px); right: 0;
+      width: 96px; background: #111827; border: 1px solid #374151;
+      box-shadow: 0 10px 40px rgba(0,0,0,.6); z-index: 60;
+    }
+    .speed-menu.open { display: block; }
+    .speed-item {
+      display: block; width: 100%; padding: 9px 14px;
+      font-size: .68rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: .05em; color: #9ca3af; background: transparent;
+      border: none; border-top: 1px solid #1f2937; cursor: pointer; text-align: left;
+    }
+    .speed-item:first-child { border-top: none; }
+    .speed-item:hover { background: rgba(255,255,255,.08); color: #fff; }
+    .speed-item.active { color: #facc15; }
   </style>
 @endpush
 
@@ -184,6 +202,20 @@
               </div>
             </div>
             @endif
+
+            {{-- Speed picker --}}
+            <div class="speed-picker">
+              <button id="speed-btn" onclick="toggleSpeedMenu()" class="flex items-center justify-center w-9 h-9 bg-white/10 text-white hover:bg-white/20 transition-colors font-bold" style="font-size:.7rem;letter-spacing:.04em;" title="Playback Speed">1×</button>
+              <div id="speed-menu" class="speed-menu">
+                <button class="speed-item" data-speed="0.5"  onclick="setSpeed(0.5)">0.5×</button>
+                <button class="speed-item" data-speed="0.75" onclick="setSpeed(0.75)">0.75×</button>
+                <button class="speed-item active" data-speed="1"    onclick="setSpeed(1)">Normal</button>
+                <button class="speed-item" data-speed="1.25" onclick="setSpeed(1.25)">1.25×</button>
+                <button class="speed-item" data-speed="1.5"  onclick="setSpeed(1.5)">1.5×</button>
+                <button class="speed-item" data-speed="1.75" onclick="setSpeed(1.75)">1.75×</button>
+                <button class="speed-item" data-speed="2"    onclick="setSpeed(2)">2×</button>
+              </div>
+            </div>
 
             {{-- Skip buttons --}}
             <button onclick="skipVideo(-10)" class="flex items-center justify-center w-9 h-9 bg-white/10 text-white hover:bg-white/20 transition-colors" title="Back 10s (←)">
@@ -415,6 +447,29 @@
           document.fullscreenElement ? document.exitFullscreen()
             : (video.requestFullscreen && video.requestFullscreen().catch(() => {}));
           break;
+      }
+    });
+
+    // ── Speed picker ──
+    const speedBtn  = document.getElementById('speed-btn');
+    const speedMenu = document.getElementById('speed-menu');
+
+    window.toggleSpeedMenu = function () {
+      speedMenu.classList.toggle('open');
+    };
+
+    window.setSpeed = function (rate) {
+      video.playbackRate = rate;
+      speedBtn.textContent = rate === 1 ? '1×' : rate + '×';
+      speedMenu.querySelectorAll('.speed-item').forEach(function (el) {
+        el.classList.toggle('active', parseFloat(el.dataset.speed) === rate);
+      });
+      speedMenu.classList.remove('open');
+    };
+
+    document.addEventListener('click', function (e) {
+      if (!speedBtn.contains(e.target) && !speedMenu.contains(e.target)) {
+        speedMenu.classList.remove('open');
       }
     });
   })();
