@@ -242,6 +242,41 @@
     @endif
     {{-- End Coming Soon grid --}}
 
+    {{-- Curated Collections --}}
+    @if (isset($collections) && $collections->isNotEmpty())
+      @foreach ($collections as $collection)
+      <div class="pb-20 md:pb-24 lg:pb-[120px]">
+        <div class="container">
+
+          <div class="mb-10 md:mb-12 lg:mb-16 xl:mb-20 flex items-end justify-between gap-x-6">
+            <h2 class="text-2.5xl font-bold tracking-tighter text-gray-900 before:text-accent before:content-['.'] dark:text-white sm:text-3.5xl md:text-4xl lg:text-[62px] lg:leading-none">
+              {{ $collection->name }}
+            </h2>
+            <a href="{{ route('collections.show', $collection) }}"
+              class="shrink-0 text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-accent dark:hover:text-accent transition-colors mb-2 lg:mb-4">
+              View All →
+            </a>
+          </div>
+
+          @if ($collection->description)
+            <p class="text-gray-500 dark:text-gray-400 text-sm mb-8 -mt-8 md:-mt-10 lg:-mt-12 max-w-2xl">{{ $collection->description }}</p>
+          @endif
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5 md:gap-6 lg:gap-7.5">
+            @foreach ($collection->items as $item)
+              @if ($item->collectible)
+                @php $type = $item->collectible_type === \App\Models\Movie::class ? 'movie' : 'series'; @endphp
+                <x-film-card :film="$item->collectible" :type="$type" />
+              @endif
+            @endforeach
+          </div>
+
+        </div>
+      </div>
+      @endforeach
+    @endif
+    {{-- End Curated Collections --}}
+
     <div class="pb-20 md:pb-24 lg:pb-[130px]">
       <div class="container">
 

@@ -68,10 +68,6 @@
                         </li>
                         <li>
                             <a class="text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
-                                href="{{ route('shop') }}">Shop</a>
-                        </li>
-                        <li>
-                            <a class="text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
                                 href="{{ route('contact') }}">Contact</a>
                         </li>
                     </ul>

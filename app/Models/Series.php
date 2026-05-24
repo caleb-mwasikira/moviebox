@@ -38,6 +38,11 @@ class Series extends Model
         return $this->hasMany(Season::class)->orderBy('season_number');
     }
 
+    public function collectionItems(): MorphMany
+    {
+        return $this->morphMany(CollectionItem::class, 'collectible');
+    }
+
     public function episodes(): HasManyThrough
     {
         return $this->hasManyThrough(Episode::class, Season::class);

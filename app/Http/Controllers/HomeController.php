@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Collection;
 use App\Models\Movie;
 use App\Models\Series;
 use App\Models\SubscriptionPackage;
@@ -33,6 +34,13 @@ class HomeController extends Controller
             ->orderBy('price')
             ->first();
 
-        return view('pages.index', compact('movies', 'series', 'featured', 'comingSoon', 'cheapestPackage'));
+        $collections = Collection::where('is_active', true)
+            ->whereHas('items')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->with(['items' => fn($q) => $q->with('collectible.posters')->limit(12)])
+            ->get();
+
+        return view('pages.index', compact('movies', 'series', 'featured', 'comingSoon', 'cheapestPackage', 'collections'));
     }
 }

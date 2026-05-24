@@ -50,6 +50,11 @@ class Movie extends Model
         return $this->morphMany(Subtitle::class, 'subtitleable')->orderBy('language');
     }
 
+    public function collectionItems(): MorphMany
+    {
+        return $this->morphMany(CollectionItem::class, 'collectible');
+    }
+
     public function isPublished(): bool
     {
         return $this->status === 'published';

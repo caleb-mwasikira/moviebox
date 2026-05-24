@@ -21,6 +21,8 @@ use App\Http\Controllers\Admin\ContactController as AdminContactController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\TestEmailController as AdminTestEmailController;
 use App\Http\Controllers\Admin\ConvertController as AdminConvertController;
+use App\Http\Controllers\Admin\CollectionController as AdminCollectionController;
+use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\ComingSoonController;
 use App\Http\Controllers\SharedLinkController;
 use App\Http\Controllers\GiftSubscriptionController;
@@ -105,6 +107,7 @@ Route::get('/coming-soon', [ComingSoonController::class, 'index'])->name('coming
 Route::get('/coming-soon/{comingSoon}', [ComingSoonController::class, 'show'])->name('coming-soon.show');
 Route::view('/shop', 'pages.shop')->name('shop');
 Route::get('/browse', [BrowseController::class, 'index'])->name('browse');
+Route::get('/collections/{collection}', [CollectionController::class, 'show'])->name('collections.show');
 Route::get('/search/suggestions', [BrowseController::class, 'suggestions'])->name('search.suggestions');
 Route::get('/s/{sharedLink}', [SharedLinkController::class, 'show'])->name('share.show');
 Route::post('/share', [SharedLinkController::class, 'store'])->middleware('auth')->name('share.store');
@@ -194,6 +197,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::post('movies/{movie}/trailer', [AdminMovieController::class, 'uploadTrailer'])->name('movies.trailer');
     Route::post('movies/{movie}/video', [AdminMovieController::class, 'updateVideo'])->name('movies.video');
     Route::post('movies/{movie}/reprocess', [AdminMovieController::class, 'reprocess'])->name('movies.reprocess');
+    Route::post('movies/{movie}/encode-quality', [AdminMovieController::class, 'reprocessQuality'])->name('movies.encode-quality');
 
     Route::resource('series', AdminSeriesController::class)->except(['show']);
     Route::patch('series/{series}/status', [AdminSeriesController::class, 'toggleStatus'])->name('series.toggle-status');
@@ -207,6 +211,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::put('episodes/{episode}', [AdminEpisodeController::class, 'update'])->name('episodes.update');
     Route::patch('episodes/{episode}/toggle-free', [AdminEpisodeController::class, 'toggleFree'])->name('episodes.toggle-free');
     Route::post('episodes/{episode}/video', [AdminEpisodeController::class, 'updateVideo'])->name('episodes.video');
+    Route::post('episodes/{episode}/encode-quality', [AdminEpisodeController::class, 'reprocessQuality'])->name('episodes.encode-quality');
     Route::delete('episodes/{episode}', [AdminEpisodeController::class, 'destroy'])->name('episodes.destroy');
 
     Route::delete('posters/{poster}', [AdminPosterController::class, 'destroy'])->name('posters.destroy');
@@ -243,6 +248,10 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
 
     Route::get('test-email', [AdminTestEmailController::class, 'show'])->name('test-email.show');
     Route::post('test-email', [AdminTestEmailController::class, 'send'])->name('test-email.send');
+
+    Route::resource('collections', AdminCollectionController::class)->except(['show']);
+    Route::post('collections/{collection}/items', [AdminCollectionController::class, 'addItem'])->name('collections.add-item');
+    Route::delete('collections/{collection}/items/{item}', [AdminCollectionController::class, 'removeItem'])->name('collections.remove-item');
 
     Route::get('contacts', [AdminContactController::class, 'index'])->name('contacts.index');
     Route::get('contacts/{contact}', [AdminContactController::class, 'show'])->name('contacts.show');

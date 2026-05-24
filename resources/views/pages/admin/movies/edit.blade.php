@@ -3,6 +3,12 @@
 @section('admin-title', 'Edit Movie')
 
 @section('admin-content')
+@php
+  $uid      = auth()->id() ?? 0;
+  $exp      = time() + 7200;
+  $sig      = hash_hmac('sha256', $uid . ':' . $exp, env('APP_SECRET', ''));
+  $hlsToken = base64_encode($uid . ':' . $exp . ':' . $sig);
+@endphp
 <div class="mb-10">
   <h2 class="text-2xl font-bold tracking-tighter text-gray-900 dark:text-white lg:text-4xl">{{ $movie->title }}</h2>
   <p class="mt-1 text-gray-500 dark:text-gray text-sm">Manage metadata, video, and trailer.</p>
@@ -233,6 +239,58 @@
       </form>
     </div>
   </div>
+</section>
+
+{{-- Encoding Quality --}}
+<section class="mb-14" x-data="encodingQuality(@json($movie->streamingUrl()), @json($hlsToken))">
+  <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6 pb-3 border-b border-gray-200 dark:border-gray-600">
+    Encoding Quality
+  </h3>
+
+  @if (session('status') === 'movie-reprocessing')
+    <div class="mb-5 flex items-center gap-x-3 py-3 px-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 max-w-xl">
+      <svg class="h-4 w-4 fill-yellow-500 shrink-0" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+      <span class="text-sm font-bold text-yellow-700 dark:text-yellow-400">Encoding started — this may take several minutes.</span>
+    </div>
+  @endif
+
+  <div class="mb-6">
+    <p class="text-xs font-bold uppercase text-gray-500 tracking-widest mb-3">Available Encodings</p>
+    <div class="flex flex-wrap items-center gap-3">
+      @if ($movie->streaming_path)
+        <template x-for="q in allQualities" :key="q">
+          <span :class="encoded.includes(q) ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'"
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-full">
+            <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="encoded.includes(q) ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"></span>
+            <span x-text="q"></span>
+          </span>
+        </template>
+        <span x-show="loading" class="text-xs text-gray-400 italic">Checking…</span>
+      @else
+        <span class="text-sm text-gray-400">No HLS stream yet — upload and encode a video first.</span>
+      @endif
+    </div>
+  </div>
+
+  @if ($movie->video_path)
+    <p class="text-xs font-bold uppercase text-gray-500 tracking-widest mb-3">Re-encode at Quality</p>
+    <div class="flex flex-wrap gap-3">
+      @foreach (['360p', '720p', '1080p'] as $quality)
+        <form method="POST" action="{{ route('admin.movies.encode-quality', $movie) }}">
+          @csrf
+          <input type="hidden" name="resolution" value="{{ $quality }}">
+          <button type="submit"
+            class="inline-flex items-center gap-x-2 text-xs font-bold uppercase tracking-wider py-2.5 px-5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-accent hover:text-accent dark:hover:text-accent transition-colors">
+            <svg class="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            {{ $quality }}
+          </button>
+        </form>
+      @endforeach
+    </div>
+    <p class="mt-3 text-xs text-gray-400">Encoding a quality level preserves existing encodings — the master playlist is updated additively.</p>
+  @else
+    <p class="text-sm text-gray-400">Upload a source video file to enable re-encoding.</p>
+  @endif
 </section>
 
 {{-- Trailer --}}
@@ -490,12 +548,6 @@
 @endsection
 
 @push('scripts')
-@php
-    $uid      = auth()->id() ?? 0;
-    $exp      = time() + 7200;
-    $sig      = hash_hmac('sha256', $uid . ':' . $exp, env('APP_SECRET', ''));
-    $hlsToken = base64_encode($uid . ':' . $exp . ':' . $sig);
-@endphp
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <script>
 // ── Admin trailer preview ─────────────────────────────────────
@@ -592,6 +644,32 @@ document.addEventListener('alpine:init', function () {
         if (!files.length) return;
         if (this.$refs.videoInput) { this.$refs.videoInput.files = files; }
         this.fileName = files[0].name;
+      }
+    };
+  });
+
+  Alpine.data('encodingQuality', function (streamingUrl, token) {
+    return {
+      allQualities: ['360p', '720p', '1080p'],
+      encoded: [],
+      loading: false,
+      init: function () {
+        if (!streamingUrl) return;
+        var self = this;
+        self.loading = true;
+        fetch(streamingUrl, { headers: { 'Authorization': 'Bearer ' + token } })
+          .then(function (r) { return r.ok ? r.text() : ''; })
+          .then(function (text) {
+            self.encoded = [];
+            text.split('\n').forEach(function (line) {
+              line = line.trim();
+              if (line === '360p/index.m3u8') self.encoded.push('360p');
+              else if (line === '720p/index.m3u8') self.encoded.push('720p');
+              else if (line === '1080p/index.m3u8') self.encoded.push('1080p');
+            });
+            self.loading = false;
+          })
+          .catch(function () { self.loading = false; });
       }
     };
   });

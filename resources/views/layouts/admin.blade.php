@@ -78,6 +78,10 @@
                 href="{{ route('admin.coming-soon.index') }}">Coming Soon</a>
             </li>
             <li>
+              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.collections.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.collections.index') }}">Collections</a>
+            </li>
+            <li>
               <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.users.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.users.index') }}">Users</a>
             </li>
@@ -185,6 +189,11 @@
               'coming-soon-updated'   => 'Film details updated.',
               'coming-soon-deleted'   => 'Film removed from Coming Soon.',
               'trailer-processing'    => 'Trailer uploaded and is being processed for streaming.',
+              'collection-created'    => 'Collection created.',
+              'collection-updated'    => 'Collection updated.',
+              'collection-deleted'    => 'Collection deleted.',
+              'item-added'            => 'Item added to collection.',
+              'item-removed'          => 'Item removed from collection.',
             ];
             $msg = $messages[session('status')] ?? null;
           @endphp

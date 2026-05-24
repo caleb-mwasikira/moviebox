@@ -488,6 +488,10 @@
             <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
               <a class="flex-grow py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
                 href="{{ route('coming-soon') }}">Coming Soon</a>
+              <button type="button" data-nav-to="mobile-l4"
+                class="shrink-0 py-4 pl-3 pr-1 text-gray-400 hover:text-accent transition-colors" aria-label="Coming Soon submenu">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+              </button>
             </li>
             <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
               <a class="flex-grow py-4 leading-normal text-gray-900 transition-colors hover:text-accent dark:text-white dark:hover:text-accent"
@@ -651,6 +655,70 @@
       </div>
       @endif
       @endauth
+
+      {{-- ── L4: Coming Soon + Collections panel ── --}}
+      <div id="mobile-l4" class="absolute inset-0 flex flex-col overflow-y-auto bg-white dark:bg-gray-700 transition-transform duration-300" style="transform:translateX(100%)">
+        <div class="container flex-1 py-5">
+          <button type="button" data-nav-close="mobile-l4"
+            class="flex items-center gap-x-2 py-3 mb-4 font-bold text-sm text-gray-500 dark:text-gray-400 hover:text-accent dark:hover:text-accent transition-colors">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+            Back
+          </button>
+
+          {{-- Coming Soon section --}}
+          <div class="mb-7">
+            <div class="flex items-center justify-between mb-3">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Coming Soon</p>
+              <a href="{{ route('coming-soon') }}" class="text-[10px] font-bold uppercase tracking-widest text-accent hover:text-accent/70 transition-colors">View all</a>
+            </div>
+
+            @if (isset($megaComingSoon) && $megaComingSoon->isNotEmpty())
+              <ul class="flex flex-col divide-y divide-gray-100 dark:divide-gray-600">
+                @foreach ($megaComingSoon as $cs)
+                  <li>
+                    <a href="{{ route('coming-soon.show', $cs) }}"
+                      class="flex items-center gap-x-3 py-3 text-gray-900 dark:text-white hover:text-accent dark:hover:text-accent transition-colors">
+                      <div class="w-8 h-10 shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-600">
+                        <img src="{{ $cs->thumbnailUrl() }}" alt="{{ $cs->title }}" class="w-full h-full object-cover">
+                      </div>
+                      <div class="min-w-0">
+                        <p class="text-sm font-bold truncate">{{ $cs->title }}</p>
+                        @if ($cs->genre)<p class="text-xs text-gray-400 mt-0.5">{{ $cs->genre }}</p>@endif
+                      </div>
+                    </a>
+                  </li>
+                @endforeach
+              </ul>
+            @else
+              <p class="text-sm text-gray-400">Nothing announced yet.</p>
+            @endif
+          </div>
+
+          {{-- Collections section --}}
+          @if (isset($megaCollections) && $megaCollections->isNotEmpty())
+          <div>
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">Collections</p>
+            <ul class="flex flex-col divide-y divide-gray-100 dark:divide-gray-600">
+              @foreach ($megaCollections as $col)
+                <li>
+                  <a href="{{ route('collections.show', $col) }}"
+                    class="flex items-center gap-x-3 py-3 text-gray-900 dark:text-white hover:text-accent dark:hover:text-accent transition-colors">
+                    <div class="w-8 h-8 shrink-0 overflow-hidden bg-gray-100 dark:bg-gray-600 flex items-center justify-center">
+                      @if ($col->thumbnail)
+                        <img src="{{ $col->thumbnailUrl() }}" alt="{{ $col->name }}" class="w-full h-full object-cover">
+                      @else
+                        <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+                      @endif
+                    </div>
+                    <p class="text-sm font-bold truncate">{{ $col->name }}</p>
+                  </a>
+                </li>
+              @endforeach
+            </ul>
+          </div>
+          @endif
+        </div>
+      </div>
 
     </div>
     <!-- Mobile Menu / End -->

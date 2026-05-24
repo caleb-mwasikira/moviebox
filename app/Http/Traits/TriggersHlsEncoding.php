@@ -85,6 +85,7 @@ trait TriggersHlsEncoding
         string $videoTitle,
         string $videoPath,
         ?string $seriesTitle = null,
+        ?string $resolution = null,
     ): bool {
         if (!file_exists($videoPath)) {
             Log::warning('convertVideo: file not found', ['path' => $videoPath]);
@@ -99,17 +100,23 @@ trait TriggersHlsEncoding
 
         $serviceUrl = env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090');
 
+        $payload = [
+            'video_uuid'   => $videoUUID,
+            'video_title'  => $videoTitle,
+            'series_title' => $seriesTitle ?? '',
+            'video_path'   => $videoPath,
+            'film_type'    => $filmType,
+            'callback_url' => $callbackUrl,
+        ];
+
+        if ($resolution) {
+            $payload['resolution'] = $resolution;
+        }
+
         try {
             $response = Http::timeout(10)
                 ->withHeaders(['X-Api-Key' => env('APP_SECRET', '')])
-                ->post($serviceUrl . '/convert-video', [
-                'video_uuid'   => $videoUUID,
-                'video_title'  => $videoTitle,
-                'series_title' => $seriesTitle ?? '',
-                'video_path'   => $videoPath,
-                'film_type'    => $filmType,
-                'callback_url' => $callbackUrl,
-            ]);
+                ->post($serviceUrl . '/convert-video', $payload);
 
             if ($response->status() === 409) {
                 Log::info('HLS encoding already in progress', [

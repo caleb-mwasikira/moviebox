@@ -255,6 +255,50 @@
     @keyframes watch-flash-fade { 0%, 20% { opacity: 1; } 100% { opacity: 0; } }
     .watch-flash.active { animation: watch-flash-fade .65s ease-out forwards; }
 
+    /* ── Pause overlay ── */
+    .pause-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      background: rgba(0, 0, 0, .38);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity .2s ease, visibility .2s ease;
+      z-index: 10;
+    }
+    .pause-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+    .po-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .14);
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      text-decoration: none;
+      flex-shrink: 0;
+      backdrop-filter: blur(4px);
+      transition: background .15s, transform .15s;
+    }
+    .po-btn:hover { background: rgba(255, 255, 255, .26); transform: scale(1.08); }
+    .po-btn.play {
+      width: 70px;
+      height: 70px;
+      background: var(--color-accent, #facc15);
+      color: #fff;
+    }
+    .po-btn.play:hover { background: rgba(250, 204, 21, .88); transform: scale(1.06); }
+    .po-btn.ep-disabled { opacity: .25; pointer-events: none; cursor: default; }
+
     /* ── Speed picker ── */
     .speed-picker { position: relative; }
     .speed-menu {
@@ -520,6 +564,23 @@
         if (apActive && video.duration > 0 && video.duration - video.currentTime > COUNTDOWN) cancelAutoplay();
       });
       @endif
+
+      // ── Pause overlay ──
+      const pauseOverlay  = document.getElementById('pause-overlay');
+      const pausePlayBtn  = document.getElementById('pause-play-btn');
+
+      function showPauseOverlay() { pauseOverlay.classList.add('show'); }
+      function hidePauseOverlay() { pauseOverlay.classList.remove('show'); }
+
+      video.addEventListener('pause',  showPauseOverlay);
+      video.addEventListener('play',   hidePauseOverlay);
+      video.addEventListener('ended',  hidePauseOverlay);
+      // Show if autoplay is blocked and video starts paused
+      video.addEventListener('loadedmetadata', function () {
+        if (video.paused) showPauseOverlay();
+      });
+
+      pauseOverlay.addEventListener('click', function () { video.play().catch(function () {}); });
     })();
   </script>
 @endpush
@@ -555,6 +616,34 @@
             +10s
           </div>
           <div id="flash-pp" class="watch-flash pp"></div>
+
+          {{-- Pause overlay --}}
+          <div id="pause-overlay" class="pause-overlay">
+            @if ($prev)
+              <a href="{{ route('series.watch', [$series, $prev]) }}" class="po-btn" title="Previous episode">
+                <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+              </a>
+            @else
+              <span class="po-btn ep-disabled">
+                <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+              </span>
+            @endif
+
+            <button id="pause-play-btn" class="po-btn play" title="Play">
+              <svg width="32" height="32" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+
+            @if ($next)
+              <a href="{{ route('series.watch', [$series, $next]) }}" class="po-btn" title="Next episode">
+                <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 3.9V8.1L8.5 12zM16 6h2v12h-2z"/></svg>
+              </a>
+            @else
+              <span class="po-btn ep-disabled">
+                <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 3.9V8.1L8.5 12zM16 6h2v12h-2z"/></svg>
+              </span>
+            @endif
+          </div>
+
           @if ($next)
           <div id="autoplay-card" class="autoplay-card">
             <p style="font-size:.55rem;font-weight:800;text-transform:uppercase;letter-spacing:.15em;color:rgba(255,255,255,.4);margin-bottom:.5rem;">Up Next</p>

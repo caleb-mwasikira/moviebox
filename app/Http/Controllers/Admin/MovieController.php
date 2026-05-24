@@ -202,6 +202,32 @@ class MovieController extends Controller
         return back()->with('status', 'movie-reprocessing');
     }
 
+    public function reprocessQuality(Request $request, Movie $movie)
+    {
+        $request->validate(['resolution' => ['required', 'in:360p,720p,1080p']]);
+
+        if (!$movie->video_path) {
+            return back()->withErrors(['resolution' => 'No source video file available for re-encoding.']);
+        }
+
+        $this->cancelJob($movie->uuid);
+
+        $ok = $this->convertVideo(
+            $movie->uuid,
+            'movies',
+            $movie->title,
+            storage_path('app/public/' . $movie->video_path),
+            null,
+            $request->input('resolution'),
+        );
+
+        if (!$ok) {
+            return back()->with('error', 'Streaming service is unavailable. Make sure it is running on ' . env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090') . '.');
+        }
+
+        return back()->with('status', 'movie-reprocessing');
+    }
+
     public function destroy(Movie $movie)
     {
         Storage::disk('public')->delete($movie->video_path);
