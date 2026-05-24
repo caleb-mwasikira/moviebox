@@ -38,13 +38,11 @@ fun AppNavGraph() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
-    val showBottomBar = currentRoute in bottomNavRoutes
-
     Scaffold(
         containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
-            if (showBottomBar) {
+            if (currentRoute in bottomNavRoutes) {
                 BottomNavBar(
                     currentRoute = currentRoute,
                     onNavigate = { route ->
@@ -66,7 +64,7 @@ fun AppNavGraph() {
                 .padding(innerPadding),
         ) {
             NavHost(
-                navController = navController,
+                navController  = navController,
                 startDestination = Screen.Splash.route,
             ) {
                 composable(Screen.Splash.route) {
@@ -79,40 +77,35 @@ fun AppNavGraph() {
 
                 composable(Screen.Home.route) {
                     HomeScreen(
-                        onMovieClick = { id -> navController.navigate(Screen.MovieDetail.createRoute(id)) },
-                        onSeriesClick = { id -> navController.navigate(Screen.SeriesDetail.createRoute(id)) },
+                        onMovieClick  = { uuid -> navController.navigate(Screen.MovieDetail.createRoute(uuid)) },
+                        onSeriesClick = { uuid -> navController.navigate(Screen.SeriesDetail.createRoute(uuid)) },
                         onSearchClick = { navController.navigate(Screen.Search.route) },
                     )
                 }
 
                 composable(Screen.Search.route) {
                     SearchScreen(
-                        onMovieClick = { id -> navController.navigate(Screen.MovieDetail.createRoute(id)) },
+                        onMovieClick = { uuid -> navController.navigate(Screen.MovieDetail.createRoute(uuid)) },
                     )
                 }
 
-                composable(Screen.Downloads.route) {
-                    DownloadsScreen()
-                }
-
-                composable(Screen.Profile.route) {
-                    ProfileScreen()
-                }
+                composable(Screen.Downloads.route) { DownloadsScreen() }
+                composable(Screen.Profile.route)   { ProfileScreen() }
 
                 composable(
                     route = Screen.MovieDetail.route,
-                    arguments = listOf(navArgument("id") { type = NavType.IntType }),
+                    arguments = listOf(navArgument("uuid") { type = NavType.StringType }),
                 ) { backStack ->
-                    val id = backStack.arguments?.getInt("id") ?: return@composable
-                    MovieDetailScreen(movieId = id, onBack = { navController.popBackStack() })
+                    val uuid = backStack.arguments?.getString("uuid") ?: return@composable
+                    MovieDetailScreen(uuid = uuid, onBack = { navController.popBackStack() })
                 }
 
                 composable(
                     route = Screen.SeriesDetail.route,
-                    arguments = listOf(navArgument("id") { type = NavType.IntType }),
+                    arguments = listOf(navArgument("uuid") { type = NavType.StringType }),
                 ) { backStack ->
-                    val id = backStack.arguments?.getInt("id") ?: return@composable
-                    SeriesDetailScreen(seriesId = id, onBack = { navController.popBackStack() })
+                    val uuid = backStack.arguments?.getString("uuid") ?: return@composable
+                    SeriesDetailScreen(uuid = uuid, onBack = { navController.popBackStack() })
                 }
             }
         }

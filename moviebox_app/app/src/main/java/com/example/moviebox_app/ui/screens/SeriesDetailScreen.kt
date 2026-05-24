@@ -21,15 +21,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -38,78 +43,119 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.moviebox_app.data.MockData
-import com.example.moviebox_app.data.Series
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import com.example.moviebox_app.data.UiState
+import com.example.moviebox_app.data.api.ApiEpisode
+import com.example.moviebox_app.data.api.ApiSeason
+import com.example.moviebox_app.data.api.ApiSeries
 import com.example.moviebox_app.ui.theme.Accent
 import com.example.moviebox_app.ui.theme.Background
 import com.example.moviebox_app.ui.theme.CardBg
 import com.example.moviebox_app.ui.theme.DividerColor
-import com.example.moviebox_app.ui.theme.Surface
 import com.example.moviebox_app.ui.theme.TagBg
 import com.example.moviebox_app.ui.theme.TextMuted
 import com.example.moviebox_app.ui.theme.TextPrimary
 import com.example.moviebox_app.ui.theme.TextSecondary
+import com.example.moviebox_app.ui.components.TopToast
+import com.example.moviebox_app.ui.viewmodel.SeriesDetailViewModel
 
 @Composable
-fun SeriesDetailScreen(seriesId: Int, onBack: () -> Unit) {
-    val series = MockData.findSeries(seriesId) ?: return
-    var selectedSeason by remember { mutableIntStateOf(1) }
+fun SeriesDetailScreen(
+    uuid: String,
+    onBack: () -> Unit,
+    vm: SeriesDetailViewModel = viewModel(factory = SeriesDetailViewModel.Factory(uuid)),
+) {
+    val state by vm.state.collectAsState()
+    var toastMessage by remember { mutableStateOf<String?>(null) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Background)
-            .verticalScroll(rememberScrollState()),
-    ) {
+    LaunchedEffect(state) {
+        if (state is UiState.Error) toastMessage = (state as UiState.Error).message
+    }
+
+    Box(modifier = Modifier.fillMaxSize().background(Background)) {
+        when (val s = state) {
+            is UiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Accent)
+            }
+
+            is UiState.Error -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Button(onClick = vm::load, colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black)) {
+                        Icon(Icons.Default.Refresh, null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Retry")
+                    }
+                }
+            }
+
+            is UiState.Success -> SeriesDetailContent(s.data, onBack)
+        }
+
+        TopToast(message = toastMessage, onDismiss = { toastMessage = null })
+    }
+}
+
+@Composable
+private fun SeriesDetailContent(series: ApiSeries, onBack: () -> Unit) {
+    val accent = posterAccentFor(series.uuid)
+    val bg     = posterBgFor(series.uuid)
+    val seasons = series.seasons ?: emptyList()
+    var selectedSeasonIdx by remember { mutableIntStateOf(0) }
+
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+
         // Poster hero
-        SeriesPosterHero(series = series, onBack = onBack)
+        Box(
+            modifier = Modifier.fillMaxWidth().height(300.dp)
+                .drawBehind {
+                    drawRect(Brush.verticalGradient(listOf(accent.copy(alpha = 0.5f), bg)))
+                    drawCircle(Brush.radialGradient(listOf(accent.copy(alpha = 0.15f), Color.Transparent), radius = size.minDimension * 0.9f))
+                },
+        ) {
+            series.thumbnailUrl?.let { url ->
+                AsyncImage(model = url, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            }
+            Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Background), startY = 150f)))
+
+            Row(modifier = Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                IconButton(onClick = onBack) {
+                    Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.4f)), contentAlignment = Alignment.Center) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = TextPrimary, modifier = Modifier.size(20.dp))
+                    }
+                }
+                IconButton(onClick = {}) {
+                    Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.4f)), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.MoreVert, null, tint = TextPrimary, modifier = Modifier.size(20.dp))
+                    }
+                }
+            }
+        }
 
         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
             Spacer(Modifier.height(16.dp))
 
-            // Title
-            Text(
-                text = series.title,
-                color = series.posterAccent,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.ExtraBold,
-            )
+            Text(series.title, color = accent, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
 
             Spacer(Modifier.height(8.dp))
 
-            // Meta
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(series.year.toString(), color = TextSecondary, fontSize = 13.sp)
-                Text("·", color = TextMuted, fontSize = 13.sp)
-                Text("${series.seasons} Season${if (series.seasons > 1) "s" else ""}", color = TextSecondary, fontSize = 13.sp)
-                Text("·", color = TextMuted, fontSize = 13.sp)
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(3.dp))
-                        .background(TagBg)
-                        .padding(horizontal = 6.dp, vertical = 2.dp),
-                ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                series.year?.let { Text(it.toString(), color = TextSecondary, fontSize = 13.sp); Text("·", color = TextMuted) }
+                if (seasons.isNotEmpty()) { Text("${seasons.size} Season${if (seasons.size > 1) "s" else ""}", color = TextSecondary, fontSize = 13.sp); Text("·", color = TextMuted) }
+                Box(modifier = Modifier.clip(RoundedCornerShape(3.dp)).background(TagBg).padding(horizontal = 6.dp, vertical = 2.dp)) {
                     Text("TV-MA", color = TextSecondary, fontSize = 11.sp)
                 }
             }
 
             Spacer(Modifier.height(10.dp))
 
-            // Genres
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                series.genre.forEach { g ->
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(TagBg)
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                    ) {
+                series.genreList().forEach { g ->
+                    Box(modifier = Modifier.clip(RoundedCornerShape(6.dp)).background(TagBg).padding(horizontal = 8.dp, vertical = 4.dp)) {
                         Text(g, color = TextSecondary, fontSize = 11.sp)
                     }
                 }
@@ -117,58 +163,59 @@ fun SeriesDetailScreen(seriesId: Int, onBack: () -> Unit) {
 
             Spacer(Modifier.height(16.dp))
 
-            // Play button
             Button(
                 onClick = {},
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
+                modifier = Modifier.fillMaxWidth().height(48.dp),
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black),
             ) {
                 Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Play S1:E1", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                val ep = seasons.firstOrNull()?.episodes?.firstOrNull()
+                Text(if (ep != null) "Play S1:E01" else "Play", fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
 
-            Spacer(Modifier.height(16.dp))
+            if (!series.description.isNullOrBlank()) {
+                Spacer(Modifier.height(16.dp))
+                Text("Synopsis", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Spacer(Modifier.height(8.dp))
+                Text(series.description, color = TextSecondary, fontSize = 14.sp, lineHeight = 22.sp)
+            }
 
-            // Description
-            Text("Synopsis", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-            Spacer(Modifier.height(8.dp))
-            Text(series.description, color = TextSecondary, fontSize = 14.sp, lineHeight = 22.sp)
+            if (seasons.isNotEmpty()) {
+                Spacer(Modifier.height(24.dp))
+                Text("Episodes", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Spacer(Modifier.height(12.dp))
 
-            Spacer(Modifier.height(24.dp))
-
-            // Season picker
-            Text("Episodes", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-            Spacer(Modifier.height(12.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                (1..series.seasons).forEach { s ->
-                    val selected = s == selectedSeason
-                    Button(
-                        onClick = { selectedSeason = s },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (selected) Accent else CardBg,
-                            contentColor   = if (selected) Color.Black else TextSecondary,
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    ) {
-                        Text("S$s", fontSize = 13.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    seasons.forEachIndexed { idx, season ->
+                        val selected = idx == selectedSeasonIdx
+                        Button(
+                            onClick = { selectedSeasonIdx = idx },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (selected) Accent else CardBg,
+                                contentColor   = if (selected) Color.Black else TextSecondary,
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        ) {
+                            Text("S${season.seasonNumber}", fontSize = 13.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
+                        }
                     }
                 }
-            }
 
-            Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(12.dp))
 
-            // Mock episode list
-            val episodeCount = if (selectedSeason == 1) 8 else 6
-            (1..episodeCount).forEach { ep ->
-                EpisodeRow(season = selectedSeason, episode = ep, accentColor = series.posterAccent)
-                if (ep < episodeCount) {
-                    HorizontalDivider(color = DividerColor, thickness = 0.5.dp, modifier = Modifier.padding(vertical = 4.dp))
+                val episodes = seasons.getOrNull(selectedSeasonIdx)?.episodes ?: emptyList()
+                if (episodes.isEmpty()) {
+                    Text("No episodes available", color = TextMuted, fontSize = 13.sp)
+                } else {
+                    episodes.forEachIndexed { i, ep ->
+                        EpisodeRow(season = seasons[selectedSeasonIdx], episode = ep, accentColor = accent)
+                        if (i < episodes.lastIndex) {
+                            HorizontalDivider(color = DividerColor, thickness = 0.5.dp, modifier = Modifier.padding(vertical = 4.dp))
+                        }
+                    }
                 }
             }
 
@@ -178,105 +225,28 @@ fun SeriesDetailScreen(seriesId: Int, onBack: () -> Unit) {
 }
 
 @Composable
-private fun SeriesPosterHero(series: Series, onBack: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(300.dp)
-            .drawBehind {
-                drawRect(
-                    brush = Brush.verticalGradient(
-                        listOf(series.posterAccent.copy(alpha = 0.5f), series.posterColor)
-                    )
-                )
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        listOf(series.posterAccent.copy(alpha = 0.15f), Color.Transparent),
-                        radius = size.minDimension * 0.9f,
-                    )
-                )
-            }
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(Color.Transparent, Background),
-                        startY = 150f,
-                    )
-                )
-        )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            IconButton(onClick = onBack) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.4f)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = TextPrimary, modifier = Modifier.size(20.dp))
-                }
-            }
-            IconButton(onClick = {}) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.4f)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(Icons.Default.MoreVert, null, tint = TextPrimary, modifier = Modifier.size(20.dp))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun EpisodeRow(season: Int, episode: Int, accentColor: Color) {
+private fun EpisodeRow(season: ApiSeason, episode: ApiEpisode, accentColor: Color) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 10.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Thumbnail
         Box(
-            modifier = Modifier
-                .width(100.dp)
-                .height(60.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(accentColor.copy(alpha = 0.3f), accentColor.copy(alpha = 0.05f))
-                    )
-                ),
+            modifier = Modifier.width(100.dp).height(60.dp).clip(RoundedCornerShape(8.dp))
+                .background(Brush.horizontalGradient(listOf(accentColor.copy(alpha = 0.3f), accentColor.copy(alpha = 0.05f)))),
             contentAlignment = Alignment.Center,
         ) {
             Icon(Icons.Default.PlayArrow, null, tint = TextPrimary.copy(alpha = 0.6f), modifier = Modifier.size(24.dp))
         }
-
         Spacer(Modifier.width(12.dp))
-
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                "S${season}:E${episode.toString().padStart(2, '0')} — Episode $episode",
-                color = TextPrimary,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
+                "S${season.seasonNumber}:E${episode.episodeNumber.toString().padStart(2, '0')} — ${episode.title}",
+                color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium,
             )
             Spacer(Modifier.height(4.dp))
-            Text("~42 min", color = TextMuted, fontSize = 12.sp)
+            val dur = episode.formattedDuration()
+            Text(if (dur.isNotEmpty()) dur else "~42 min", color = TextMuted, fontSize = 12.sp)
         }
-
         Icon(Icons.Default.PlayArrow, null, tint = TextSecondary, modifier = Modifier.size(20.dp))
     }
 }

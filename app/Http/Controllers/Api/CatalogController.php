@@ -14,8 +14,19 @@ class CatalogController extends Controller
 {
     public function movies(Request $request): JsonResponse
     {
-        $movies = Movie::where('status', 'published')
-            ->where('coming_soon', false)
+        $query = Movie::where('status', 'published')->where('coming_soon', false);
+
+        if ($request->filled('q')) {
+            $q = $request->input('q');
+            $query->where(fn ($b) => $b->where('title', 'like', "%{$q}%")->orWhere('genre', 'like', "%{$q}%")->orWhere('description', 'like', "%{$q}%"));
+        }
+
+        if ($request->filled('genre') && $request->input('genre') !== 'All') {
+            $query->where('genre', 'like', '%' . $request->input('genre') . '%');
+        }
+
+        $movies = $query
+            ->orderByDesc('featured')
             ->orderByDesc('created_at')
             ->paginate(20);
 
