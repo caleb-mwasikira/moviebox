@@ -15,7 +15,12 @@ class SeriesResource extends JsonResource
             'description'   => $this->description,
             'genre'         => $this->genre,
             'year'          => $this->year,
+            'featured'      => (bool) $this->featured,
+            'coming_soon'   => (bool) $this->coming_soon,
             'thumbnail_url' => $this->thumbnailUrl(),
+            'trailer_url'   => $this->trailerIsReady()
+                                    ? (str_starts_with($this->trailer_path, 'http') ? $this->trailer_path : '/' . ltrim($this->trailer_path, '/'))
+                                    : null,
             'seasons'       => SeasonResource::collection($this->whenLoaded('seasons')),
             'created_at'    => $this->created_at?->toISOString(),
         ];

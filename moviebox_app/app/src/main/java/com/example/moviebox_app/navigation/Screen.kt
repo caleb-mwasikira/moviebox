@@ -19,4 +19,7 @@ sealed class Screen(val route: String) {
     data object SeriesDetail   : Screen("series/{uuid}") {
         fun createRoute(uuid: String) = "series/$uuid"
     }
+    data object VideoPlayer    : Screen("player/{url}") {
+        fun createRoute(url: String) = "player/${android.net.Uri.encode(url)}"
+    }
 }

@@ -1,6 +1,8 @@
 package com.example.moviebox_app.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +27,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -68,6 +71,8 @@ import com.example.moviebox_app.ui.viewmodel.SeriesDetailViewModel
 fun SeriesDetailScreen(
     uuid: String,
     onBack: () -> Unit,
+    onWatchTrailer: (String) -> Unit = {},
+    onEpisodePlay: (String) -> Unit = {},
     vm: SeriesDetailViewModel = viewModel(factory = SeriesDetailViewModel.Factory(uuid)),
 ) {
     val state by vm.state.collectAsState()
@@ -93,7 +98,7 @@ fun SeriesDetailScreen(
                 }
             }
 
-            is UiState.Success -> SeriesDetailContent(s.data, onBack)
+            is UiState.Success -> SeriesDetailContent(s.data, onBack, onWatchTrailer, onEpisodePlay)
         }
 
         TopToast(message = toastMessage, onDismiss = { toastMessage = null })
@@ -101,7 +106,12 @@ fun SeriesDetailScreen(
 }
 
 @Composable
-private fun SeriesDetailContent(series: ApiSeries, onBack: () -> Unit) {
+private fun SeriesDetailContent(
+    series: ApiSeries,
+    onBack: () -> Unit,
+    onWatchTrailer: (String) -> Unit,
+    onEpisodePlay: (String) -> Unit,
+) {
     val accent = posterAccentFor(series.uuid)
     val bg     = posterBgFor(series.uuid)
     val seasons = series.seasons ?: emptyList()
@@ -163,16 +173,32 @@ private fun SeriesDetailContent(series: ApiSeries, onBack: () -> Unit) {
 
             Spacer(Modifier.height(16.dp))
 
+            val firstEpisode = seasons.firstOrNull()?.episodes?.firstOrNull()
             Button(
-                onClick = {},
+                onClick = { firstEpisode?.streamingUrl?.let(onEpisodePlay) },
+                enabled = firstEpisode?.hasStream == true,
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black),
             ) {
                 Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(6.dp))
-                val ep = seasons.firstOrNull()?.episodes?.firstOrNull()
-                Text(if (ep != null) "Play S1:E01" else "Play", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text(if (firstEpisode != null) "Play S1:E01" else "Play", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            }
+
+            if (series.trailerUrl != null) {
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = { onWatchTrailer(series.trailerUrl) },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, TextSecondary.copy(alpha = 0.4f)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
+                ) {
+                    Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Watch Trailer", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                }
             }
 
             if (!series.description.isNullOrBlank()) {
@@ -211,7 +237,12 @@ private fun SeriesDetailContent(series: ApiSeries, onBack: () -> Unit) {
                     Text("No episodes available", color = TextMuted, fontSize = 13.sp)
                 } else {
                     episodes.forEachIndexed { i, ep ->
-                        EpisodeRow(season = seasons[selectedSeasonIdx], episode = ep, accentColor = accent)
+                        EpisodeRow(
+                            season      = seasons[selectedSeasonIdx],
+                            episode     = ep,
+                            accentColor = accent,
+                            onClick     = { ep.streamingUrl?.let(onEpisodePlay) },
+                        )
                         if (i < episodes.lastIndex) {
                             HorizontalDivider(color = DividerColor, thickness = 0.5.dp, modifier = Modifier.padding(vertical = 4.dp))
                         }
@@ -225,9 +256,12 @@ private fun SeriesDetailContent(series: ApiSeries, onBack: () -> Unit) {
 }
 
 @Composable
-private fun EpisodeRow(season: ApiSeason, episode: ApiEpisode, accentColor: Color) {
+private fun EpisodeRow(season: ApiSeason, episode: ApiEpisode, accentColor: Color, onClick: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = episode.hasStream, onClick = onClick)
+            .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(

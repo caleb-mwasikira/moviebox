@@ -17,6 +17,7 @@ class EpisodeResource extends JsonResource
             'duration'       => $this->duration,
             'is_free'        => $this->is_free,
             'has_stream'     => (bool) $this->streaming_path,
+            'streaming_url'  => $this->streaming_path ? ('/' . ltrim($this->streaming_path, '/')) : null,
         ];
     }
 }

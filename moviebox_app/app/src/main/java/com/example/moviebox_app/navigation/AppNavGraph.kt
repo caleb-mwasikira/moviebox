@@ -27,7 +27,9 @@ import com.example.moviebox_app.ui.screens.ProfileScreen
 import com.example.moviebox_app.ui.screens.RegisterScreen
 import com.example.moviebox_app.ui.screens.SearchScreen
 import com.example.moviebox_app.ui.screens.SeriesDetailScreen
+import com.example.moviebox_app.data.resolveStreamingUrl
 import com.example.moviebox_app.ui.screens.SplashScreen
+import com.example.moviebox_app.ui.screens.VideoPlayerScreen
 
 private val bottomNavRoutes = setOf(
     Screen.Home.route,
@@ -169,7 +171,16 @@ fun AppNavGraph() {
                     arguments = listOf(navArgument("uuid") { type = NavType.StringType }),
                 ) { backStack ->
                     val uuid = backStack.arguments?.getString("uuid") ?: return@composable
-                    MovieDetailScreen(uuid = uuid, onBack = { navController.popBackStack() })
+                    MovieDetailScreen(
+                        uuid           = uuid,
+                        onBack         = { navController.popBackStack() },
+                        onPlay         = { url ->
+                            resolveStreamingUrl(url)?.let { navController.navigate(Screen.VideoPlayer.createRoute(it)) }
+                        },
+                        onWatchTrailer = { url ->
+                            resolveStreamingUrl(url)?.let { navController.navigate(Screen.VideoPlayer.createRoute(it)) }
+                        },
+                    )
                 }
 
                 composable(
@@ -177,7 +188,24 @@ fun AppNavGraph() {
                     arguments = listOf(navArgument("uuid") { type = NavType.StringType }),
                 ) { backStack ->
                     val uuid = backStack.arguments?.getString("uuid") ?: return@composable
-                    SeriesDetailScreen(uuid = uuid, onBack = { navController.popBackStack() })
+                    SeriesDetailScreen(
+                        uuid           = uuid,
+                        onBack         = { navController.popBackStack() },
+                        onWatchTrailer = { url ->
+                            resolveStreamingUrl(url)?.let { navController.navigate(Screen.VideoPlayer.createRoute(it)) }
+                        },
+                        onEpisodePlay  = { url ->
+                            resolveStreamingUrl(url)?.let { navController.navigate(Screen.VideoPlayer.createRoute(it)) }
+                        },
+                    )
+                }
+
+                composable(
+                    route     = Screen.VideoPlayer.route,
+                    arguments = listOf(navArgument("url") { type = NavType.StringType }),
+                ) { backStack ->
+                    val url = backStack.arguments?.getString("url") ?: return@composable
+                    VideoPlayerScreen(url = url, onBack = { navController.popBackStack() })
                 }
             }
         }

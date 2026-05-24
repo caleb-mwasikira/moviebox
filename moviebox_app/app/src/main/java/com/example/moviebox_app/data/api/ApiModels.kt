@@ -38,8 +38,10 @@ data class ApiMovie(
     @SerializedName("is_free")      val isFree: Boolean = false,
     @SerializedName("featured")     val featured: Boolean = false,
     @SerializedName("thumbnail_url") val thumbnailUrl: String? = null,
-    @SerializedName("has_stream")   val hasStream: Boolean = false,
-    @SerializedName("created_at")   val createdAt: String? = null,
+    @SerializedName("has_stream")    val hasStream: Boolean  = false,
+    @SerializedName("streaming_url") val streamingUrl: String? = null,
+    @SerializedName("trailer_url")   val trailerUrl: String?   = null,
+    @SerializedName("created_at")    val createdAt: String?    = null,
 ) {
     fun genreList(): List<String> = genre
         ?.split(",")
@@ -69,12 +71,15 @@ data class ApiSeriesDetail(
 data class ApiSeries(
     val uuid: String,
     val title: String,
-    val description: String?                              = null,
-    val genre: String?                                    = null,
-    val year: Int?                                        = null,
+    val description: String?                               = null,
+    val genre: String?                                     = null,
+    val year: Int?                                         = null,
+    @SerializedName("featured")      val featured: Boolean     = false,
+    @SerializedName("coming_soon")   val comingSoon: Boolean   = false,
     @SerializedName("thumbnail_url") val thumbnailUrl: String? = null,
-    val seasons: List<ApiSeason>?                         = null,
-    @SerializedName("created_at")   val createdAt: String? = null,
+    @SerializedName("trailer_url")   val trailerUrl: String?   = null,
+    val seasons: List<ApiSeason>?                          = null,
+    @SerializedName("created_at")    val createdAt: String?    = null,
 ) {
     fun genreList(): List<String> = genre
         ?.split(",")
@@ -99,7 +104,8 @@ data class ApiEpisode(
     val description: String? = null,
     val duration: Int?       = null,
     @SerializedName("is_free")    val isFree: Boolean    = false,
-    @SerializedName("has_stream") val hasStream: Boolean = false,
+    @SerializedName("has_stream")    val hasStream: Boolean    = false,
+    @SerializedName("streaming_url") val streamingUrl: String? = null,
 ) {
     fun formattedDuration(): String {
         val mins = duration ?: return ""

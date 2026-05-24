@@ -23,8 +23,11 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "API_BASE_URL", "\"${localProps["api.base.url"] ?: "http://10.0.2.2:8000/api/"}\"")
-        buildConfigField("String", "APP_KEY",      "\"${localProps["api.app.key"]  ?: ""}\"")
+        buildConfigField("String", "API_BASE_URL",       "\"${localProps["api.base.url"]       ?: "http://10.0.2.2:8000/api/"}\"")
+        buildConfigField("String", "APP_KEY",            "\"${localProps["api.app.key"]        ?: ""}\"")
+        buildConfigField("String", "STREAMING_BASE_URL", "\"${localProps["streaming.base.url"] ?: "http://10.0.2.2:9090"}\"")
+        buildConfigField("String", "STREAMING_SECRET",   "\"${localProps["streaming.secret"]   ?: ""}\"")
+
     }
 
     buildTypes {
@@ -66,6 +69,10 @@ dependencies {
     implementation(libs.retrofit.gson)
     implementation(libs.okhttp.logging)
     implementation(libs.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.exoplayer.hls)
+    implementation(libs.androidx.media3.datasource)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

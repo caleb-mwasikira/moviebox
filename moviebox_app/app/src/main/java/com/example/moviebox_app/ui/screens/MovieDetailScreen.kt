@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.MoreVert
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -70,6 +72,8 @@ import com.example.moviebox_app.ui.viewmodel.MovieDetailViewModel
 fun MovieDetailScreen(
     uuid: String,
     onBack: () -> Unit,
+    onPlay: (String) -> Unit = {},
+    onWatchTrailer: (String) -> Unit = {},
     vm: MovieDetailViewModel = viewModel(factory = MovieDetailViewModel.Factory(uuid)),
 ) {
     val state by vm.state.collectAsState()
@@ -95,7 +99,7 @@ fun MovieDetailScreen(
                 }
             }
 
-            is UiState.Success -> MovieDetailContent(s.data, onBack)
+            is UiState.Success -> MovieDetailContent(s.data, onBack, onPlay, onWatchTrailer)
         }
 
         TopToast(message = toastMessage, onDismiss = { toastMessage = null })
@@ -103,7 +107,12 @@ fun MovieDetailScreen(
 }
 
 @Composable
-private fun MovieDetailContent(movie: ApiMovie, onBack: () -> Unit) {
+private fun MovieDetailContent(
+    movie: ApiMovie,
+    onBack: () -> Unit,
+    onPlay: (String) -> Unit,
+    onWatchTrailer: (String) -> Unit,
+) {
     val accent = posterAccentFor(movie.uuid)
     val bg     = posterBgFor(movie.uuid)
 
@@ -186,7 +195,8 @@ private fun MovieDetailContent(movie: ApiMovie, onBack: () -> Unit) {
 
             // Play button
             Button(
-                onClick = {},
+                onClick = { movie.streamingUrl?.let(onPlay) },
+                enabled = movie.hasStream,
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Surface, contentColor = TextPrimary),
@@ -194,6 +204,21 @@ private fun MovieDetailContent(movie: ApiMovie, onBack: () -> Unit) {
                 Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(6.dp))
                 Text("Play", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            }
+
+            if (movie.trailerUrl != null) {
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(
+                    onClick = { onWatchTrailer(movie.trailerUrl) },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, TextSecondary.copy(alpha = 0.4f)),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
+                ) {
+                    Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Watch Trailer", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                }
             }
 
             Spacer(Modifier.height(8.dp))

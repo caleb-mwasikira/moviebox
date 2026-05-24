@@ -13,7 +13,7 @@ class Series extends Model
 {
     protected $fillable = [
         'title', 'description', 'genre', 'year',
-        'thumbnail', 'trailer_path', 'status', 'featured',
+        'thumbnail', 'trailer_path', 'status', 'featured', 'coming_soon',
     ];
 
     protected static function booted(): void
@@ -56,6 +56,11 @@ class Series extends Model
     public function isFeatured(): bool
     {
         return (bool) $this->featured;
+    }
+
+    public function isComingSoon(): bool
+    {
+        return (bool) $this->coming_soon;
     }
 
     public function thumbnailUrl(): ?string

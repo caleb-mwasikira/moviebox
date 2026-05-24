@@ -74,6 +74,18 @@ class CatalogController extends Controller
         ]);
     }
 
+    public function comingSoon(): JsonResponse
+    {
+        $movies = Movie::where('status', 'published')
+            ->where('coming_soon', true)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return response()->json([
+            'data' => MovieResource::collection($movies),
+        ]);
+    }
+
     public function movie(Movie $movie): JsonResponse
     {
         if (!$movie->isPublished() || $movie->isComingSoon()) {
@@ -83,9 +95,22 @@ class CatalogController extends Controller
         return response()->json(['data' => new MovieResource($movie)]);
     }
 
+    public function comingSoonSeries(): JsonResponse
+    {
+        $series = Series::where('status', 'published')
+            ->where('coming_soon', true)
+            ->orderByDesc('created_at')
+            ->get();
+
+        return response()->json([
+            'data' => SeriesResource::collection($series),
+        ]);
+    }
+
     public function series(Request $request): JsonResponse
     {
         $series = Series::where('status', 'published')
+            ->where('coming_soon', false)
             ->orderByDesc('created_at')
             ->paginate(20);
 

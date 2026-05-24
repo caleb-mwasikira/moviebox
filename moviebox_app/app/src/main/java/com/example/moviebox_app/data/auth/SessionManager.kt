@@ -22,6 +22,8 @@ class SessionManager(context: Context) {
 
     fun isLoggedIn(): Boolean = getToken() != null
 
+    fun getUserId(): Int? = prefs.getInt(KEY_USER_ID, -1).takeIf { it != -1 }
+
     fun getUserName(): String? = prefs.getString(KEY_USER_NAME, null)
 
     fun getUserEmail(): String? = prefs.getString(KEY_USER_EMAIL, null)

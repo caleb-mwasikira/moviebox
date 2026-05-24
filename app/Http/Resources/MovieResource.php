@@ -20,6 +20,10 @@ class MovieResource extends JsonResource
             'featured'      => (bool) $this->featured,
             'thumbnail_url' => $this->thumbnailUrl(),
             'has_stream'    => (bool) $this->streaming_path,
+            'streaming_url' => $this->streaming_path ? ('/' . ltrim($this->streaming_path, '/')) : null,
+            'trailer_url'   => $this->trailerIsReady()
+                                    ? (str_starts_with($this->trailer_path, 'http') ? $this->trailer_path : '/' . ltrim($this->trailer_path, '/'))
+                                    : null,
             'created_at'    => $this->created_at?->toISOString(),
         ];
     }
