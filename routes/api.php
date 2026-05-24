@@ -20,8 +20,11 @@ Route::middleware('api.key')->group(function () {
     // Auth
     Route::post('auth/register', [AuthController::class, 'register']);
     Route::post('auth/login', [AuthController::class, 'login']);
+    Route::post('auth/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('auth/reset-password', [AuthController::class, 'resetPassword']);
 
     // Public catalog — browsing does not require login
+    Route::get('search', [CatalogController::class, 'search']);
     Route::get('movies', [CatalogController::class, 'movies']);
     Route::get('movies/{movie:uuid}', [CatalogController::class, 'movie']);
     Route::get('series', [CatalogController::class, 'series']);

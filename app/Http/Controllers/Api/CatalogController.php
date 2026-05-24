@@ -12,6 +12,40 @@ use Illuminate\Http\Request;
 
 class CatalogController extends Controller
 {
+    public function search(Request $request): JsonResponse
+    {
+        $q     = trim((string) $request->input('q', ''));
+        $genre = $request->input('genre');
+
+        $movieQuery  = Movie::where('status', 'published')->where('coming_soon', false);
+        $seriesQuery = Series::where('status', 'published');
+
+        if ($q !== '') {
+            $pattern = '%' . strtolower($q) . '%';
+            $movieQuery->where(fn ($b) => $b
+                ->whereRaw('LOWER(title) LIKE ?', [$pattern])
+                ->orWhereRaw('LOWER(genre) LIKE ?', [$pattern])
+                ->orWhereRaw('LOWER(description) LIKE ?', [$pattern])
+            );
+            $seriesQuery->where(fn ($b) => $b
+                ->whereRaw('LOWER(title) LIKE ?', [$pattern])
+                ->orWhereRaw('LOWER(genre) LIKE ?', [$pattern])
+                ->orWhereRaw('LOWER(description) LIKE ?', [$pattern])
+            );
+        }
+
+        if ($genre && $genre !== 'All') {
+            $p = '%' . strtolower($genre) . '%';
+            $movieQuery->whereRaw('LOWER(genre) LIKE ?', [$p]);
+            $seriesQuery->whereRaw('LOWER(genre) LIKE ?', [$p]);
+        }
+
+        return response()->json([
+            'movies' => MovieResource::collection($movieQuery->orderByDesc('created_at')->take(20)->get()),
+            'series' => SeriesResource::collection($seriesQuery->orderByDesc('created_at')->take(20)->get()),
+        ]);
+    }
+
     public function movies(Request $request): JsonResponse
     {
         $query = Movie::where('status', 'published')->where('coming_soon', false);

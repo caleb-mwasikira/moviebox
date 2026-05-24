@@ -12,8 +12,34 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+sealed interface FeaturedItem {
+    data class Movie(val movie: ApiMovie)   : FeaturedItem
+    data class Series(val series: ApiSeries) : FeaturedItem
+
+    val uuid: String get() = when (this) {
+        is Movie  -> movie.uuid
+        is Series -> series.uuid
+    }
+    val title: String get() = when (this) {
+        is Movie  -> movie.title
+        is Series -> series.title
+    }
+    val thumbnailUrl: String? get() = when (this) {
+        is Movie  -> movie.thumbnailUrl
+        is Series -> series.thumbnailUrl
+    }
+    val year: Int? get() = when (this) {
+        is Movie  -> movie.year
+        is Series -> series.year
+    }
+    fun genreList(): List<String> = when (this) {
+        is Movie  -> movie.genreList()
+        is Series -> series.genreList()
+    }
+}
+
 data class HomeData(
-    val featured: ApiMovie?,
+    val featured: FeaturedItem?,
     val trending: List<ApiMovie>,
     val nowShowing: List<ApiMovie>,
     val popular: List<ApiMovie>,
@@ -37,8 +63,17 @@ class HomeViewModel(private val repo: ApiRepository = ApiRepository()) : ViewMod
             val movies = repo.getMovies(page = 1)
             val series = repo.getSeries(page = 1)
 
-            val featured = movies.firstOrNull { it.featured } ?: movies.firstOrNull()
-            val rest     = movies.filter { it.uuid != featured?.uuid }
+            // Prefer an explicitly featured movie; fall back to first series, then first movie
+            val featured: FeaturedItem? = when {
+                movies.any { it.featured } -> FeaturedItem.Movie(movies.first { it.featured })
+                series.isNotEmpty()        -> FeaturedItem.Series(series.first())
+                movies.isNotEmpty()        -> FeaturedItem.Movie(movies.first())
+                else                       -> null
+            }
+
+            // Exclude the featured movie from the scrollable rows (series are unaffected)
+            val excludeUuid = (featured as? FeaturedItem.Movie)?.movie?.uuid
+            val rest = if (excludeUuid != null) movies.filter { it.uuid != excludeUuid } else movies
 
             _state.value = UiState.Success(
                 HomeData(

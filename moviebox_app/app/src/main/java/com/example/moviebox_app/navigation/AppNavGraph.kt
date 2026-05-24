@@ -17,10 +17,14 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.moviebox_app.ui.components.BottomNavBar
+import com.example.moviebox_app.ui.screens.BrowseScreen
 import com.example.moviebox_app.ui.screens.DownloadsScreen
+import com.example.moviebox_app.ui.screens.ForgotPasswordScreen
 import com.example.moviebox_app.ui.screens.HomeScreen
+import com.example.moviebox_app.ui.screens.LoginScreen
 import com.example.moviebox_app.ui.screens.MovieDetailScreen
 import com.example.moviebox_app.ui.screens.ProfileScreen
+import com.example.moviebox_app.ui.screens.RegisterScreen
 import com.example.moviebox_app.ui.screens.SearchScreen
 import com.example.moviebox_app.ui.screens.SeriesDetailScreen
 import com.example.moviebox_app.ui.screens.SplashScreen
@@ -64,36 +68,104 @@ fun AppNavGraph() {
                 .padding(innerPadding),
         ) {
             NavHost(
-                navController  = navController,
+                navController    = navController,
                 startDestination = Screen.Splash.route,
             ) {
                 composable(Screen.Splash.route) {
-                    SplashScreen(onEnter = {
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.Splash.route) { inclusive = true }
-                        }
-                    })
+                    SplashScreen(
+                        onAuthenticated = {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Splash.route) { inclusive = true }
+                            }
+                        },
+                        onUnauthenticated = {
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(Screen.Splash.route) { inclusive = true }
+                            }
+                        },
+                    )
+                }
+
+                composable(Screen.Login.route) {
+                    LoginScreen(
+                        onLoginSuccess   = {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        },
+                        onRegisterClick  = { navController.navigate(Screen.Register.route) },
+                        onForgotClick    = { navController.navigate(Screen.ForgotPassword.route) },
+                    )
+                }
+
+                composable(Screen.Register.route) {
+                    RegisterScreen(
+                        onRegisterSuccess = {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        },
+                        onLoginClick = { navController.popBackStack() },
+                    )
+                }
+
+                composable(Screen.ForgotPassword.route) {
+                    ForgotPasswordScreen(
+                        onResetSuccess = {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        },
+                        onBack = { navController.popBackStack() },
+                    )
                 }
 
                 composable(Screen.Home.route) {
                     HomeScreen(
-                        onMovieClick  = { uuid -> navController.navigate(Screen.MovieDetail.createRoute(uuid)) },
-                        onSeriesClick = { uuid -> navController.navigate(Screen.SeriesDetail.createRoute(uuid)) },
-                        onSearchClick = { navController.navigate(Screen.Search.route) },
+                        onMovieClick   = { uuid -> navController.navigate(Screen.MovieDetail.createRoute(uuid)) },
+                        onSeriesClick  = { uuid -> navController.navigate(Screen.SeriesDetail.createRoute(uuid)) },
+                        onSearchClick  = { navController.navigate(Screen.Search.route) },
+                        onSeeAllMovies = { navController.navigate(Screen.Browse.movies()) },
+                        onSeeAllSeries = { navController.navigate(Screen.Browse.series()) },
                     )
                 }
 
                 composable(Screen.Search.route) {
                     SearchScreen(
-                        onMovieClick = { uuid -> navController.navigate(Screen.MovieDetail.createRoute(uuid)) },
+                        onMovieClick  = { uuid -> navController.navigate(Screen.MovieDetail.createRoute(uuid)) },
+                        onSeriesClick = { uuid -> navController.navigate(Screen.SeriesDetail.createRoute(uuid)) },
+                    )
+                }
+
+                composable(
+                    route     = Screen.Browse.route,
+                    arguments = listOf(navArgument("type") { type = NavType.StringType }),
+                ) { backStack ->
+                    val browseType = backStack.arguments?.getString("type") ?: "movies"
+                    BrowseScreen(
+                        type = browseType,
+                        onItemClick = { uuid ->
+                            if (browseType == "series") navController.navigate(Screen.SeriesDetail.createRoute(uuid))
+                            else navController.navigate(Screen.MovieDetail.createRoute(uuid))
+                        },
+                        onBack = { navController.popBackStack() },
                     )
                 }
 
                 composable(Screen.Downloads.route) { DownloadsScreen() }
-                composable(Screen.Profile.route)   { ProfileScreen() }
+
+                composable(Screen.Profile.route) {
+                    ProfileScreen(
+                        onSignOut = {
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        },
+                    )
+                }
 
                 composable(
-                    route = Screen.MovieDetail.route,
+                    route     = Screen.MovieDetail.route,
                     arguments = listOf(navArgument("uuid") { type = NavType.StringType }),
                 ) { backStack ->
                     val uuid = backStack.arguments?.getString("uuid") ?: return@composable
@@ -101,7 +173,7 @@ fun AppNavGraph() {
                 }
 
                 composable(
-                    route = Screen.SeriesDetail.route,
+                    route     = Screen.SeriesDetail.route,
                     arguments = listOf(navArgument("uuid") { type = NavType.StringType }),
                 ) { backStack ->
                     val uuid = backStack.arguments?.getString("uuid") ?: return@composable

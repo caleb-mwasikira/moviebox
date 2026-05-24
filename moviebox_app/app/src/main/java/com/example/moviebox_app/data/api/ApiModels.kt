@@ -2,6 +2,13 @@ package com.example.moviebox_app.data.api
 
 import com.google.gson.annotations.SerializedName
 
+// ── Search ────────────────────────────────────────────────────────────────────
+
+data class SearchResult(
+    val movies: List<ApiMovie>,
+    val series: List<ApiSeries>,
+)
+
 // ── Pagination wrapper ────────────────────────────────────────────────────────
 
 data class PageMeta(

@@ -2,6 +2,9 @@ package com.example.moviebox_app.data.api
 
 class ApiRepository(private val service: ApiService = ApiClient.service) {
 
+    suspend fun search(query: String? = null, genre: String? = null): SearchResult =
+        service.search(query?.takeIf { it.isNotBlank() }, genre?.takeIf { it != "All" })
+
     suspend fun getMovies(
         page: Int = 1,
         query: String? = null,

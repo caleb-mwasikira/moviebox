@@ -11,9 +11,11 @@ import java.util.concurrent.TimeUnit
 object ApiClient {
 
     private val appKeyInterceptor = Interceptor { chain ->
+        val token = try { com.example.moviebox_app.MovieBoxApplication.sessionManager.getToken() } catch (_: Exception) { null }
         val request = chain.request().newBuilder()
             .addHeader("X-App-Key", BuildConfig.APP_KEY)
             .addHeader("Accept", "application/json")
+            .apply { if (token != null) addHeader("Authorization", "Bearer $token") }
             .build()
         chain.proceed(request)
     }

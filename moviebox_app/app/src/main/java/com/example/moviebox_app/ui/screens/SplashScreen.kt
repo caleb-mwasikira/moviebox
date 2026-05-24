@@ -14,64 +14,105 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import com.example.moviebox_app.MovieBoxApplication
 import com.example.moviebox_app.ui.theme.Accent
 import com.example.moviebox_app.ui.theme.Background
 import com.example.moviebox_app.ui.theme.TextPrimary
 import com.example.moviebox_app.ui.theme.TextSecondary
+import com.example.moviebox_app.ui.viewmodel.SplashViewModel
+import kotlinx.coroutines.delay
 
 @Composable
-fun SplashScreen(onEnter: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Background)
-            .drawBehind {
-                // Atmospheric radial glow — simulates city-skyline mood from design
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFF1A2340).copy(alpha = 0.8f),
-                            Color.Transparent,
-                        ),
-                        center = Offset(size.width * 0.5f, size.height * 0.3f),
-                        radius = size.width * 0.9f,
-                    ),
+fun SplashScreen(
+    onAuthenticated: () -> Unit,
+    onUnauthenticated: () -> Unit,
+    vm: SplashViewModel = viewModel(),
+) {
+    val featured by vm.featured.collectAsState()
+    val isLoggedIn = remember { MovieBoxApplication.sessionManager.isLoggedIn() }
+
+    LaunchedEffect(Unit) {
+        if (isLoggedIn) {
+            delay(900)
+            onAuthenticated()
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Background: featured movie poster (falls back to atmospheric glow)
+        if (featured?.thumbnailUrl != null) {
+            val accent = posterAccentFor(featured!!.uuid)
+            val bg     = posterBgFor(featured!!.uuid)
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .drawBehind {
+                        drawRect(Brush.verticalGradient(listOf(accent.copy(alpha = 0.5f), bg)))
+                        drawCircle(
+                            Brush.radialGradient(
+                                listOf(accent.copy(alpha = 0.18f), Color.Transparent),
+                                radius = size.minDimension * 0.9f,
+                            ),
+                        )
+                    },
+            ) {
+                AsyncImage(
+                    model = featured!!.thumbnailUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
                 )
-                // bottom warm glow
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFF2E1A08).copy(alpha = 0.5f),
-                            Color.Transparent,
-                        ),
-                        center = Offset(size.width * 0.5f, size.height * 0.85f),
-                        radius = size.width * 0.7f,
-                    ),
-                )
-            },
-    ) {
-        // Vertical gradient fade at bottom
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Background)
+                    .drawBehind {
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                colors = listOf(Color(0xFF1A2340).copy(alpha = 0.8f), Color.Transparent),
+                                center = Offset(size.width * 0.5f, size.height * 0.3f),
+                                radius = size.width * 0.9f,
+                            ),
+                        )
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                colors = listOf(Color(0xFF2E1A08).copy(alpha = 0.5f), Color.Transparent),
+                                center = Offset(size.width * 0.5f, size.height * 0.85f),
+                                radius = size.width * 0.7f,
+                            ),
+                        )
+                    },
+            )
+        }
+
+        // Gradient fade over poster so text reads cleanly
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        listOf(
-                            Color.Transparent,
-                            Background.copy(alpha = 0.6f),
-                            Background,
-                        ),
-                        startY = 300f,
+                        listOf(Color.Transparent, Background.copy(alpha = 0.5f), Background),
+                        startY = 200f,
                     )
                 )
         )
@@ -83,6 +124,17 @@ fun SplashScreen(onEnter: () -> Unit) {
             verticalArrangement = Arrangement.Bottom,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            if (featured != null) {
+                Text(
+                    text = featured!!.title,
+                    color = TextPrimary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+
             Text(
                 text = "Watch All Movies",
                 color = TextPrimary,
@@ -104,25 +156,18 @@ fun SplashScreen(onEnter: () -> Unit) {
 
             Spacer(Modifier.height(48.dp))
 
-            Button(
-                onClick = onEnter,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Accent,
-                    contentColor   = Color.Black,
-                ),
-            ) {
-                Text(
-                    text = "Enter Now",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
+            if (!isLoggedIn) {
+                Button(
+                    onClick = onUnauthenticated,
+                    modifier = Modifier.fillMaxWidth().height(54.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black),
+                ) {
+                    Text("Get Started", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
 
-            Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(16.dp))
+            }
         }
     }
 }
