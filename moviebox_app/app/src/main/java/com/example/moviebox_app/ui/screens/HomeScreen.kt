@@ -31,9 +31,11 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -66,6 +68,7 @@ import com.example.moviebox_app.ui.theme.TextSecondary
 import com.example.moviebox_app.ui.viewmodel.HomeData
 import com.example.moviebox_app.ui.viewmodel.HomeViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
         onMovieClick: (String) -> Unit,
@@ -75,7 +78,8 @@ fun HomeScreen(
         onSeeAllSeries: () -> Unit = {},
         vm: HomeViewModel = viewModel(),
 ) {
-    val state by vm.state.collectAsState()
+    val state        by vm.state.collectAsState()
+    val isRefreshing by vm.isRefreshing.collectAsState()
     var toastMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(state) {
@@ -90,14 +94,20 @@ fun HomeScreen(
                     }
             is UiState.Error -> RetryContent(onRetry = vm::load)
             is UiState.Success ->
-                    HomeContent(
-                            data = s.data,
-                            onMovieClick = onMovieClick,
-                            onSeriesClick = onSeriesClick,
-                            onSearchClick = onSearchClick,
-                            onSeeAllMovies = onSeeAllMovies,
-                            onSeeAllSeries = onSeeAllSeries,
-                    )
+                    PullToRefreshBox(
+                            isRefreshing = isRefreshing,
+                            onRefresh    = vm::refresh,
+                            modifier     = Modifier.fillMaxSize(),
+                    ) {
+                        HomeContent(
+                                data           = s.data,
+                                onMovieClick   = onMovieClick,
+                                onSeriesClick  = onSeriesClick,
+                                onSearchClick  = onSearchClick,
+                                onSeeAllMovies = onSeeAllMovies,
+                                onSeeAllSeries = onSeeAllSeries,
+                        )
+                    }
         }
 
         TopToast(message = toastMessage, onDismiss = { toastMessage = null })
