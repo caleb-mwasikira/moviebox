@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\CollectionController as AdminCollectionController
 use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\ActivityController as AdminActivityController;
 use App\Http\Controllers\Admin\TrashController as AdminTrashController;
+use App\Http\Controllers\Admin\GiftController as AdminGiftController;
 use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\ComingSoonController;
 use App\Http\Controllers\SharedLinkController;
@@ -309,6 +310,9 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     // ── Finance ───────────────────────────────────────────────────────────────
     Route::get('payments', [AdminPaymentController::class, 'index'])
         ->middleware('admin.can:view payments')->name('payments.index');
+
+    Route::get('gifts', [AdminGiftController::class, 'index'])->name('gifts.index');
+    Route::post('gifts/{gift}/resend', [AdminGiftController::class, 'resend'])->name('gifts.resend');
 
     Route::middleware('admin.can:view packages')->group(function () {
         Route::resource('packages', AdminSubscriptionController::class);

@@ -21,7 +21,7 @@
             This gift subscription has already been redeemed. Each gift can only be claimed once.
           </p>
           <a href="{{ route('home') }}"
-            class="inline-flex font-bold uppercase tracking-wide py-3 px-8 text-xs bg-gray-900 text-white hover:bg-accent hover:text-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-accent transition-colors">
+            class="inline-flex font-bold uppercase tracking-wide py-3 px-8 text-xs bg-gray-900 text-black hover:bg-accent hover:text-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-accent transition-colors">
             Go to Homepage
           </a>
         </div>
@@ -152,11 +152,11 @@
             Sign in or create a free account to claim your gift.
           </p>
           <div class="flex flex-col sm:flex-row gap-3">
-            <a href="{{ route('login') }}?redirect={{ urlencode(request()->fullUrl()) }}"
+            <a href="{{ route('login') }}"
               class="flex-1 inline-flex justify-center font-bold uppercase tracking-wide py-3 px-6 text-sm bg-gray-900 hover:bg-accent hover:text-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-accent transition-colors">
               Sign In
             </a>
-            <a href="{{ route('register') }}?redirect={{ urlencode(request()->fullUrl()) }}"
+            <a href="{{ route('register') }}"
               class="flex-1 inline-flex justify-center font-bold uppercase tracking-wide py-3 px-6 text-sm border border-gray-900 dark:border-white text-gray-900 dark:text-white hover:bg-gray-900 hover:text-white dark:hover:bg-white dark:hover:text-gray-900 transition-colors">
               Create Account
             </a>

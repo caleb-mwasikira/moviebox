@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Profile;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 class ProfileSelectionController extends Controller
 {
@@ -30,7 +31,7 @@ class ProfileSelectionController extends Controller
                 'status'          => Profile::STATUS_ACTIVE,
             ]);
             session(['active_profile_id' => $profile->id]);
-            return redirect()->intended(route('home'));
+            return $this->redirectAfterSelect();
         }
 
         // Auto-select if there's exactly one profile
@@ -40,7 +41,7 @@ class ProfileSelectionController extends Controller
             $allActive->count() === 1
         ) {
             session(['active_profile_id' => $allActive->first()->id]);
-            return redirect()->intended(route('home'));
+            return $this->redirectAfterSelect();
         }
 
         return view('pages.profiles.select', compact('ownProfiles', 'sharedProfiles'));
@@ -63,6 +64,15 @@ class ProfileSelectionController extends Controller
             ->firstOrFail();
 
         session(['active_profile_id' => $profile->id]);
+
+        return $this->redirectAfterSelect();
+    }
+
+    private function redirectAfterSelect()
+    {
+        if ($token = session()->pull('pending_gift_claim')) {
+            return redirect()->route('gift.accept', $token);
+        }
 
         return redirect()->intended(route('home'));
     }

@@ -115,6 +115,12 @@
                 href="{{ route('admin.payments.index') }}">Payments</a>
             </li>
             @endcan
+            @if (auth()->user()->isAdmin())
+            <li>
+              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.gifts.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.gifts.index') }}">Gifts</a>
+            </li>
+            @endif
             @can('send test emails')
             <li>
               <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.test-email.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"

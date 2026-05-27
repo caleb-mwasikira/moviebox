@@ -508,7 +508,7 @@
             My Account
             <svg class="w-3.5 h-3.5 shrink-0 opacity-40" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
           </button>
-          @if (auth()->user()->isAdmin())
+          @if (auth()->user()->isAdmin() || auth()->user()->roles->isNotEmpty())
           <button type="button" data-nav-to="mobile-l3"
             class="flex items-center justify-between w-full py-4 font-bold text-accent hover:text-accent/80 transition-colors border-t border-gray-200/50 dark:border-gray-200/10">
             Admin Panel
@@ -545,24 +545,36 @@
           <p class="mb-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">My Account</p>
           <ul class="flex flex-col font-bold">
             <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('account.dashboard') }}">Dashboard</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
               <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.profile') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('account.profile') }}">My Profile</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.watchlist') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('account.watchlist') }}">Watch Later</a>
             </li>
             <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
               <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.watching') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('account.watching') }}">Continue Watching</a>
             </li>
             <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
-              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.watchlist') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('account.watchlist') }}">My Watchlist</a>
-            </li>
-            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
               <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.billing') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('account.billing') }}">Billing Details</a>
             </li>
-            <li class="flex items-center">
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.watch-party.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('account.watch-party.index') }}">Watch Party</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
               <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent text-gray-900 dark:text-white"
                 href="{{ route('profiles.select') }}">Switch Profile</a>
+            </li>
+            <li class="flex items-center">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-red-500 dark:hover:text-red-400 {{ request()->routeIs('account.delete-account') ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-gray-500' }}"
+                href="{{ route('account.delete-account') }}">Delete Account</a>
             </li>
           </ul>
           @else
@@ -582,14 +594,14 @@
 
         @auth
         <div class="container pb-5 border-t border-gray-200/50 dark:border-gray-200/10">
-          @if (auth()->user()->isAdmin())
+          @if (auth()->user()->isAdmin() || auth()->user()->roles->isNotEmpty())
           <button type="button" data-nav-to="mobile-l3"
             class="flex items-center justify-between w-full py-4 font-bold text-accent hover:text-accent/80 transition-colors">
             Admin Panel
             <svg class="w-3.5 h-3.5 shrink-0 opacity-60" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
           </button>
           @endif
-          <form method="POST" action="{{ route('logout') }}" class="@if(auth()->user()->isAdmin()) border-t border-gray-200/50 dark:border-gray-200/10 @endif">
+          <form method="POST" action="{{ route('logout') }}" class="@if(auth()->user()->isAdmin() || auth()->user()->roles->isNotEmpty()) border-t border-gray-200/50 dark:border-gray-200/10 @endif">
             @csrf
             <button type="submit"
               class="w-full text-left py-4 font-bold text-gray-500 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
@@ -602,7 +614,7 @@
 
       {{-- ── L3: Admin menu ── --}}
       @auth
-      @if (auth()->user()->isAdmin())
+      @if (auth()->user()->isAdmin() || auth()->user()->roles->isNotEmpty())
       <div id="mobile-l3" class="absolute inset-0 flex flex-col overflow-y-auto bg-white dark:bg-gray-700 transition-transform duration-300" style="transform:translateX(100%)">
         <div class="container flex-1 py-5">
           <button type="button" data-nav-close="mobile-l3"
@@ -617,25 +629,97 @@
               <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.dashboard') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.dashboard') }}">Dashboard</a>
             </li>
+            @can('view analytics')
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.analytics') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.analytics') }}">Analytics</a>
+            </li>
+            @endcan
+            @can('view movies')
             <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
               <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.movies.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.movies.index') }}">Movies</a>
             </li>
+            @endcan
+            @can('view series')
             <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
               <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.series.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.series.index') }}">Series</a>
             </li>
+            @endcan
+            @can('view coming soon')
             <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
               <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.coming-soon.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.coming-soon.index') }}">Coming Soon</a>
             </li>
+            @endcan
+            @can('view collections')
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.collections.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.collections.index') }}">Collections</a>
+            </li>
+            @endcan
+            @can('view users')
             <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
               <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.users.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.users.index') }}">Users</a>
             </li>
-            <li class="flex items-center">
+            @endcan
+            @can('assign permissions')
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.roles.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.roles.index') }}">Roles</a>
+            </li>
+            @endcan
+            @can('view packages')
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
               <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.packages.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.packages.index') }}">Subscription Packages</a>
+            </li>
+            @endcan
+            @can('view payments')
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.payments.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.payments.index') }}">Payments</a>
+            </li>
+            @endcan
+            @if (auth()->user()->isAdmin())
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.gifts.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.gifts.index') }}">Gifts</a>
+            </li>
+            @endif
+            @can('send test emails')
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.test-email.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.test-email.show') }}">Test Emails</a>
+            </li>
+            @endcan
+            @can('view contacts')
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              @php $unreadContacts = \App\Models\Contact::unread()->count(); @endphp
+              <a class="flex-grow flex items-center gap-x-2 py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.contacts.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.contacts.index') }}">
+                Messages
+                @if ($unreadContacts > 0)
+                  <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold bg-accent text-gray-900 rounded-full">{{ $unreadContacts }}</span>
+                @endif
+              </a>
+            </li>
+            @endcan
+            @if (auth()->user()->isAdmin())
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.activity.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.activity.index') }}">Activity Log</a>
+            </li>
+            <li class="flex items-center border-b border-b-gray-200/50 dark:border-b-gray-200/10">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.trash.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.trash.index') }}">Trash</a>
+            </li>
+            @endif
+            <li class="flex items-center">
+              <a class="flex-grow py-4 leading-normal transition-colors hover:text-accent dark:hover:text-accent text-gray-900 dark:text-white"
+                href="{{ route('account.dashboard') }}">My Account</a>
             </li>
           </ul>
         </div>

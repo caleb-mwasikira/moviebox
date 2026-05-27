@@ -86,6 +86,17 @@ class GiftSubscriptionController extends Controller
             ->with('package', 'sender')
             ->firstOrFail();
 
+        // Authenticated user visiting a claimable gift → claim immediately
+        if (Auth::check() && $gift->isClaimable()) {
+            return $this->claim($token);
+        }
+
+        // Guest visiting a claimable gift → remember the token so we can
+        // auto-claim right after they finish the login / register flow
+        if (! Auth::check() && $gift->isClaimable()) {
+            session(['pending_gift_claim' => $token]);
+        }
+
         return view('pages.gift.accept', compact('gift'));
     }
 
