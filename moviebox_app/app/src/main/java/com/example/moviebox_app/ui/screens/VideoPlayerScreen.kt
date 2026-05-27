@@ -367,38 +367,53 @@ fun VideoPlayerScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (PlayerSession.subtitles.isNotEmpty()) {
-                val subActive = activeSubtitleIdx >= 0
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            if (subActive) Accent.copy(alpha = 0.9f)
-                            else Color.Black.copy(alpha = 0.65f)
-                        )
-                        .clickable {
-                            activeDrawer = ActiveDrawer.Subtitles
-                            hideControlsJob?.cancel()
+            // CC pill — always shown so it stays next to the episodes pill
+            val hasSubtitles = PlayerSession.subtitles.isNotEmpty()
+            val subActive    = hasSubtitles && activeSubtitleIdx >= 0
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(
+                        when {
+                            subActive    -> Accent.copy(alpha = 0.9f)
+                            hasSubtitles -> Color.Black.copy(alpha = 0.65f)
+                            else         -> Color.Black.copy(alpha = 0.30f)
                         }
-                        .padding(horizontal = 12.dp, vertical = 7.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(5.dp),
-                ) {
-                    Icon(
-                        Icons.Default.Subtitles,
-                        contentDescription = null,
-                        tint = if (subActive) Color.Black else Color.White,
-                        modifier = Modifier.size(15.dp),
                     )
-                    Text(
-                        if (subActive) PlayerSession.subtitles.getOrNull(activeSubtitleIdx)?.displayCode() ?: "CC"
-                        else "CC",
-                        color = if (subActive) Color.Black else Color.White,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+                    .clickable(enabled = hasSubtitles) {
+                        activeDrawer = ActiveDrawer.Subtitles
+                        hideControlsJob?.cancel()
+                    }
+                    .padding(horizontal = 12.dp, vertical = 7.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+            ) {
+                Icon(
+                    Icons.Default.Subtitles,
+                    contentDescription = null,
+                    tint = when {
+                        subActive    -> Color.Black
+                        hasSubtitles -> Color.White
+                        else         -> Color.White.copy(alpha = 0.35f)
+                    },
+                    modifier = Modifier.size(15.dp),
+                )
+                Text(
+                    text = when {
+                        subActive    -> PlayerSession.subtitles.getOrNull(activeSubtitleIdx)?.displayCode() ?: "CC"
+                        else         -> "CC"
+                    },
+                    color = when {
+                        subActive    -> Color.Black
+                        hasSubtitles -> Color.White
+                        else         -> Color.White.copy(alpha = 0.35f)
+                    },
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                )
             }
+
+            // Episodes pill
             if (PlayerSession.episodes.isNotEmpty()) {
                 Row(
                     modifier = Modifier

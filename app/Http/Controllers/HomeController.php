@@ -11,9 +11,9 @@ class HomeController extends Controller
 {
     public function welcome()
     {
-        $movies = Movie::where('status', 'published')->where('coming_soon', false)->with('posters')->latest()->take(18)->get();
-        $series = Series::where('status', 'published')->with('posters')->latest()->take(18)->get();
-        $comingSoon = Movie::where('coming_soon', true)->with('posters')->latest()->take(18)->get();
+        $movies = Movie::where('status', 'published')->where('coming_soon', false)->with('posters')->inRandomOrder()->take(15)->get();
+        $series = Series::where('status', 'published')->with('posters')->inRandomOrder()->take(15)->get();
+        $comingSoon = Movie::where('coming_soon', true)->with('posters')->inRandomOrder()->take(15)->get();
 
         $featuredMovies = Movie::where('status', 'published')->where('coming_soon', false)->where('featured', true)
             ->with('posters')->latest()->take(6)->get();

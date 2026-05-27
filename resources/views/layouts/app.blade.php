@@ -25,14 +25,13 @@
   <meta name="theme-color" media="(prefers-color-scheme: dark)"  content="#111827">
   <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  @vite('resources/js/app.js')
   @stack('head')
 
   <!-- Google Web Fonts
   ================================================== -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet">
 
   <!-- CSS
   ================================================== -->
@@ -42,6 +41,9 @@
 
   <!-- Template CSS-->
   <link href="{{ asset('assets/css/str1/style.css') }}" rel="stylesheet">
+
+  <!-- App CSS (must load after template CSS to override font) -->
+  @vite('resources/js/app.js')
 
   <style>
     .auth-banner-fade-r {

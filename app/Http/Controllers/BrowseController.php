@@ -66,11 +66,15 @@ class BrowseController extends Controller
         return response()->json($results->values());
     }
 
+    private const PER_PAGE = 24;
+
     public function index(Request $request)
     {
-        $type  = $request->input('type', 'all');
-        $genre = $request->input('genre');
-        $query = trim($request->input('q', ''));
+        $type    = $request->input('type', 'all');
+        $genre   = $request->input('genre');
+        $query   = trim($request->input('q', ''));
+        $page    = max(1, (int) $request->input('page', 1));
+        $perPage = self::PER_PAGE;
 
         $movieQuery  = Movie::where('status', 'published')->where('coming_soon', false);
         $seriesQuery = Series::where('status', 'published');
@@ -81,35 +85,53 @@ class BrowseController extends Controller
         }
 
         if ($query) {
-            $movieQuery->where(function ($q) use ($query) {
-                $q->where('title', 'ilike', "%{$query}%")
-                  ->orWhere('description', 'ilike', "%{$query}%")
-                  ->orWhere('genre', 'ilike', "%{$query}%");
-            });
-            $seriesQuery->where(function ($q) use ($query) {
-                $q->where('title', 'ilike', "%{$query}%")
-                  ->orWhere('description', 'ilike', "%{$query}%")
-                  ->orWhere('genre', 'ilike', "%{$query}%");
-            });
+            $movieQuery->where(fn($q) => $q
+                ->where('title', 'ilike', "%{$query}%")
+                ->orWhere('description', 'ilike', "%{$query}%")
+                ->orWhere('genre', 'ilike', "%{$query}%"));
+            $seriesQuery->where(fn($q) => $q
+                ->where('title', 'ilike', "%{$query}%")
+                ->orWhere('description', 'ilike', "%{$query}%")
+                ->orWhere('genre', 'ilike', "%{$query}%"));
         }
 
-        $movies = in_array($type, ['all', 'movies'])
-            ? $movieQuery->latest()->get()
-            : collect();
+        // Build combined sorted list, then paginate in PHP
+        $all = collect();
 
-        $series = in_array($type, ['all', 'series'])
-            ? $seriesQuery->latest()->get()
-            : collect();
+        if (in_array($type, ['all', 'movies'])) {
+            $movieQuery->latest()->get()
+                ->each(fn($m) => $all->push(['type' => 'movie', 'item' => $m, 'ts' => $m->created_at]));
+        }
+        if (in_array($type, ['all', 'series'])) {
+            $seriesQuery->latest()->get()
+                ->each(fn($s) => $all->push(['type' => 'series', 'item' => $s, 'ts' => $s->created_at]));
+        }
+
+        if ($type === 'all') {
+            $all = $all->sortByDesc('ts')->values();
+        }
+
+        $total   = $all->count();
+        $paged   = $all->forPage($page, $perPage);
+        $hasMore = ($page * $perPage) < $total;
+
+        // AJAX — return JSON for infinite-scroll requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'items'   => $paged->map(fn($e) => $this->itemJson($e))->values(),
+                'hasMore' => $hasMore,
+                'page'    => $page,
+            ]);
+        }
 
         // Coming soon only surfaces when searching with type=all
         $comingSoon = collect();
         if ($query && $type === 'all') {
             $csQuery = Movie::where('coming_soon', true)
-                ->where(function ($q) use ($query) {
-                    $q->where('title', 'ilike', "%{$query}%")
-                      ->orWhere('description', 'ilike', "%{$query}%")
-                      ->orWhere('genre', 'ilike', "%{$query}%");
-                });
+                ->where(fn($q) => $q
+                    ->where('title', 'ilike', "%{$query}%")
+                    ->orWhere('description', 'ilike', "%{$query}%")
+                    ->orWhere('genre', 'ilike', "%{$query}%"));
             if ($genre) {
                 $csQuery->where('genre', $genre);
             }
@@ -120,6 +142,22 @@ class BrowseController extends Controller
             ->merge(Series::where('status', 'published')->distinct()->pluck('genre'))
             ->filter()->unique()->sort()->values();
 
-        return view('pages.browse', compact('movies', 'series', 'comingSoon', 'genres', 'type', 'genre', 'query'));
+        return view('pages.browse', compact('paged', 'comingSoon', 'genres', 'type', 'genre', 'query', 'hasMore'));
+    }
+
+    private function itemJson(array $entry): array
+    {
+        $item = $entry['item'];
+        return [
+            'type'         => $entry['type'],
+            'title'        => $item->title,
+            'url'          => $entry['type'] === 'movie'
+                ? route('movies.show', $item)
+                : route('series.show', $item),
+            'thumbnailUrl' => $item->thumbnailUrl(),
+            'genre'        => $item->genre,
+            'year'         => $item->year,
+            'isFree'       => $entry['type'] === 'movie' && ($item->is_free ?? false),
+        ];
     }
 }
