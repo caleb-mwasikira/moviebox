@@ -48,9 +48,10 @@
   <div class="lg:hidden border border-gray-200 dark:border-gray-600 divide-y divide-gray-200 dark:divide-gray-600">
     @foreach ($users as $user)
       @php
-        $latestSub = $user->userSubscriptions->first();
-        $subActive = $latestSub && $latestSub->status === 'active'
+        $latestSub   = $user->userSubscriptions->first();
+        $subActive   = $latestSub && $latestSub->status === 'active'
             && ($latestSub->expires_at === null || $latestSub->expires_at->isFuture());
+        $pendingGift = $pendingGifts[$user->email] ?? null;
       @endphp
       <div class="p-4 {{ $user->isBanned() ? 'opacity-60' : '' }}">
         {{-- Name + badges --}}
@@ -84,69 +85,12 @@
           </div>
         </div>
 
-        {{-- Actions --}}
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-          @if ($latestSub && !$user->isAdmin())
-            <details class="relative" style="list-style:none">
-              <summary class="text-xs font-bold uppercase text-gray-500 hover:text-accent transition-colors cursor-pointer" style="list-style:none">
-                Extend
-              </summary>
-              <div class="absolute left-0 top-6 z-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-lg p-4 w-52">
-                <p class="text-xs font-bold uppercase text-gray-500 mb-2">Extend by days</p>
-                <form method="POST" action="{{ route('admin.users.extend-subscription', $user) }}" class="flex gap-x-2">
-                  @csrf @method('PATCH')
-                  <input type="number" name="days" min="1" max="3650" value="30"
-                    class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs focus:border-accent focus:outline-none">
-                  <button type="submit"
-                    class="px-3 py-1.5 text-xs font-bold uppercase bg-accent text-gray-900 hover:bg-accent/90 transition-colors shrink-0">OK</button>
-                </form>
-              </div>
-            </details>
-          @endif
-          @if(! $user->isAdmin())
-            @can('assign permissions')
-              <details class="relative" style="list-style:none">
-                <summary class="text-xs font-bold uppercase text-gray-500 hover:text-accent transition-colors cursor-pointer" style="list-style:none">
-                  Role
-                </summary>
-                <div class="absolute left-0 top-6 z-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-lg p-4 w-52">
-                  <p class="text-xs font-bold uppercase text-gray-500 mb-2">Assign Role</p>
-                  <form method="POST" action="{{ route('admin.users.assign-role', $user) }}" class="flex gap-x-2">
-                    @csrf @method('PATCH')
-                    <select name="role"
-                      class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs focus:border-accent focus:outline-none">
-                      <option value="">No role</option>
-                      @foreach ($roles as $r)
-                        <option value="{{ $r->name }}" {{ $user->roles->first()?->name === $r->name ? 'selected' : '' }}>
-                          {{ str_replace('-', ' ', $r->name) }}
-                        </option>
-                      @endforeach
-                    </select>
-                    <button type="submit"
-                      class="px-3 py-1.5 text-xs font-bold uppercase bg-accent text-gray-900 hover:bg-accent/90 transition-colors shrink-0">OK</button>
-                  </form>
-                </div>
-              </details>
-              <a href="{{ route('admin.users.permissions', $user) }}"
-                 class="text-xs font-bold uppercase text-gray-500 hover:text-accent transition-colors">
-                Permissions
-              </a>
-            @endcan
-          @endif
-          @if(! $user->is(auth()->user()) && ! $user->isAdmin())
-            @if($user->isBanned())
-              <form method="POST" action="{{ route('admin.users.unban', $user) }}" class="inline">
-                @csrf @method('PATCH')
-                <button type="submit" class="text-xs font-bold uppercase text-accent hover:underline transition-colors">Unban</button>
-              </form>
-            @else
-              <form method="POST" action="{{ route('admin.users.ban', $user) }}" class="inline"
-                onsubmit="return confirm('Ban {{ addslashes($user->name) }}?')">
-                @csrf @method('PATCH')
-                <button type="submit" class="text-xs font-bold uppercase text-red-500 hover:underline transition-colors">Ban</button>
-              </form>
-            @endif
-          @endif
+        {{-- Action --}}
+        <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+          <a href="{{ route('admin.users.show', $user) }}"
+             class="text-xs font-bold uppercase text-gray-500 hover:text-accent transition-colors">
+            Manage →
+          </a>
         </div>
       </div>
     @endforeach
@@ -167,9 +111,10 @@
       <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
         @foreach ($users as $user)
           @php
-            $latestSub = $user->userSubscriptions->first();
-            $subActive = $latestSub && $latestSub->status === 'active'
+            $latestSub   = $user->userSubscriptions->first();
+            $subActive   = $latestSub && $latestSub->status === 'active'
                 && ($latestSub->expires_at === null || $latestSub->expires_at->isFuture());
+            $pendingGift = $pendingGifts[$user->email] ?? null;
           @endphp
           <tr class="{{ $user->isBanned() ? 'opacity-60' : '' }}">
             <td class="px-5 py-4 font-bold text-gray-900 dark:text-white whitespace-nowrap">
@@ -203,6 +148,19 @@
                     </p>
                   @endif
                 </div>
+              @elseif ($pendingGift)
+                <div>
+                  <span class="inline-flex items-center gap-x-1 text-xs font-bold uppercase text-pink-500">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112.83 0L12 8zm0 0V6a2 2 0 10-2.83 0L12 8zm-7 4h14M5 12a2 2 0 01-2-2V6h3.5m10 6a2 2 0 002-2V6h-3.5"/>
+                    </svg>
+                    Gift Pending
+                  </span>
+                  @if ($pendingGift->package)
+                    <span class="text-xs text-gray-500 ml-1">· {{ $pendingGift->package->name }}</span>
+                  @endif
+                  <p class="text-xs text-gray-400 mt-0.5">Awaiting claim</p>
+                </div>
               @else
                 <span class="text-xs text-gray-400 uppercase">None</span>
               @endif
@@ -218,70 +176,11 @@
                 </span>
               @endif
             </td>
-            <td class="px-5 py-4 text-right whitespace-nowrap">
-              <div class="flex items-center justify-end gap-x-4">
-                @if ($latestSub && !$user->isAdmin())
-                  <details class="relative" style="list-style:none">
-                    <summary class="text-xs font-bold uppercase text-gray-500 hover:text-accent transition-colors cursor-pointer" style="list-style:none">
-                      Extend
-                    </summary>
-                    <div class="absolute right-0 top-6 z-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-lg p-4 w-52">
-                      <p class="text-xs font-bold uppercase text-gray-500 mb-2">Extend by days</p>
-                      <form method="POST" action="{{ route('admin.users.extend-subscription', $user) }}" class="flex gap-x-2">
-                        @csrf @method('PATCH')
-                        <input type="number" name="days" min="1" max="3650" value="30"
-                          class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs focus:border-accent focus:outline-none">
-                        <button type="submit"
-                          class="px-3 py-1.5 text-xs font-bold uppercase bg-accent text-gray-900 hover:bg-accent/90 transition-colors shrink-0">OK</button>
-                      </form>
-                    </div>
-                  </details>
-                @endif
-                @if(! $user->isAdmin())
-                  @can('assign permissions')
-                    <details class="relative" style="list-style:none">
-                      <summary class="text-xs font-bold uppercase text-gray-500 hover:text-accent transition-colors cursor-pointer" style="list-style:none">
-                        Role
-                      </summary>
-                      <div class="absolute right-0 top-6 z-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-lg p-4 w-52">
-                        <p class="text-xs font-bold uppercase text-gray-500 mb-2">Assign Role</p>
-                        <form method="POST" action="{{ route('admin.users.assign-role', $user) }}" class="flex gap-x-2">
-                          @csrf @method('PATCH')
-                          <select name="role"
-                            class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs focus:border-accent focus:outline-none">
-                            <option value="">No role</option>
-                            @foreach ($roles as $r)
-                              <option value="{{ $r->name }}" {{ $user->roles->first()?->name === $r->name ? 'selected' : '' }}>
-                                {{ str_replace('-', ' ', $r->name) }}
-                              </option>
-                            @endforeach
-                          </select>
-                          <button type="submit"
-                            class="px-3 py-1.5 text-xs font-bold uppercase bg-accent text-gray-900 hover:bg-accent/90 transition-colors shrink-0">OK</button>
-                        </form>
-                      </div>
-                    </details>
-                    <a href="{{ route('admin.users.permissions', $user) }}"
-                       class="text-xs font-bold uppercase text-gray-500 hover:text-accent transition-colors">
-                      Permissions
-                    </a>
-                  @endcan
-                @endif
-                @if(! $user->is(auth()->user()) && ! $user->isAdmin())
-                  @if($user->isBanned())
-                    <form method="POST" action="{{ route('admin.users.unban', $user) }}" class="inline">
-                      @csrf @method('PATCH')
-                      <button type="submit" class="text-xs font-bold uppercase text-accent hover:underline transition-colors">Unban</button>
-                    </form>
-                  @else
-                    <form method="POST" action="{{ route('admin.users.ban', $user) }}" class="inline"
-                      onsubmit="return confirm('Ban {{ addslashes($user->name) }}?')">
-                      @csrf @method('PATCH')
-                      <button type="submit" class="text-xs font-bold uppercase text-red-500 hover:underline transition-colors">Ban</button>
-                    </form>
-                  @endif
-                @endif
-              </div>
+            <td class="px-5 py-4 text-right">
+              <a href="{{ route('admin.users.show', $user) }}"
+                 class="text-xs font-bold uppercase text-gray-500 hover:text-accent transition-colors">
+                Manage →
+              </a>
             </td>
           </tr>
         @endforeach

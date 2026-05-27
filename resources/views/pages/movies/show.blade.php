@@ -156,7 +156,7 @@
                       <svg class="h-4 w-4" viewBox="0 0 24 24" :fill="watchlisted ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
                       </svg>
-                      <span x-text="watchlisted ? 'Watchlisted' : 'Watchlist'"></span>
+                      <span x-text="watchlisted ? 'Saved' : 'Watch Later'"></span>
                     </button>
                   </div>
                 @else
@@ -165,7 +165,7 @@
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
                     </svg>
-                    Watchlist
+                    Watch Later
                   </button>
                 @endauth
 

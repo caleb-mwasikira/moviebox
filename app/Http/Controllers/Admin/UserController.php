@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Mail\SubscriptionUpdated;
+use App\Models\ActivityLog;
+use App\Models\GiftSubscription;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -25,9 +27,34 @@ class UserController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $roles = Role::orderBy('name')->get();
+        // Pending (unclaimed) gifts keyed by recipient email for users on this page
+        $pendingGifts = GiftSubscription::whereIn('recipient_email', $users->pluck('email'))
+            ->where('status', 'sent')
+            ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+            ->with('package')
+            ->get()
+            ->keyBy('recipient_email');
 
-        return view('pages.admin.users.index', compact('users', 'roles'));
+        return view('pages.admin.users.index', compact('users', 'pendingGifts'));
+    }
+
+    public function show(User $user)
+    {
+        $user->load([
+            'roles',
+            'userSubscriptions' => fn ($q) => $q->with('package')->latest('starts_at')->limit(1),
+        ]);
+
+        $roles          = Role::orderBy('name')->get();
+        $recentActivity = ActivityLog::where('user_id', $user->id)->latest('created_at')->limit(15)->get();
+
+        $activityStats = ActivityLog::where('user_id', $user->id)
+            ->selectRaw('action, subject_type, count(*) as total')
+            ->groupBy('action', 'subject_type')
+            ->get()
+            ->keyBy(fn ($r) => $r->action . '|' . $r->subject_type);
+
+        return view('pages.admin.users.show', compact('user', 'roles', 'recentActivity', 'activityStats'));
     }
 
     public function ban(User $user)

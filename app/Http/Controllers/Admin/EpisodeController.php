@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Traits\TriggersHlsEncoding;
+use App\Models\ActivityLog;
 use App\Models\Episode;
 use App\Models\Season;
 use Illuminate\Http\Request;
@@ -60,6 +61,8 @@ class EpisodeController extends Controller
             storage_path('app/public/' . $finalPath),
             $series->title,
         );
+
+        ActivityLog::record('created', 'Episode', $episode->id, $episode->label() . ' — ' . $series->title);
 
         return redirect()
             ->route('admin.series.edit', $series)
@@ -183,8 +186,10 @@ class EpisodeController extends Controller
     public function destroy(Episode $episode)
     {
         $series = $episode->season->series;
+        $label  = $episode->label() . ' — ' . $series->title;
         Storage::disk('public')->delete($episode->video_path);
         $episode->delete();
+        ActivityLog::record('deleted', 'Episode', null, $label);
 
         return redirect()
             ->route('admin.series.edit', $series)

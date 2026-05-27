@@ -29,15 +29,15 @@
                 </a>
               </li>
               <li>
-                <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.watching') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                  href="{{ route('account.watching') }}">
-                  Continue Watching
+                <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.watchlist') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                  href="{{ route('account.watchlist') }}">
+                  Watch Later
                 </a>
               </li>
               <li>
-                <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.watchlist') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                  href="{{ route('account.watchlist') }}">
-                  My Watchlist
+                <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('account.watching') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                  href="{{ route('account.watching') }}">
+                  Continue Watching
                 </a>
               </li>
               <li>
@@ -60,6 +60,12 @@
                 </a>
               </li>
               @endif
+              <li class="lg:mt-4 lg:pt-4 lg:border-t lg:border-gray-200 lg:dark:border-gray-600">
+                <a class="block py-1.5 transition-all font-bold hover:text-red-500 dark:hover:text-red-400 {{ request()->routeIs('account.delete-account') ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-gray-500' }}"
+                  href="{{ route('account.delete-account') }}">
+                  Delete Account
+                </a>
+              </li>
               <li>
                 <form method="POST" action="{{ route('logout') }}" class="inline">
                   @csrf

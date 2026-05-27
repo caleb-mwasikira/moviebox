@@ -23,6 +23,8 @@ use App\Http\Controllers\Admin\TestEmailController as AdminTestEmailController;
 use App\Http\Controllers\Admin\ConvertController as AdminConvertController;
 use App\Http\Controllers\Admin\CollectionController as AdminCollectionController;
 use App\Http\Controllers\Admin\RoleController as AdminRoleController;
+use App\Http\Controllers\Admin\ActivityController as AdminActivityController;
+use App\Http\Controllers\Admin\TrashController as AdminTrashController;
 use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\ComingSoonController;
 use App\Http\Controllers\SharedLinkController;
@@ -186,6 +188,8 @@ Route::middleware(['auth', 'verified', 'not.shared.guest'])->prefix('account')->
     Route::post('profiles/{profile}/resend-invite', [AccountProfileController::class, 'resendInvite'])->name('profiles.resend-invite');
     Route::patch('profiles/{profile}/own', [AccountProfileController::class, 'updateOwn'])->name('profiles.update-own');
     Route::delete('profiles/{profile}', [AccountProfileController::class, 'destroy'])->name('profiles.destroy');
+    Route::get('delete-account', [AccountController::class, 'deleteAccountPage'])->name('delete-account');
+    Route::delete('delete-account', [AccountController::class, 'deleteAccount'])->name('delete-account.destroy');
 });
 
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -287,6 +291,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     // ── Users ─────────────────────────────────────────────────────────────────
     Route::middleware('admin.can:view users')->group(function () {
         Route::get('users', [AdminUserController::class, 'index'])->name('users.index');
+        Route::get('users/{user}', [AdminUserController::class, 'show'])->name('users.show');
         Route::patch('users/{user}/ban', [AdminUserController::class, 'ban'])
             ->middleware('admin.can:ban users')->name('users.ban');
         Route::patch('users/{user}/unban', [AdminUserController::class, 'unban'])
@@ -317,6 +322,16 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
         Route::delete('contacts/{contact}', [AdminContactController::class, 'destroy'])
             ->middleware('admin.can:manage contacts')->name('contacts.destroy');
     });
+
+    // ── Activity Log (admin only) ─────────────────────────────────────────────
+    Route::get('activity', [AdminActivityController::class, 'index'])->name('activity.index');
+
+    // ── Trash (admin only — restore / force-delete soft-deleted content) ──────
+    Route::get('trash', [AdminTrashController::class, 'index'])->name('trash.index');
+    Route::patch('trash/movies/{id}/restore', [AdminMovieController::class, 'restore'])->name('movies.restore');
+    Route::delete('trash/movies/{id}/force', [AdminMovieController::class, 'forceDestroy'])->name('movies.force-delete');
+    Route::patch('trash/series/{id}/restore', [AdminSeriesController::class, 'restore'])->name('series.restore');
+    Route::delete('trash/series/{id}/force', [AdminSeriesController::class, 'forceDestroy'])->name('series.force-delete');
 
     // ── System ────────────────────────────────────────────────────────────────
     Route::middleware('admin.can:send test emails')->group(function () {

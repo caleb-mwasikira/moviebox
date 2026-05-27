@@ -196,4 +196,26 @@ class AccountController extends Controller
             return redirect()->back()->with('error', 'Something went wrong while updating your plan. Please try again.');
         }
     }
+
+    public function deleteAccountPage()
+    {
+        return view('pages.account.delete-account');
+    }
+
+    public function deleteAccount(Request $request)
+    {
+        $user = auth()->user();
+
+        $request->validate([
+            'password' => ['required', 'current_password'],
+        ]);
+
+        auth()->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        $user->delete();
+
+        return redirect()->route('home')->with('success', 'Your account has been deleted.');
+    }
 }

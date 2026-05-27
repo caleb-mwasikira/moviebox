@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Traits\TriggersHlsEncoding;
 use App\Jobs\SendNewContentAlerts;
+use App\Models\ActivityLog;
 use App\Models\Series;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -14,14 +15,20 @@ class SeriesController extends Controller
 {
     use TriggersHlsEncoding;
 
-    public function index()
+    public function index(Request $request)
     {
-        $series = Series::withCount('seasons')
-            ->withCount(['episodes as unprocessed_count' => fn ($q) => $q->whereNull('streaming_path')])
-            ->withCount(['episodes as free_episodes_count' => fn ($q) => $q->where('is_free', true)])
-            ->latest()
-            ->paginate(20);
-        return view('pages.admin.series.index', compact('series'));
+        $trashed = $request->boolean('trashed');
+
+        $query = $trashed
+            ? Series::onlyTrashed()->latest('deleted_at')
+            : Series::withCount('seasons')
+                ->withCount(['episodes as unprocessed_count' => fn ($q) => $q->whereNull('streaming_path')])
+                ->withCount(['episodes as free_episodes_count' => fn ($q) => $q->where('is_free', true)])
+                ->latest();
+
+        $series = $query->paginate(20)->withQueryString();
+
+        return view('pages.admin.series.index', compact('series', 'trashed'));
     }
 
     public function create()
@@ -56,6 +63,7 @@ class SeriesController extends Controller
         }
 
         $series = Series::create($data);
+        ActivityLog::record('created', 'Series', $series->id, $series->title);
 
         foreach ($request->file('posters', []) as $i => $file) {
             $series->posters()->create([
@@ -148,10 +156,48 @@ class SeriesController extends Controller
             ]);
         }
 
+        ActivityLog::record('updated', 'Series', $series->id, $series->title);
+
         return redirect()->route('admin.series.edit', $series)->with('status', 'series-updated');
     }
 
     public function destroy(Series $series)
+    {
+        $title = $series->title;
+
+        if (auth()->user()->isAdmin()) {
+            $this->deleteSeriesFiles($series);
+            $series->forceDelete();
+            ActivityLog::record('force_deleted', 'Series', null, $title);
+        } else {
+            $series->delete();
+            ActivityLog::record('deleted', 'Series', $series->id, $title);
+        }
+
+        return redirect()->route('admin.series.index')->with('status', 'series-deleted');
+    }
+
+    public function restore(int $id)
+    {
+        $series = Series::withTrashed()->findOrFail($id);
+        $series->restore();
+        ActivityLog::record('restored', 'Series', $series->id, $series->title);
+
+        return redirect()->route('admin.trash.index')->with('status', 'series-restored');
+    }
+
+    public function forceDestroy(int $id)
+    {
+        $series = Series::withTrashed()->findOrFail($id);
+        $title  = $series->title;
+        $this->deleteSeriesFiles($series);
+        $series->forceDelete();
+        ActivityLog::record('force_deleted', 'Series', null, $title);
+
+        return redirect()->route('admin.trash.index')->with('status', 'series-force-deleted');
+    }
+
+    private function deleteSeriesFiles(Series $series): void
     {
         if ($series->thumbnail) {
             Storage::disk('public')->delete($series->thumbnail);
@@ -159,9 +205,6 @@ class SeriesController extends Controller
         foreach ($series->posters as $poster) {
             Storage::disk('public')->delete($poster->path);
         }
-        $series->delete();
-
-        return redirect()->route('admin.series.index')->with('status', 'series-deleted');
     }
 
     public function uploadTrailer(Request $request, Series $series)

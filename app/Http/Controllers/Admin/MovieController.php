@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Traits\TriggersHlsEncoding;
 use App\Jobs\SendNewContentAlerts;
+use App\Models\ActivityLog;
 use App\Models\Movie;
 use App\Models\Series;
 use Illuminate\Http\Request;
@@ -15,10 +16,15 @@ class MovieController extends Controller
 {
     use TriggersHlsEncoding;
 
-    public function index()
+    public function index(Request $request)
     {
-        $movies = Movie::latest()->paginate(20);
-        return view('pages.admin.movies.index', compact('movies'));
+        $trashed = $request->boolean('trashed');
+
+        $movies = $trashed
+            ? Movie::onlyTrashed()->latest('deleted_at')->paginate(20)->withQueryString()
+            : Movie::latest()->paginate(20)->withQueryString();
+
+        return view('pages.admin.movies.index', compact('movies', 'trashed'));
     }
 
     public function create()
@@ -65,6 +71,7 @@ class MovieController extends Controller
         }
 
         $movie = Movie::create($data);
+        ActivityLog::record('created', 'Movie', $movie->id, $movie->title);
 
         foreach ($request->file('posters', []) as $i => $file) {
             $movie->posters()->create([
@@ -181,6 +188,8 @@ class MovieController extends Controller
             ]);
         }
 
+        ActivityLog::record('updated', 'Movie', $movie->id, $movie->title);
+
         return redirect()->route('admin.movies.edit', $movie)->with('status', 'movie-updated');
     }
 
@@ -230,6 +239,42 @@ class MovieController extends Controller
 
     public function destroy(Movie $movie)
     {
+        $title = $movie->title;
+
+        if (auth()->user()->isAdmin()) {
+            $this->deleteMovieFiles($movie);
+            $movie->forceDelete();
+            ActivityLog::record('force_deleted', 'Movie', null, $title);
+        } else {
+            $movie->delete();
+            ActivityLog::record('deleted', 'Movie', $movie->id, $title);
+        }
+
+        return redirect()->route('admin.movies.index')->with('status', 'movie-deleted');
+    }
+
+    public function restore(int $id)
+    {
+        $movie = Movie::withTrashed()->findOrFail($id);
+        $movie->restore();
+        ActivityLog::record('restored', 'Movie', $movie->id, $movie->title);
+
+        return redirect()->route('admin.trash.index')->with('status', 'movie-restored');
+    }
+
+    public function forceDestroy(int $id)
+    {
+        $movie = Movie::withTrashed()->findOrFail($id);
+        $title = $movie->title;
+        $this->deleteMovieFiles($movie);
+        $movie->forceDelete();
+        ActivityLog::record('force_deleted', 'Movie', null, $title);
+
+        return redirect()->route('admin.trash.index')->with('status', 'movie-force-deleted');
+    }
+
+    private function deleteMovieFiles(Movie $movie): void
+    {
         Storage::disk('public')->delete($movie->video_path);
         if ($movie->thumbnail) {
             Storage::disk('public')->delete($movie->thumbnail);
@@ -237,9 +282,6 @@ class MovieController extends Controller
         foreach ($movie->posters as $poster) {
             Storage::disk('public')->delete($poster->path);
         }
-        $movie->delete();
-
-        return redirect()->route('admin.movies.index')->with('status', 'movie-deleted');
     }
 
     public function updateVideo(Request $request, Movie $movie)

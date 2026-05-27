@@ -28,6 +28,17 @@
           ->with('package', 'claimedBy')
           ->orderByDesc('created_at')
           ->get();
+
+      // Detect if the active subscription came from a claimed gift
+      $claimedGift = null;
+      if ($userSubscription && $selectedPackage) {
+          $claimedGift = \App\Models\GiftSubscription::where('claimed_by_id', $user->id)
+              ->where('status', 'claimed')
+              ->where('subscription_package_id', $selectedPackage->id)
+              ->with('sender')
+              ->latest('claimed_at')
+              ->first();
+      }
     @endphp
 
     <div class="bg-white shadow-3xl p-8 md:p-10 lg:p-14 xl:p-[60px] dark:bg-gray-700">
@@ -38,7 +49,17 @@
         @if($userSubscription && $selectedPackage)
           <div>
             <div class="text-xs font-bold uppercase text-gray-500 mb-1">Current Plan</div>
-            <div class="text-lg font-bold text-gray-900 dark:text-white">{{ $selectedPackage->name }}</div>
+            <div class="flex items-center gap-x-2">
+              <span class="text-lg font-bold text-gray-900 dark:text-white">{{ $selectedPackage->name }}</span>
+              @if ($claimedGift)
+                <span class="inline-flex items-center gap-x-1 px-2 py-0.5 text-[10px] font-bold uppercase bg-pink-50 text-pink-600 border border-pink-200 dark:bg-pink-900/20 dark:border-pink-700 dark:text-pink-400">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112.83 0L12 8zm0 0V6a2 2 0 10-2.83 0L12 8zm-7 4h14M5 12a2 2 0 01-2-2V6h3.5m10 6a2 2 0 002-2V6h-3.5"/>
+                  </svg>
+                  Gift
+                </span>
+              @endif
+            </div>
             <div class="text-sm text-gray-500 dark:text-gray mt-1">
               @if($userSubscription->expires_at)
                 Renews on {{ $userSubscription->expires_at->format('F j, Y') }}
@@ -46,6 +67,11 @@
                 Lifetime Access
               @endif
             </div>
+            @if ($claimedGift?->sender)
+              <div class="text-xs text-gray-400 mt-1">
+                Gifted by <span class="font-semibold text-gray-600 dark:text-gray-300">{{ $claimedGift->sender->name }}</span>
+              </div>
+            @endif
           </div>
           <span
             class="inline-flex items-center px-3 py-1 text-xs font-bold uppercase bg-accent/10 text-accent border border-accent">

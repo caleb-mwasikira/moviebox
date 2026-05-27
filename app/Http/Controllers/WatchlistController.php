@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Episode;
 use App\Models\Movie;
 use App\Models\Series;
 use App\Models\WatchlistItem;
+use App\Models\WatchProgress;
 use Illuminate\Http\Request;
 
 class WatchlistController extends Controller
@@ -26,7 +28,30 @@ class WatchlistController extends Controller
                 ->filter(fn($item) => $item->watchable !== null)
             : collect();
 
-        return view('pages.account.watchlist', compact('items'));
+        $historyQuery = $profileId
+            ? WatchProgress::where('profile_id', $profileId)
+            : WatchProgress::where('user_id', $request->user()->id)->whereNull('profile_id');
+
+        $history = $historyQuery
+            ->where('position', '>=', 30)
+            ->orderByDesc('watched_at')
+            ->limit(300)
+            ->get();
+
+        $history->loadMorph('watchable', [
+            Movie::class   => ['posters'],
+            Episode::class => ['season.series.posters'],
+        ]);
+
+        $history = $history
+            ->filter(fn($item) => $item->watchable !== null)
+            ->unique(fn($item) => $item->watchable_type === 'movie'
+                ? 'movie_' . $item->watchable_id
+                : 'series_' . $item->watchable->season->series->id)
+            ->sortByDesc('watched_at')
+            ->values();
+
+        return view('pages.account.watchlist', compact('items', 'history'));
     }
 
     public function toggle(Request $request, string $type, int $id)

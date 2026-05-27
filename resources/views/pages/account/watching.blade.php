@@ -3,7 +3,12 @@
 @section('account-title', 'Continue Watching')
 
 @section('account-content')
-  <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Continue Watching</h2>
+<div class="bg-white shadow-3xl p-4 sm:p-8 md:p-10 lg:p-14 dark:bg-gray-700">
+
+  <h2 class="text-2xl font-bold tracking-tighter text-gray-900 dark:text-white mb-1">Continue Watching</h2>
+  <p class="text-sm text-gray-500 dark:text-gray mb-8">
+    Pick up where you left off.
+  </p>
 
   @if ($items->isEmpty())
     <div class="py-16 text-center border border-dashed border-gray-300 dark:border-gray-600">
@@ -153,4 +158,6 @@
     </div>
 
   @endif
+
+</div>
 @endsection

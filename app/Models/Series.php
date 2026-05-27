@@ -7,10 +7,12 @@ use App\Models\Episode;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class Series extends Model
 {
+    use SoftDeletes;
     protected $fillable = [
         'title', 'description', 'genre', 'year',
         'thumbnail', 'trailer_path', 'status', 'featured', 'coming_soon',
