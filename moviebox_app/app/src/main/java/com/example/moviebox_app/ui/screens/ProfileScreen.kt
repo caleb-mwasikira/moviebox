@@ -53,6 +53,7 @@ import com.example.moviebox_app.ui.viewmodel.ProfileViewModel
 @Composable
 fun ProfileScreen(
     onSignOut: () -> Unit,
+    onManageSubscription: () -> Unit = {},
     vm: ProfileViewModel = viewModel(),
 ) {
     val state by vm.state.collectAsState()
@@ -68,17 +69,16 @@ fun ProfileScreen(
             }
 
             is UiState.Success -> ProfileContent(
-                profile  = s.data,
-                onSignOut = {
-                    vm.logout(onDone = onSignOut)
-                },
+                profile              = s.data,
+                onManageSubscription = onManageSubscription,
+                onSignOut            = { vm.logout(onDone = onSignOut) },
             )
         }
     }
 }
 
 @Composable
-private fun ProfileContent(profile: UserProfile, onSignOut: () -> Unit) {
+private fun ProfileContent(profile: UserProfile, onManageSubscription: () -> Unit, onSignOut: () -> Unit) {
     val initial = profile.name.firstOrNull()?.uppercaseChar()?.toString() ?: "U"
 
     Column(
@@ -158,7 +158,7 @@ private fun ProfileContent(profile: UserProfile, onSignOut: () -> Unit) {
 
         ProfileMenuItem(icon = Icons.Outlined.AccountCircle, label = "Edit Profile")
         HorizontalDivider(color = DividerColor, thickness = 0.5.dp)
-        ProfileMenuItem(icon = Icons.Outlined.CreditCard, label = "Manage Subscription")
+        ProfileMenuItem(icon = Icons.Outlined.CreditCard, label = "Manage Subscription", onClick = onManageSubscription)
         HorizontalDivider(color = DividerColor, thickness = 0.5.dp)
         ProfileMenuItem(icon = Icons.Outlined.Notifications, label = "Notifications")
 

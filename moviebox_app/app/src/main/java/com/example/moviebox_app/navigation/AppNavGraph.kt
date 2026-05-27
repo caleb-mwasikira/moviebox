@@ -16,6 +16,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.moviebox_app.MovieBoxApplication
+import com.example.moviebox_app.data.PlayerSession
+import com.example.moviebox_app.data.api.ApiEpisode
+import com.example.moviebox_app.data.api.ApiMovie
+import com.example.moviebox_app.data.api.ApiSeries
+import com.example.moviebox_app.data.resolveStreamingUrl
 import com.example.moviebox_app.ui.components.BottomNavBar
 import com.example.moviebox_app.ui.screens.BrowseScreen
 import com.example.moviebox_app.ui.screens.DownloadsScreen
@@ -27,8 +33,8 @@ import com.example.moviebox_app.ui.screens.ProfileScreen
 import com.example.moviebox_app.ui.screens.RegisterScreen
 import com.example.moviebox_app.ui.screens.SearchScreen
 import com.example.moviebox_app.ui.screens.SeriesDetailScreen
-import com.example.moviebox_app.data.resolveStreamingUrl
 import com.example.moviebox_app.ui.screens.SplashScreen
+import com.example.moviebox_app.ui.screens.SubscriptionScreen
 import com.example.moviebox_app.ui.screens.VideoPlayerScreen
 
 private val bottomNavRoutes = setOf(
@@ -37,6 +43,31 @@ private val bottomNavRoutes = setOf(
     Screen.Downloads.route,
     Screen.Profile.route,
 )
+
+private fun populatePlayerSession(movie: ApiMovie) {
+    val progress = MovieBoxApplication.progressStore.get(movie.uuid)
+    PlayerSession.title = movie.title
+    PlayerSession.subtitles = movie.subtitles ?: emptyList()
+    PlayerSession.contentUuid = movie.uuid
+    PlayerSession.episodes = emptyList()
+    PlayerSession.currentEpisodeIdx = -1
+    PlayerSession.initialPositionMs = if (progress != null && !progress.isFinished) progress.positionMs else 0L
+}
+
+private fun populatePlayerSessionEpisode(
+    episode: ApiEpisode,
+    allEpisodes: List<ApiEpisode>,
+    series: ApiSeries,
+) {
+    val progress = MovieBoxApplication.progressStore.get(episode.uuid)
+    val idx = allEpisodes.indexOfFirst { it.uuid == episode.uuid }.coerceAtLeast(0)
+    PlayerSession.title = series.title
+    PlayerSession.subtitles = episode.subtitles ?: emptyList()
+    PlayerSession.contentUuid = episode.uuid
+    PlayerSession.episodes = allEpisodes
+    PlayerSession.currentEpisodeIdx = idx
+    PlayerSession.initialPositionMs = if (progress != null && !progress.isFinished) progress.positionMs else 0L
+}
 
 @Composable
 fun AppNavGraph() {
@@ -76,7 +107,7 @@ fun AppNavGraph() {
                 composable(Screen.Splash.route) {
                     SplashScreen(
                         onAuthenticated = {
-                            navController.navigate(Screen.Home.route) {
+                            navController.navigate(Screen.Subscription.route) {
                                 popUpTo(Screen.Splash.route) { inclusive = true }
                             }
                         },
@@ -88,10 +119,25 @@ fun AppNavGraph() {
                     )
                 }
 
+                composable(Screen.Subscription.route) {
+                    SubscriptionScreen(
+                        onActive = {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        },
+                        onSkip = {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        },
+                    )
+                }
+
                 composable(Screen.Login.route) {
                     LoginScreen(
                         onLoginSuccess   = {
-                            navController.navigate(Screen.Home.route) {
+                            navController.navigate(Screen.Subscription.route) {
                                 popUpTo(0) { inclusive = true }
                             }
                         },
@@ -103,7 +149,7 @@ fun AppNavGraph() {
                 composable(Screen.Register.route) {
                     RegisterScreen(
                         onRegisterSuccess = {
-                            navController.navigate(Screen.Home.route) {
+                            navController.navigate(Screen.Subscription.route) {
                                 popUpTo(0) { inclusive = true }
                             }
                         },
@@ -163,6 +209,9 @@ fun AppNavGraph() {
                                 popUpTo(0) { inclusive = true }
                             }
                         },
+                        onManageSubscription = {
+                            navController.navigate(Screen.Subscription.route)
+                        },
                     )
                 }
 
@@ -174,11 +223,22 @@ fun AppNavGraph() {
                     MovieDetailScreen(
                         uuid           = uuid,
                         onBack         = { navController.popBackStack() },
-                        onPlay         = { url ->
-                            resolveStreamingUrl(url)?.let { navController.navigate(Screen.VideoPlayer.createRoute(it)) }
+                        onPlay         = { url, movie ->
+                            resolveStreamingUrl(url)?.let { resolved ->
+                                populatePlayerSession(movie)
+                                navController.navigate(Screen.VideoPlayer.createRoute(resolved))
+                            }
                         },
-                        onWatchTrailer = { url ->
-                            resolveStreamingUrl(url)?.let { navController.navigate(Screen.VideoPlayer.createRoute(it)) }
+                        onWatchTrailer = { url, movie ->
+                            resolveStreamingUrl(url)?.let { resolved ->
+                                PlayerSession.title = movie.title
+                                PlayerSession.subtitles = emptyList()
+                                PlayerSession.contentUuid = ""
+                                PlayerSession.episodes = emptyList()
+                                PlayerSession.currentEpisodeIdx = -1
+                                PlayerSession.initialPositionMs = 0L
+                                navController.navigate(Screen.VideoPlayer.createRoute(resolved))
+                            }
                         },
                     )
                 }
@@ -191,11 +251,22 @@ fun AppNavGraph() {
                     SeriesDetailScreen(
                         uuid           = uuid,
                         onBack         = { navController.popBackStack() },
-                        onWatchTrailer = { url ->
-                            resolveStreamingUrl(url)?.let { navController.navigate(Screen.VideoPlayer.createRoute(it)) }
+                        onWatchTrailer = { url, series ->
+                            resolveStreamingUrl(url)?.let { resolved ->
+                                PlayerSession.title = series.title
+                                PlayerSession.subtitles = emptyList()
+                                PlayerSession.contentUuid = ""
+                                PlayerSession.episodes = emptyList()
+                                PlayerSession.currentEpisodeIdx = -1
+                                PlayerSession.initialPositionMs = 0L
+                                navController.navigate(Screen.VideoPlayer.createRoute(resolved))
+                            }
                         },
-                        onEpisodePlay  = { url ->
-                            resolveStreamingUrl(url)?.let { navController.navigate(Screen.VideoPlayer.createRoute(it)) }
+                        onEpisodePlay  = { episode, allEpisodes, series ->
+                            resolveStreamingUrl(episode.streamingUrl)?.let { resolved ->
+                                populatePlayerSessionEpisode(episode, allEpisodes, series)
+                                navController.navigate(Screen.VideoPlayer.createRoute(resolved))
+                            }
                         },
                     )
                 }

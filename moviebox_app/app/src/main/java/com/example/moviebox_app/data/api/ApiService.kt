@@ -54,4 +54,16 @@ interface ApiService {
 
     @GET("series/{uuid}")
     suspend fun getSeriesDetail(@Path("uuid") uuid: String): ApiSeriesDetail
+
+    @GET("subscriptions/packages")
+    suspend fun getSubscriptionPackages(): ApiPackageList
+
+    @GET("subscriptions/current")
+    suspend fun getCurrentSubscription(): ApiCurrentSubWrapper
+
+    @POST("subscriptions/initiate")
+    suspend fun initiateSubscription(@Body body: SubscriptionInitiateRequest): SubscriptionInitiateResponse
+
+    @GET("subscriptions/status")
+    suspend fun getSubscriptionStatus(@Query("checkout_request_id") checkoutRequestId: String): SubscriptionStatusResponse
 }

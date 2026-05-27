@@ -22,4 +22,5 @@ sealed class Screen(val route: String) {
     data object VideoPlayer    : Screen("player/{url}") {
         fun createRoute(url: String) = "player/${android.net.Uri.encode(url)}"
     }
+    data object Subscription   : Screen("subscription")
 }

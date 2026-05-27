@@ -31,6 +31,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,7 +53,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.moviebox_app.MovieBoxApplication
 import com.example.moviebox_app.data.UiState
+import com.example.moviebox_app.data.WatchProgressStore
 import com.example.moviebox_app.data.api.ApiEpisode
 import com.example.moviebox_app.data.api.ApiSeason
 import com.example.moviebox_app.data.api.ApiSeries
@@ -71,8 +74,8 @@ import com.example.moviebox_app.ui.viewmodel.SeriesDetailViewModel
 fun SeriesDetailScreen(
     uuid: String,
     onBack: () -> Unit,
-    onWatchTrailer: (String) -> Unit = {},
-    onEpisodePlay: (String) -> Unit = {},
+    onWatchTrailer: (String, ApiSeries) -> Unit = { _, _ -> },
+    onEpisodePlay: (ApiEpisode, List<ApiEpisode>, ApiSeries) -> Unit = { _, _, _ -> },
     vm: SeriesDetailViewModel = viewModel(factory = SeriesDetailViewModel.Factory(uuid)),
 ) {
     val state by vm.state.collectAsState()
@@ -109,13 +112,20 @@ fun SeriesDetailScreen(
 private fun SeriesDetailContent(
     series: ApiSeries,
     onBack: () -> Unit,
-    onWatchTrailer: (String) -> Unit,
-    onEpisodePlay: (String) -> Unit,
+    onWatchTrailer: (String, ApiSeries) -> Unit,
+    onEpisodePlay: (ApiEpisode, List<ApiEpisode>, ApiSeries) -> Unit,
 ) {
     val accent = posterAccentFor(series.uuid)
     val bg     = posterBgFor(series.uuid)
     val seasons = series.seasons ?: emptyList()
+    val allEpisodes = seasons.flatMap { it.episodes ?: emptyList() }
     var selectedSeasonIdx by remember { mutableIntStateOf(0) }
+
+    // Find the last-watched episode across all seasons
+    val continueEpisode = allEpisodes.firstOrNull { ep ->
+        val p = MovieBoxApplication.progressStore.get(ep.uuid)
+        p != null && !p.isFinished
+    }
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
 
@@ -173,13 +183,43 @@ private fun SeriesDetailContent(
 
             Spacer(Modifier.height(16.dp))
 
+            // Continue Watching button
+            if (continueEpisode != null) {
+                val continueProgress = MovieBoxApplication.progressStore.get(continueEpisode.uuid)
+                Button(
+                    onClick = { onEpisodePlay(continueEpisode, allEpisodes, series) },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black),
+                ) {
+                    Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "Continue — E${continueEpisode.episodeNumber}: ${continueEpisode.title}",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                    )
+                }
+                if (continueProgress != null) {
+                    Spacer(Modifier.height(4.dp))
+                    LinearProgressIndicator(
+                        progress = { continueProgress.fraction },
+                        modifier = Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(2.dp)),
+                        color = Accent,
+                        trackColor = Accent.copy(alpha = 0.2f),
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+
             val firstEpisode = seasons.firstOrNull()?.episodes?.firstOrNull()
             Button(
-                onClick = { firstEpisode?.streamingUrl?.let(onEpisodePlay) },
+                onClick = { firstEpisode?.let { onEpisodePlay(it, allEpisodes, series) } },
                 enabled = firstEpisode?.hasStream == true,
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black),
+                colors = ButtonDefaults.buttonColors(containerColor = com.example.moviebox_app.ui.theme.Surface, contentColor = TextPrimary),
             ) {
                 Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(6.dp))
@@ -189,7 +229,7 @@ private fun SeriesDetailContent(
             if (series.trailerUrl != null) {
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(
-                    onClick = { onWatchTrailer(series.trailerUrl) },
+                    onClick = { onWatchTrailer(series.trailerUrl, series) },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(10.dp),
                     border = BorderStroke(1.dp, TextSecondary.copy(alpha = 0.4f)),
@@ -237,11 +277,13 @@ private fun SeriesDetailContent(
                     Text("No episodes available", color = TextMuted, fontSize = 13.sp)
                 } else {
                     episodes.forEachIndexed { i, ep ->
+                        val epProgress = MovieBoxApplication.progressStore.get(ep.uuid)
                         EpisodeRow(
                             season      = seasons[selectedSeasonIdx],
                             episode     = ep,
                             accentColor = accent,
-                            onClick     = { ep.streamingUrl?.let(onEpisodePlay) },
+                            progress    = epProgress,
+                            onClick     = { onEpisodePlay(ep, allEpisodes, series) },
                         )
                         if (i < episodes.lastIndex) {
                             HorizontalDivider(color = DividerColor, thickness = 0.5.dp, modifier = Modifier.padding(vertical = 4.dp))
@@ -256,31 +298,48 @@ private fun SeriesDetailContent(
 }
 
 @Composable
-private fun EpisodeRow(season: ApiSeason, episode: ApiEpisode, accentColor: Color, onClick: () -> Unit) {
-    Row(
+private fun EpisodeRow(
+    season: ApiSeason,
+    episode: ApiEpisode,
+    accentColor: Color,
+    progress: WatchProgressStore.Progress?,
+    onClick: () -> Unit,
+) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = episode.hasStream, onClick = onClick)
             .padding(vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier = Modifier.width(100.dp).height(60.dp).clip(RoundedCornerShape(8.dp))
-                .background(Brush.horizontalGradient(listOf(accentColor.copy(alpha = 0.3f), accentColor.copy(alpha = 0.05f)))),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(Icons.Default.PlayArrow, null, tint = TextPrimary.copy(alpha = 0.6f), modifier = Modifier.size(24.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier.width(100.dp).height(60.dp).clip(RoundedCornerShape(8.dp))
+                    .background(Brush.horizontalGradient(listOf(accentColor.copy(alpha = 0.3f), accentColor.copy(alpha = 0.05f)))),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Default.PlayArrow, null, tint = TextPrimary.copy(alpha = 0.6f), modifier = Modifier.size(24.dp))
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "S${season.seasonNumber}:E${episode.episodeNumber.toString().padStart(2, '0')} — ${episode.title}",
+                    color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                )
+                Spacer(Modifier.height(4.dp))
+                val dur = episode.formattedDuration()
+                Text(if (dur.isNotEmpty()) dur else "~42 min", color = TextMuted, fontSize = 12.sp)
+            }
+            Icon(Icons.Default.PlayArrow, null, tint = TextSecondary, modifier = Modifier.size(20.dp))
         }
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                "S${season.seasonNumber}:E${episode.episodeNumber.toString().padStart(2, '0')} — ${episode.title}",
-                color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium,
+        // Progress bar under the episode row
+        if (progress != null && !progress.isFinished) {
+            Spacer(Modifier.height(6.dp))
+            LinearProgressIndicator(
+                progress = { progress.fraction },
+                modifier = Modifier.fillMaxWidth().height(2.dp).clip(RoundedCornerShape(1.dp)),
+                color = accentColor,
+                trackColor = accentColor.copy(alpha = 0.2f),
             )
-            Spacer(Modifier.height(4.dp))
-            val dur = episode.formattedDuration()
-            Text(if (dur.isNotEmpty()) dur else "~42 min", color = TextMuted, fontSize = 12.sp)
         }
-        Icon(Icons.Default.PlayArrow, null, tint = TextSecondary, modifier = Modifier.size(20.dp))
     }
 }

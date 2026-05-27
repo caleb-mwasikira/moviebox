@@ -19,4 +19,16 @@ class ApiRepository(private val service: ApiService = ApiClient.service) {
 
     suspend fun getSeriesDetail(uuid: String): ApiSeries =
         service.getSeriesDetail(uuid).data
+
+    suspend fun getSubscriptionPackages(): List<ApiSubscriptionPackage> =
+        service.getSubscriptionPackages().data
+
+    suspend fun getCurrentSubscription(): ApiCurrentSubscription? =
+        service.getCurrentSubscription().data
+
+    suspend fun initiateSubscription(phone: String, packageUuid: String): SubscriptionInitiateResponse =
+        service.initiateSubscription(SubscriptionInitiateRequest(phone, packageUuid))
+
+    suspend fun getSubscriptionStatus(checkoutRequestId: String): SubscriptionStatusResponse =
+        service.getSubscriptionStatus(checkoutRequestId)
 }

@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +32,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,7 +53,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.moviebox_app.MovieBoxApplication
 import com.example.moviebox_app.data.UiState
+import com.example.moviebox_app.data.WatchProgressStore
 import com.example.moviebox_app.data.api.ApiMovie
 import com.example.moviebox_app.ui.theme.Accent
 import com.example.moviebox_app.ui.theme.Background
@@ -72,8 +73,8 @@ import com.example.moviebox_app.ui.viewmodel.MovieDetailViewModel
 fun MovieDetailScreen(
     uuid: String,
     onBack: () -> Unit,
-    onPlay: (String) -> Unit = {},
-    onWatchTrailer: (String) -> Unit = {},
+    onPlay: (String, ApiMovie) -> Unit = { _, _ -> },
+    onWatchTrailer: (String, ApiMovie) -> Unit = { _, _ -> },
     vm: MovieDetailViewModel = viewModel(factory = MovieDetailViewModel.Factory(uuid)),
 ) {
     val state by vm.state.collectAsState()
@@ -110,11 +111,12 @@ fun MovieDetailScreen(
 private fun MovieDetailContent(
     movie: ApiMovie,
     onBack: () -> Unit,
-    onPlay: (String) -> Unit,
-    onWatchTrailer: (String) -> Unit,
+    onPlay: (String, ApiMovie) -> Unit,
+    onWatchTrailer: (String, ApiMovie) -> Unit,
 ) {
     val accent = posterAccentFor(movie.uuid)
     val bg     = posterBgFor(movie.uuid)
+    val progress = MovieBoxApplication.progressStore.get(movie.uuid)
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
 
@@ -193,9 +195,31 @@ private fun MovieDetailContent(
 
             Spacer(Modifier.height(16.dp))
 
+            // Continue Watching button (shown when there is unsaved progress)
+            if (progress != null && !progress.isFinished && movie.hasStream) {
+                Button(
+                    onClick = { movie.streamingUrl?.let { onPlay(it, movie) } },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Accent, contentColor = Color.Black),
+                ) {
+                    Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Continue Watching", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                }
+                Spacer(Modifier.height(4.dp))
+                LinearProgressIndicator(
+                    progress = { progress.fraction },
+                    modifier = Modifier.fillMaxWidth().height(3.dp).clip(RoundedCornerShape(2.dp)),
+                    color = Accent,
+                    trackColor = Accent.copy(alpha = 0.2f),
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+
             // Play button
             Button(
-                onClick = { movie.streamingUrl?.let(onPlay) },
+                onClick = { movie.streamingUrl?.let { onPlay(it, movie) } },
                 enabled = movie.hasStream,
                 modifier = Modifier.fillMaxWidth().height(48.dp),
                 shape = RoundedCornerShape(10.dp),
@@ -203,13 +227,13 @@ private fun MovieDetailContent(
             ) {
                 Icon(Icons.Default.PlayArrow, null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Play", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text(if (progress != null && !progress.isFinished) "Play from beginning" else "Play", fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
 
             if (movie.trailerUrl != null) {
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(
-                    onClick = { onWatchTrailer(movie.trailerUrl) },
+                    onClick = { onWatchTrailer(movie.trailerUrl, movie) },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(10.dp),
                     border = BorderStroke(1.dp, TextSecondary.copy(alpha = 0.4f)),
