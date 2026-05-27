@@ -104,7 +104,7 @@
               @else
                 <a href="{{ route('payment.show', $package->uuid) }}"
                   class="w-full inline-flex justify-center font-bold uppercase py-3 px-4 text-xs bg-gray-900 hover:bg-accent hover:text-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-accent transition-colors">
-                  @auth {{ $currentPackage ? 'Switch Plan' : 'Subscribe' }} @else Get Started @endauth
+                  @auth {{ $currentPackage ? 'Switch Plan' : 'Get This Plan' }} @else Get Started @endauth
                 </a>
               @endif
               @auth

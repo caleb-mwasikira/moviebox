@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\TestEmailController as AdminTestEmailController;
 use App\Http\Controllers\Admin\ConvertController as AdminConvertController;
 use App\Http\Controllers\Admin\CollectionController as AdminCollectionController;
+use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\ComingSoonController;
 use App\Http\Controllers\SharedLinkController;
@@ -88,7 +89,7 @@ Route::middleware('auth')->group(function () {
 Route::post('/callbacks/video-ready', [VideoCallbackController::class, 'videoReady'])->name('callbacks.video-ready');
 Route::post('/callbacks/mkv-converted', [VideoCallbackController::class, 'mkvConverted'])->name('callbacks.mkv-converted');
 
-Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/', [HomeController::class, 'welcome'])->name('home');
 Route::get('/pricing', [PricingController::class, 'index'])->name('pricing');
 
 // M-Pesa — callback is CSRF-exempt via bootstrap/app.php
@@ -189,73 +190,139 @@ Route::middleware(['auth', 'verified', 'not.shared.guest'])->prefix('account')->
 
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
-    Route::get('analytics', [AdminAnalyticsController::class, 'index'])->name('analytics');
 
-    Route::resource('movies', AdminMovieController::class)->except(['show']);
-    Route::patch('movies/{movie}/status', [AdminMovieController::class, 'toggleStatus'])->name('movies.toggle-status');
-    Route::patch('movies/{movie}/featured', [AdminMovieController::class, 'toggleFeatured'])->name('movies.toggle-featured');
-    Route::post('movies/{movie}/trailer', [AdminMovieController::class, 'uploadTrailer'])->name('movies.trailer');
-    Route::post('movies/{movie}/video', [AdminMovieController::class, 'updateVideo'])->name('movies.video');
-    Route::post('movies/{movie}/reprocess', [AdminMovieController::class, 'reprocess'])->name('movies.reprocess');
-    Route::post('movies/{movie}/encode-quality', [AdminMovieController::class, 'reprocessQuality'])->name('movies.encode-quality');
+    // Analytics
+    Route::get('analytics', [AdminAnalyticsController::class, 'index'])
+        ->middleware('admin.can:view analytics')->name('analytics');
 
-    Route::resource('series', AdminSeriesController::class)->except(['show']);
-    Route::patch('series/{series}/status', [AdminSeriesController::class, 'toggleStatus'])->name('series.toggle-status');
-    Route::patch('series/{series}/featured', [AdminSeriesController::class, 'toggleFeatured'])->name('series.toggle-featured');
-    Route::post('series/{series}/trailer', [AdminSeriesController::class, 'uploadTrailer'])->name('series.trailer');
+    // Encoding status
+    Route::get('encoding-status', [AdminStreamingStatusController::class, 'index'])
+        ->middleware('admin.can:view encoding status')->name('encoding-status');
 
-    Route::post('series/{series}/seasons', [AdminSeasonController::class, 'store'])->name('seasons.store');
-    Route::delete('seasons/{season}', [AdminSeasonController::class, 'destroy'])->name('seasons.destroy');
+    // ── Movies ────────────────────────────────────────────────────────────────
+    Route::middleware('admin.can:view movies')->group(function () {
+        Route::resource('movies', AdminMovieController::class)->except(['show']);
+        Route::patch('movies/{movie}/status', [AdminMovieController::class, 'toggleStatus'])->name('movies.toggle-status');
+        Route::patch('movies/{movie}/featured', [AdminMovieController::class, 'toggleFeatured'])->name('movies.toggle-featured');
+        Route::post('movies/{movie}/trailer', [AdminMovieController::class, 'uploadTrailer'])
+            ->middleware('admin.can:upload movie videos')->name('movies.trailer');
+        Route::post('movies/{movie}/video', [AdminMovieController::class, 'updateVideo'])
+            ->middleware('admin.can:upload movie videos')->name('movies.video');
+        Route::post('movies/{movie}/reprocess', [AdminMovieController::class, 'reprocess'])
+            ->middleware('admin.can:reprocess movies')->name('movies.reprocess');
+        Route::post('movies/{movie}/encode-quality', [AdminMovieController::class, 'reprocessQuality'])
+            ->middleware('admin.can:reprocess movies')->name('movies.encode-quality');
+        Route::post('movies/{movie}/subtitles', [AdminSubtitleController::class, 'storeForMovie'])
+            ->middleware('admin.can:manage subtitles')->name('movies.subtitles.store');
+        Route::post('movies/{movie}/convert-to-episode', [AdminConvertController::class, 'movieToEpisode'])
+            ->middleware('admin.can:convert content')->name('movies.convert-to-episode');
+    });
 
-    Route::post('seasons/{season}/episodes', [AdminEpisodeController::class, 'store'])->name('episodes.store');
-    Route::put('episodes/{episode}', [AdminEpisodeController::class, 'update'])->name('episodes.update');
-    Route::patch('episodes/{episode}/toggle-free', [AdminEpisodeController::class, 'toggleFree'])->name('episodes.toggle-free');
-    Route::post('episodes/{episode}/video', [AdminEpisodeController::class, 'updateVideo'])->name('episodes.video');
-    Route::post('episodes/{episode}/encode-quality', [AdminEpisodeController::class, 'reprocessQuality'])->name('episodes.encode-quality');
-    Route::delete('episodes/{episode}', [AdminEpisodeController::class, 'destroy'])->name('episodes.destroy');
+    // ── Series ────────────────────────────────────────────────────────────────
+    Route::middleware('admin.can:view series')->group(function () {
+        Route::resource('series', AdminSeriesController::class)->except(['show']);
+        Route::patch('series/{series}/status', [AdminSeriesController::class, 'toggleStatus'])->name('series.toggle-status');
+        Route::patch('series/{series}/featured', [AdminSeriesController::class, 'toggleFeatured'])->name('series.toggle-featured');
+        Route::post('series/{series}/trailer', [AdminSeriesController::class, 'uploadTrailer'])
+            ->middleware('admin.can:upload series videos')->name('series.trailer');
+        Route::post('series/{series}/seasons', [AdminSeasonController::class, 'store'])->name('seasons.store');
+        Route::delete('seasons/{season}', [AdminSeasonController::class, 'destroy'])->name('seasons.destroy');
+        Route::post('seasons/{season}/episodes', [AdminEpisodeController::class, 'store'])->name('episodes.store');
+        Route::put('episodes/{episode}', [AdminEpisodeController::class, 'update'])->name('episodes.update');
+        Route::patch('episodes/{episode}/toggle-free', [AdminEpisodeController::class, 'toggleFree'])->name('episodes.toggle-free');
+        Route::post('episodes/{episode}/video', [AdminEpisodeController::class, 'updateVideo'])
+            ->middleware('admin.can:upload series videos')->name('episodes.video');
+        Route::post('episodes/{episode}/encode-quality', [AdminEpisodeController::class, 'reprocessQuality'])
+            ->middleware('admin.can:reprocess movies')->name('episodes.encode-quality');
+        Route::delete('episodes/{episode}', [AdminEpisodeController::class, 'destroy'])->name('episodes.destroy');
+        Route::post('episodes/{episode}/subtitles', [AdminSubtitleController::class, 'storeForEpisode'])
+            ->middleware('admin.can:manage subtitles')->name('episodes.subtitles.store');
+        Route::post('episodes/{episode}/convert-to-movie', [AdminConvertController::class, 'episodeToMovie'])
+            ->middleware('admin.can:convert content')->name('episodes.convert-to-movie');
+    });
 
-    Route::delete('posters/{poster}', [AdminPosterController::class, 'destroy'])->name('posters.destroy');
+    // Shared subtitle/poster delete (content managers have both movie+series)
+    Route::delete('subtitles/{subtitle}', [AdminSubtitleController::class, 'destroy'])
+        ->middleware('admin.can:manage subtitles')->name('subtitles.destroy');
+    Route::delete('posters/{poster}', [AdminPosterController::class, 'destroy'])
+        ->middleware('admin.can:manage posters')->name('posters.destroy');
 
-    Route::get('encoding-status', [AdminStreamingStatusController::class, 'index'])->name('encoding-status');
+    // ── Collections ───────────────────────────────────────────────────────────
+    Route::middleware('admin.can:view collections')->group(function () {
+        Route::resource('collections', AdminCollectionController::class)->except(['show']);
+        Route::post('collections/{collection}/items', [AdminCollectionController::class, 'addItem'])
+            ->middleware('admin.can:manage collections')->name('collections.add-item');
+        Route::delete('collections/{collection}/items/{item}', [AdminCollectionController::class, 'removeItem'])
+            ->middleware('admin.can:manage collections')->name('collections.remove-item');
+    });
 
-    Route::get('users', [AdminUserController::class, 'index'])->name('users.index');
-    Route::patch('users/{user}/ban', [AdminUserController::class, 'ban'])->name('users.ban');
-    Route::patch('users/{user}/unban', [AdminUserController::class, 'unban'])->name('users.unban');
-    Route::patch('users/{user}/extend-subscription', [AdminUserController::class, 'extendSubscription'])->name('users.extend-subscription');
+    // ── Coming Soon ───────────────────────────────────────────────────────────
+    Route::middleware('admin.can:view coming soon')->group(function () {
+        Route::get('coming-soon', [AdminComingSoonController::class, 'index'])->name('coming-soon.index');
+        Route::get('coming-soon/create', [AdminComingSoonController::class, 'create'])
+            ->middleware('admin.can:manage coming soon')->name('coming-soon.create');
+        Route::post('coming-soon', [AdminComingSoonController::class, 'store'])
+            ->middleware('admin.can:manage coming soon')->name('coming-soon.store');
+        Route::get('coming-soon/{comingSoon}/edit', [AdminComingSoonController::class, 'edit'])
+            ->middleware('admin.can:manage coming soon')->name('coming-soon.edit');
+        Route::put('coming-soon/{comingSoon}', [AdminComingSoonController::class, 'update'])
+            ->middleware('admin.can:manage coming soon')->name('coming-soon.update');
+        Route::patch('coming-soon/{comingSoon}/featured', [AdminComingSoonController::class, 'toggleFeatured'])
+            ->middleware('admin.can:manage coming soon')->name('coming-soon.toggle-featured');
+        Route::post('coming-soon/{comingSoon}/trailer', [AdminComingSoonController::class, 'uploadTrailer'])
+            ->middleware('admin.can:manage coming soon')->name('coming-soon.trailer');
+        Route::post('coming-soon/{comingSoon}/video', [AdminComingSoonController::class, 'uploadVideo'])
+            ->middleware('admin.can:manage coming soon')->name('coming-soon.video');
+        Route::post('coming-soon/{comingSoon}/promote-series', [AdminComingSoonController::class, 'promoteToSeries'])
+            ->middleware('admin.can:manage coming soon')->name('coming-soon.promote-series');
+        Route::delete('coming-soon/{comingSoon}', [AdminComingSoonController::class, 'destroy'])
+            ->middleware('admin.can:manage coming soon')->name('coming-soon.destroy');
+    });
 
-    Route::post('movies/{movie}/subtitles', [AdminSubtitleController::class, 'storeForMovie'])->name('movies.subtitles.store');
-    Route::post('episodes/{episode}/subtitles', [AdminSubtitleController::class, 'storeForEpisode'])->name('episodes.subtitles.store');
-    Route::delete('subtitles/{subtitle}', [AdminSubtitleController::class, 'destroy'])->name('subtitles.destroy');
+    // ── Roles ─────────────────────────────────────────────────────────────────
+    Route::middleware('admin.can:assign permissions')->group(function () {
+        Route::resource('roles', AdminRoleController::class)->except(['show']);
+    });
 
-    Route::post('movies/{movie}/convert-to-episode', [AdminConvertController::class, 'movieToEpisode'])->name('movies.convert-to-episode');
-    Route::post('episodes/{episode}/convert-to-movie', [AdminConvertController::class, 'episodeToMovie'])->name('episodes.convert-to-movie');
+    // ── Users ─────────────────────────────────────────────────────────────────
+    Route::middleware('admin.can:view users')->group(function () {
+        Route::get('users', [AdminUserController::class, 'index'])->name('users.index');
+        Route::patch('users/{user}/ban', [AdminUserController::class, 'ban'])
+            ->middleware('admin.can:ban users')->name('users.ban');
+        Route::patch('users/{user}/unban', [AdminUserController::class, 'unban'])
+            ->middleware('admin.can:ban users')->name('users.unban');
+        Route::patch('users/{user}/extend-subscription', [AdminUserController::class, 'extendSubscription'])
+            ->middleware('admin.can:manage user subscriptions')->name('users.extend-subscription');
+        Route::patch('users/{user}/assign-role', [AdminUserController::class, 'assignRole'])
+            ->middleware('admin.can:assign permissions')->name('users.assign-role');
+        Route::get('users/{user}/permissions', [AdminUserController::class, 'permissions'])
+            ->middleware('admin.can:assign permissions')->name('users.permissions');
+        Route::put('users/{user}/permissions', [AdminUserController::class, 'syncPermissions'])
+            ->middleware('admin.can:assign permissions')->name('users.permissions.sync');
+    });
 
-    Route::resource('packages', AdminSubscriptionController::class);
-    Route::post('packages/{uuid}/restore', [AdminSubscriptionController::class, 'restore'])->name('packages.restore');
+    // ── Finance ───────────────────────────────────────────────────────────────
+    Route::get('payments', [AdminPaymentController::class, 'index'])
+        ->middleware('admin.can:view payments')->name('payments.index');
 
-    Route::get('coming-soon', [AdminComingSoonController::class, 'index'])->name('coming-soon.index');
-    Route::get('coming-soon/create', [AdminComingSoonController::class, 'create'])->name('coming-soon.create');
-    Route::post('coming-soon', [AdminComingSoonController::class, 'store'])->name('coming-soon.store');
-    Route::get('coming-soon/{comingSoon}/edit', [AdminComingSoonController::class, 'edit'])->name('coming-soon.edit');
-    Route::put('coming-soon/{comingSoon}', [AdminComingSoonController::class, 'update'])->name('coming-soon.update');
-    Route::patch('coming-soon/{comingSoon}/featured', [AdminComingSoonController::class, 'toggleFeatured'])->name('coming-soon.toggle-featured');
-    Route::post('coming-soon/{comingSoon}/trailer', [AdminComingSoonController::class, 'uploadTrailer'])->name('coming-soon.trailer');
-    Route::post('coming-soon/{comingSoon}/video', [AdminComingSoonController::class, 'uploadVideo'])->name('coming-soon.video');
-    Route::post('coming-soon/{comingSoon}/promote-series', [AdminComingSoonController::class, 'promoteToSeries'])->name('coming-soon.promote-series');
-    Route::delete('coming-soon/{comingSoon}', [AdminComingSoonController::class, 'destroy'])->name('coming-soon.destroy');
+    Route::middleware('admin.can:view packages')->group(function () {
+        Route::resource('packages', AdminSubscriptionController::class);
+        Route::post('packages/{uuid}/restore', [AdminSubscriptionController::class, 'restore'])->name('packages.restore');
+    });
 
-    Route::get('payments', [AdminPaymentController::class, 'index'])->name('payments.index');
+    // ── Support ───────────────────────────────────────────────────────────────
+    Route::middleware('admin.can:view contacts')->group(function () {
+        Route::get('contacts', [AdminContactController::class, 'index'])->name('contacts.index');
+        Route::get('contacts/{contact}', [AdminContactController::class, 'show'])->name('contacts.show');
+        Route::delete('contacts/{contact}', [AdminContactController::class, 'destroy'])
+            ->middleware('admin.can:manage contacts')->name('contacts.destroy');
+    });
 
-    Route::get('test-email', [AdminTestEmailController::class, 'show'])->name('test-email.show');
-    Route::post('test-email', [AdminTestEmailController::class, 'send'])->name('test-email.send');
-
-    Route::resource('collections', AdminCollectionController::class)->except(['show']);
-    Route::post('collections/{collection}/items', [AdminCollectionController::class, 'addItem'])->name('collections.add-item');
-    Route::delete('collections/{collection}/items/{item}', [AdminCollectionController::class, 'removeItem'])->name('collections.remove-item');
-
-    Route::get('contacts', [AdminContactController::class, 'index'])->name('contacts.index');
-    Route::get('contacts/{contact}', [AdminContactController::class, 'show'])->name('contacts.show');
-    Route::delete('contacts/{contact}', [AdminContactController::class, 'destroy'])->name('contacts.destroy');
+    // ── System ────────────────────────────────────────────────────────────────
+    Route::middleware('admin.can:send test emails')->group(function () {
+        Route::get('test-email', [AdminTestEmailController::class, 'show'])->name('test-email.show');
+        Route::post('test-email', [AdminTestEmailController::class, 'send'])->name('test-email.send');
+    });
 });
 
 require __DIR__.'/settings.php';

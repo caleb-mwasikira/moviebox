@@ -10,6 +10,17 @@
   </div>
 </div>
 
+@if (session('success'))
+  <div class="mb-6 px-4 py-3 border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 text-sm font-medium">
+    {{ session('success') }}
+  </div>
+@endif
+@if (session('error'))
+  <div class="mb-6 px-4 py-3 border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 text-sm font-medium">
+    {{ session('error') }}
+  </div>
+@endif
+
 {{-- Search --}}
 <form method="GET" action="{{ route('admin.users.index') }}" class="mb-6 flex gap-x-2">
   <input type="text" name="search" value="{{ request('search') }}"
@@ -50,9 +61,13 @@
               @if($user->is(auth()->user()))
                 <span class="text-[10px] font-bold text-accent">(you)</span>
               @endif
-              <span class="text-[10px] font-bold uppercase {{ $user->isAdmin() ? 'text-accent' : 'text-gray-400' }}">
-                {{ $user->isAdmin() ? 'Admin' : 'User' }}
-              </span>
+              @if ($user->isAdmin())
+                <span class="text-[10px] font-bold uppercase text-accent">Admin</span>
+              @elseif ($user->roles->first())
+                <span class="text-[10px] font-bold uppercase text-accent/70 capitalize">{{ str_replace('-', ' ', $user->roles->first()->name) }}</span>
+              @else
+                <span class="text-[10px] font-bold uppercase text-gray-400">User</span>
+              @endif
             </div>
             <p class="text-xs text-gray-500 mt-0.5">{{ $user->email }}</p>
           </div>
@@ -67,24 +82,6 @@
               </span>
             @endif
           </div>
-        </div>
-
-        {{-- Subscription + joined --}}
-        <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-          <span class="text-gray-400">Joined {{ $user->created_at->format('M j, Y') }}</span>
-          @if ($latestSub)
-            <span class="{{ $subActive ? 'text-accent' : 'text-red-500' }} font-bold uppercase">
-              {{ $subActive ? 'Active' : 'Expired' }}
-              @if ($latestSub->package) · {{ $latestSub->package->name }} @endif
-            </span>
-            @if ($latestSub->expires_at)
-              <span class="text-gray-400">
-                {{ $subActive ? 'Expires' : 'Expired' }} {{ $latestSub->expires_at->format('M j, Y') }}
-              </span>
-            @endif
-          @else
-            <span class="text-gray-400 uppercase">No subscription</span>
-          @endif
         </div>
 
         {{-- Actions --}}
@@ -105,6 +102,36 @@
                 </form>
               </div>
             </details>
+          @endif
+          @if(! $user->isAdmin())
+            @can('assign permissions')
+              <details class="relative" style="list-style:none">
+                <summary class="text-xs font-bold uppercase text-gray-500 hover:text-accent transition-colors cursor-pointer" style="list-style:none">
+                  Role
+                </summary>
+                <div class="absolute left-0 top-6 z-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-lg p-4 w-52">
+                  <p class="text-xs font-bold uppercase text-gray-500 mb-2">Assign Role</p>
+                  <form method="POST" action="{{ route('admin.users.assign-role', $user) }}" class="flex gap-x-2">
+                    @csrf @method('PATCH')
+                    <select name="role"
+                      class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs focus:border-accent focus:outline-none">
+                      <option value="">No role</option>
+                      @foreach ($roles as $r)
+                        <option value="{{ $r->name }}" {{ $user->roles->first()?->name === $r->name ? 'selected' : '' }}>
+                          {{ str_replace('-', ' ', $r->name) }}
+                        </option>
+                      @endforeach
+                    </select>
+                    <button type="submit"
+                      class="px-3 py-1.5 text-xs font-bold uppercase bg-accent text-gray-900 hover:bg-accent/90 transition-colors shrink-0">OK</button>
+                  </form>
+                </div>
+              </details>
+              <a href="{{ route('admin.users.permissions', $user) }}"
+                 class="text-xs font-bold uppercase text-gray-500 hover:text-accent transition-colors">
+                Permissions
+              </a>
+            @endcan
           @endif
           @if(! $user->is(auth()->user()) && ! $user->isAdmin())
             @if($user->isBanned())
@@ -132,7 +159,6 @@
         <tr class="border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800">
           <th class="text-left px-5 py-3 font-bold uppercase text-xs text-gray-500 tracking-widest">Name</th>
           <th class="text-left px-5 py-3 font-bold uppercase text-xs text-gray-500 tracking-widest">Role</th>
-          <th class="text-left px-5 py-3 font-bold uppercase text-xs text-gray-500 tracking-widest">Joined</th>
           <th class="text-left px-5 py-3 font-bold uppercase text-xs text-gray-500 tracking-widest">Subscription</th>
           <th class="text-left px-5 py-3 font-bold uppercase text-xs text-gray-500 tracking-widest">Status</th>
           <th class="px-5 py-3"></th>
@@ -154,11 +180,14 @@
               <p class="text-xs font-normal text-gray-500 mt-0.5">{{ $user->email }}</p>
             </td>
             <td class="px-5 py-4">
-              <span class="text-xs font-bold uppercase {{ $user->isAdmin() ? 'text-accent' : 'text-gray-400' }}">
-                {{ $user->isAdmin() ? 'Admin' : 'User' }}
-              </span>
+              @if ($user->isAdmin())
+                <span class="text-xs font-bold uppercase text-accent">Admin</span>
+              @elseif ($user->roles->first())
+                <span class="text-xs font-bold uppercase text-accent/70 capitalize">{{ str_replace('-', ' ', $user->roles->first()->name) }}</span>
+              @else
+                <span class="text-xs font-bold uppercase text-gray-400">User</span>
+              @endif
             </td>
-            <td class="px-5 py-4 text-gray-500 whitespace-nowrap">{{ $user->created_at->format('M j, Y') }}</td>
             <td class="px-5 py-4">
               @if ($latestSub)
                 <div>
@@ -207,6 +236,36 @@
                       </form>
                     </div>
                   </details>
+                @endif
+                @if(! $user->isAdmin())
+                  @can('assign permissions')
+                    <details class="relative" style="list-style:none">
+                      <summary class="text-xs font-bold uppercase text-gray-500 hover:text-accent transition-colors cursor-pointer" style="list-style:none">
+                        Role
+                      </summary>
+                      <div class="absolute right-0 top-6 z-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-lg p-4 w-52">
+                        <p class="text-xs font-bold uppercase text-gray-500 mb-2">Assign Role</p>
+                        <form method="POST" action="{{ route('admin.users.assign-role', $user) }}" class="flex gap-x-2">
+                          @csrf @method('PATCH')
+                          <select name="role"
+                            class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-xs focus:border-accent focus:outline-none">
+                            <option value="">No role</option>
+                            @foreach ($roles as $r)
+                              <option value="{{ $r->name }}" {{ $user->roles->first()?->name === $r->name ? 'selected' : '' }}>
+                                {{ str_replace('-', ' ', $r->name) }}
+                              </option>
+                            @endforeach
+                          </select>
+                          <button type="submit"
+                            class="px-3 py-1.5 text-xs font-bold uppercase bg-accent text-gray-900 hover:bg-accent/90 transition-colors shrink-0">OK</button>
+                        </form>
+                      </div>
+                    </details>
+                    <a href="{{ route('admin.users.permissions', $user) }}"
+                       class="text-xs font-bold uppercase text-gray-500 hover:text-accent transition-colors">
+                      Permissions
+                    </a>
+                  @endcan
                 @endif
                 @if(! $user->is(auth()->user()) && ! $user->isAdmin())
                   @if($user->isBanned())

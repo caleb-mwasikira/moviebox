@@ -61,42 +61,99 @@
               <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.dashboard') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.dashboard') }}">Dashboard</a>
             </li>
+            @can('view analytics')
             <li>
               <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.analytics') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.analytics') }}">Analytics</a>
             </li>
+            @endcan
+            @can('view movies')
             <li>
               <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.movies.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.movies.index') }}">Movies</a>
+              @can('create movies')
+              <ul class="ml-3 mt-0.5 flex flex-col gap-y-0.5 border-l border-gray-200 dark:border-gray-600 pl-3">
+                <li>
+                  <a class="block py-1 text-xs transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.movies.create') ? 'text-accent' : 'text-gray-500 dark:text-gray-400' }}"
+                    href="{{ route('admin.movies.create') }}">+ Upload Movie</a>
+                </li>
+              </ul>
+              @endcan
             </li>
+            @endcan
+            @can('view series')
             <li>
               <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.series.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.series.index') }}">Series</a>
+              @can('create series')
+              <ul class="ml-3 mt-0.5 flex flex-col gap-y-0.5 border-l border-gray-200 dark:border-gray-600 pl-3">
+                <li>
+                  <a class="block py-1 text-xs transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.series.create') ? 'text-accent' : 'text-gray-500 dark:text-gray-400' }}"
+                    href="{{ route('admin.series.create') }}">+ Add Series</a>
+                </li>
+              </ul>
+              @endcan
             </li>
+            @endcan
+            @can('view coming soon')
             <li>
               <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.coming-soon.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.coming-soon.index') }}">Coming Soon</a>
+              @can('manage coming soon')
+              <ul class="ml-3 mt-0.5 flex flex-col gap-y-0.5 border-l border-gray-200 dark:border-gray-600 pl-3">
+                <li>
+                  <a class="block py-1 text-xs transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.coming-soon.create') ? 'text-accent' : 'text-gray-500 dark:text-gray-400' }}"
+                    href="{{ route('admin.coming-soon.create') }}">+ Add Coming Soon</a>
+                </li>
+              </ul>
+              @endcan
             </li>
+            @endcan
+            @can('view collections')
             <li>
               <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.collections.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.collections.index') }}">Collections</a>
+              @can('manage collections')
+              <ul class="ml-3 mt-0.5 flex flex-col gap-y-0.5 border-l border-gray-200 dark:border-gray-600 pl-3">
+                <li>
+                  <a class="block py-1 text-xs transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.collections.create') ? 'text-accent' : 'text-gray-500 dark:text-gray-400' }}"
+                    href="{{ route('admin.collections.create') }}">+ New Collection</a>
+                </li>
+              </ul>
+              @endcan
             </li>
+            @endcan
+            @can('view users')
             <li>
               <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.users.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.users.index') }}">Users</a>
             </li>
+            @endcan
+            @can('assign permissions')
+            <li>
+              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.roles.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
+                href="{{ route('admin.roles.index') }}">Roles</a>
+            </li>
+            @endcan
+            @can('view packages')
             <li>
               <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.packages.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.packages.index') }}">Subscription Packages</a>
             </li>
+            @endcan
+            @can('view payments')
             <li>
               <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.payments.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.payments.index') }}">Payments</a>
             </li>
+            @endcan
+            @can('send test emails')
             <li>
               <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.test-email.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
                 href="{{ route('admin.test-email.show') }}">Test Emails</a>
             </li>
+            @endcan
+            @can('view contacts')
             <li>
               @php $unreadContacts = \App\Models\Contact::unread()->count(); @endphp
               <a class="flex items-center gap-x-2 py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.contacts.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
@@ -107,6 +164,7 @@
                 @endif
               </a>
             </li>
+            @endcan
             <li class="lg:mt-4 lg:pt-4 lg:border-t lg:border-gray-200 lg:dark:border-gray-600">
               <a class="block py-1.5 transition-all text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent"
                 href="{{ route('account.dashboard') }}">My Account</a>

@@ -9,7 +9,7 @@ use App\Models\SubscriptionPackage;
 
 class HomeController extends Controller
 {
-    public function index()
+    public function welcome()
     {
         $movies = Movie::where('status', 'published')->where('coming_soon', false)->with('posters')->latest()->take(18)->get();
         $series = Series::where('status', 'published')->with('posters')->latest()->take(18)->get();
@@ -41,6 +41,15 @@ class HomeController extends Controller
             ->with(['items' => fn($q) => $q->with('collectible.posters')->limit(12)])
             ->get();
 
-        return view('pages.index', compact('movies', 'series', 'featured', 'comingSoon', 'cheapestPackage', 'collections'));
+        $trailerFeature = $movies->filter(fn($m) => $m->trailerIsReady())
+            ->merge($series->filter(fn($s) => $s->trailerIsReady()))
+            ->shuffle()
+            ->first();
+
+        if ($trailerFeature) {
+            $trailerFeature->content_type = $trailerFeature instanceof Movie ? 'movie' : 'series';
+        }
+
+        return view('pages.welcome', compact('movies', 'series', 'featured', 'comingSoon', 'cheapestPackage', 'collections', 'trailerFeature'));
     }
 }

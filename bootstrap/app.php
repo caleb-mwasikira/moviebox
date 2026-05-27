@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AdminCanMiddleware;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\ApiKeyMiddleware;
 use App\Http\Middleware\CheckBanned;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'admin'            => AdminMiddleware::class,
+            'admin.can'        => AdminCanMiddleware::class,
             'api.key'          => ApiKeyMiddleware::class,
             'auth.modal'       => RequireAuthModal::class,
             'subscription'     => RequireActiveSubscription::class,

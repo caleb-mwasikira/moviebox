@@ -145,6 +145,79 @@
 
         <div class="grid grid-cols-12 gap-x-5 gap-y-12 md:gap-x-6 lg:gap-x-7.5">
 
+          @if($trailerFeature)
+          {{-- Trailer visual --}}
+          <div class="col-span-full md:col-span-7">
+            <div class="group relative overflow-hidden cursor-pointer"
+              onclick="openTrailerModal('{{ $trailerFeature->trailerUrl() }}')">
+              @php $poster = $trailerFeature->posters->first() @endphp
+              @if($poster)
+                <img src="{{ $poster->url() }}" alt="{{ $trailerFeature->title }}"
+                  class="w-full aspect-video object-cover transition-transform duration-500 group-hover:scale-105">
+              @elseif($trailerFeature->thumbnailUrl())
+                <img src="{{ $trailerFeature->thumbnailUrl() }}" alt="{{ $trailerFeature->title }}"
+                  class="w-full aspect-video object-cover transition-transform duration-500 group-hover:scale-105">
+              @else
+                <div class="w-full aspect-video bg-gray-800"></div>
+              @endif
+
+              {{-- Dark gradient overlay --}}
+              <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
+            </div>
+          </div>
+
+          {{-- Trailer details --}}
+          <div class="col-span-full md:col-span-5">
+            <div class="md:-ml-[76px] lg:-ml-[100px] xl:-ml-[130px]">
+              <h2
+                class="mb-8 text-2xl font-bold tracking-tighter text-gray-900 dark:text-white sm:mb-9 sm:text-3xl md:-mt-[0.6em] md:mb-10 md:text-4xl md:leading-none lg:-mt-[0.6em] lg:mb-12 lg:text-5xl lg:leading-none xl:-mt-[0.7em] xl:mb-14 xl:text-[62px] xl:leading-none">
+                {{ $trailerFeature->title }}
+              </h2>
+            </div>
+
+            <div class="md:pl-4 md:pr-2 lg:px-7 xl:pr-[70px] xl:pl-10">
+              {{-- Type + meta --}}
+              <div class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span class="text-xs font-bold uppercase tracking-widest text-accent">
+                  {{ $trailerFeature->content_type === 'series' ? 'Series' : 'Movie' }}
+                </span>
+                @if($trailerFeature->year)
+                  <span class="text-xs text-gray-400">{{ $trailerFeature->year }}</span>
+                @endif
+                @if($trailerFeature->genre)
+                  <span class="text-xs text-gray-400">· {{ $trailerFeature->genre }}</span>
+                @endif
+              </div>
+
+              @if($trailerFeature->description)
+                <p class="mb-8 text-gray-500 dark:text-gray-400 line-clamp-4">{{ $trailerFeature->description }}</p>
+              @endif
+
+              <div class="flex flex-wrap items-center gap-3">
+                <button
+                  onclick="openTrailerModal('{{ $trailerFeature->trailerUrl() }}')"
+                  class="inline-flex items-center gap-x-2 bg-accent px-5 py-2.5 text-sm font-bold uppercase tracking-widest text-gray-900 transition-colors hover:bg-accent/90">
+                  <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  Watch Trailer
+                </button>
+
+                @if($trailerFeature->content_type === 'series')
+                  <a href="{{ route('series.show', $trailerFeature->uuid) }}"
+                    class="inline-flex items-center gap-x-2 border border-gray-300 dark:border-gray-600 px-5 py-2.5 text-sm font-bold uppercase tracking-widest text-gray-700 dark:text-gray-300 transition-colors hover:border-accent hover:text-accent">
+                    View Series
+                  </a>
+                @elseif($trailerFeature->streamingUrl())
+                  <a href="{{ route('movies.show', $trailerFeature->uuid) }}"
+                    class="inline-flex items-center gap-x-2 border border-gray-300 dark:border-gray-600 px-5 py-2.5 text-sm font-bold uppercase tracking-widest text-gray-700 dark:text-gray-300 transition-colors hover:border-accent hover:text-accent">
+                    Watch Now
+                  </a>
+                @endif
+              </div>
+            </div>
+          </div>
+
+          @else
+          {{-- Fallback: static imagery --}}
           <div
             class="col-span-full grid grid-cols-7 gap-x-5 sm:grid-rows-[197px_107px_85px] md:col-span-7 md:grid-rows-[152px_83px_66px] md:gap-x-6 lg:grid-rows-[197px_107px_85px] lg:gap-x-7.5 xl:grid-rows-[246px_134px_106px]">
             <figure class="col-span-full sm:row-start-1 sm:row-end-3">
@@ -183,6 +256,7 @@
               <p>Whether you love gripping dramas, pulse-pounding thrillers, laugh-out-loud comedies or epic sci-fi adventures, MovieBox has something for every taste. Enjoy unlimited streaming on all your devices, with new titles added every week.</p>
             </div>
           </div>
+          @endif
 
         </div>
 
