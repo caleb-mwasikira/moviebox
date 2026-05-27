@@ -33,11 +33,10 @@
     }
 
     .watch-meta-bar {
+      position: relative;
+      z-index: 2;
       width: 100%;
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      padding: 10px 14px;
       background: #111;
       border-top: 1px solid #222;
     }
@@ -49,7 +48,7 @@
       right: 0;
       width: 320px;
       height: 100%;
-      z-index: 9999;
+      z-index: 4;
       background: var(--watch-sidebar-bg, #fff);
       box-shadow: -5px 0 25px rgba(0,0,0,0.5);
       transform: translateX(100%);
@@ -66,7 +65,7 @@
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,0.7);
-      z-index: 9998;
+      z-index: 3;
       opacity: 0;
       visibility: hidden;
       transition: opacity 0.3s;
@@ -91,7 +90,7 @@
       gap: 3px; padding: 14px 20px; border-radius: 50px;
       background: rgba(0,0,0,.6); color: #fff;
       font-size: 10px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
-      pointer-events: none; opacity: 0; z-index: 20;
+      pointer-events: none; opacity: 0; z-index: 1;
     }
     .watch-flash.skip-back  { left: 10%; }
     .watch-flash.skip-fwd   { right: 10%; }
@@ -104,7 +103,7 @@
     .speed-menu {
       display: none; position: absolute; bottom: calc(100% + 8px); right: 0;
       width: 96px; background: #111827; border: 1px solid #374151;
-      box-shadow: 0 10px 40px rgba(0,0,0,.6); z-index: 60;
+      box-shadow: 0 10px 40px rgba(0,0,0,.6); z-index: 1;
     }
     .speed-menu.open { display: block; }
     .speed-item {
@@ -155,57 +154,82 @@
         </div>
 
         <div class="watch-meta-bar">
-          <div class="flex flex-col">
-            <span class="text-white font-bold text-sm">{{ $movie->title }}</span>
-            <span class="text-gray-500 text-xs uppercase">{{ $movie->genre }} • {{ $movie->year }}</span>
-          </div>
-
-          <div class="flex items-center gap-x-3">
+          {{-- Single action bar --}}
+          <div class="flex items-center justify-end gap-x-1.5">
             {{-- Picture-in-Picture --}}
-            <button id="pip-btn" title="Picture in Picture" class="flex items-center justify-center w-9 h-9 bg-white/10 text-white hover:bg-white/20 transition-colors" style="display:none!important">
-              <svg id="pip-icon-enter" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <button id="pip-btn" title="Picture in Picture"
+              class="flex items-center justify-center w-8 h-8 bg-white/10 text-white hover:bg-white/20 transition-colors"
+              style="display:none!important">
+              <svg id="pip-icon-enter" width="17" height="17" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3C1.9 3 1 3.88 1 4.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V5h18v14.02z"/>
               </svg>
-              <svg id="pip-icon-exit" width="20" height="20" fill="currentColor" viewBox="0 0 24 24" style="display:none">
+              <svg id="pip-icon-exit" width="17" height="17" fill="currentColor" viewBox="0 0 24 24" style="display:none">
                 <path d="M21 3H3C1.9 3 1 3.88 1 4.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V4.98C23 3.88 22.1 3 21 3zm-2 16.02H5V5h14v14.02zM11 11H7v4h4v-4z"/>
               </svg>
             </button>
-            {{-- Subtitle picker --}}
+
+            {{-- Subtitle drawer trigger --}}
             @if ($movie->subtitles->isNotEmpty())
             @php $defaultSubIdx = $movie->subtitles->search(fn($s) => $s->is_default); @endphp
-            <div x-data="subtitlePicker('movie-player', {{ $defaultSubIdx !== false ? $defaultSubIdx : 'null' }})" class="relative">
-              <button @click="open = !open"
+            <div x-data="subtitlePicker('movie-player', {{ $defaultSubIdx !== false ? $defaultSubIdx : 'null' }})">
+              <button @click="open = true"
                 :class="active ? 'border-accent text-accent bg-accent/20' : 'border-transparent text-white bg-white/10'"
-                class="flex items-center justify-center w-9 h-9 border hover:bg-white/20 transition-colors"
+                class="flex items-center justify-center w-8 h-8 border hover:bg-white/20 transition-colors"
                 title="Subtitles">
-                <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                <svg width="17" height="17" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M19 4H5c-1.11 0-2 .9-2 2v12c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H5V6h14v12zM7 15h4v-2H9v-2h2V9H7v6zm6 0h4v-2h-2v-2h2V9h-4v6z"/>
                 </svg>
               </button>
-              <div x-show="open" @click.away="open = false"
-                x-transition:enter="transition ease-out duration-100"
-                x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
-                class="absolute bottom-full right-0 mb-2 w-44 bg-gray-900 border border-gray-700 shadow-2xl z-50"
-                style="display:none">
-                <button @click="off()"
-                  :class="!active ? 'text-accent' : 'text-gray-300 hover:text-white'"
-                  class="w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-wide hover:bg-white/10 transition-colors">
-                  Off
-                </button>
-                @foreach ($movie->subtitles as $i => $subtitle)
-                <button @click="setTrack({{ $i }})"
-                  :class="trackIndex === {{ $i }} ? 'text-accent' : 'text-gray-300 hover:text-white'"
-                  class="w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-wide hover:bg-white/10 transition-colors border-t border-gray-800">
-                  {{ $subtitle->language }}
-                </button>
-                @endforeach
+              {{-- Subtitle drawer backdrop --}}
+              <div x-show="open" style="display:none" class="fixed inset-0 bg-black/70 z-[9998]" @click="open = false"
+                x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+              </div>
+              {{-- Subtitle drawer panel --}}
+              <div x-show="open" style="display:none" class="fixed top-0 right-0 h-full w-72 bg-gray-900 border-l border-gray-800 z-[9999] flex flex-col shadow-2xl"
+                x-transition:enter="transition ease-out duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
+                x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full">
+                <div class="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+                  <span class="text-[10px] font-black uppercase tracking-[.18em] text-gray-400">Subtitles</span>
+                  <button @click="open = false" class="text-gray-500 hover:text-white transition-colors">
+                    <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                  </button>
+                </div>
+                <div class="overflow-y-auto flex-1">
+                  <button @click="off()"
+                    class="w-full flex items-center justify-between px-5 py-3 text-sm font-bold hover:bg-white/10 transition-colors"
+                    :class="!active ? 'text-accent' : 'text-gray-400 hover:text-white'">
+                    <span>Off</span>
+                    <svg x-show="!active" width="14" height="14" fill="currentColor" viewBox="0 0 24 24" class="text-accent shrink-0">
+                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    </svg>
+                  </button>
+                  @foreach ($movie->subtitles as $i => $subtitle)
+                  <button @click="setTrack({{ $i }})"
+                    class="w-full flex items-center justify-between gap-x-3 px-5 py-3 text-sm font-bold hover:bg-white/10 transition-colors border-t border-gray-800/60"
+                    :class="trackIndex === {{ $i }} ? 'text-white' : 'text-gray-400 hover:text-white'">
+                    <span class="flex items-center gap-x-3 min-w-0">
+                      <span class="shrink-0 text-[9px] font-black uppercase tracking-wide px-1.5 py-[2px]"
+                        :class="trackIndex === {{ $i }} ? 'bg-accent text-gray-900' : 'bg-gray-800 text-gray-500'">
+                        {{ strtoupper(substr($subtitle->language_code, 0, 3)) }}
+                      </span>
+                      <span class="truncate">{{ $subtitle->language }}</span>
+                    </span>
+                    <svg x-show="trackIndex === {{ $i }}" width="14" height="14" fill="currentColor" viewBox="0 0 24 24" class="text-accent shrink-0">
+                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    </svg>
+                  </button>
+                  @endforeach
+                </div>
               </div>
             </div>
             @endif
 
             {{-- Speed picker --}}
             <div class="speed-picker">
-              <button id="speed-btn" onclick="toggleSpeedMenu()" class="flex items-center justify-center w-9 h-9 bg-white/10 text-white hover:bg-white/20 transition-colors font-bold" style="font-size:.7rem;letter-spacing:.04em;" title="Playback Speed">1×</button>
+              <button id="speed-btn" onclick="toggleSpeedMenu()"
+                class="flex items-center justify-center w-8 h-8 bg-white/10 text-white hover:bg-white/20 transition-colors font-bold"
+                style="font-size:.7rem;letter-spacing:.04em;" title="Playback Speed">1×</button>
               <div id="speed-menu" class="speed-menu">
                 <button class="speed-item" data-speed="0.5"  onclick="setSpeed(0.5)">0.5×</button>
                 <button class="speed-item" data-speed="0.75" onclick="setSpeed(0.75)">0.75×</button>
@@ -217,27 +241,21 @@
               </div>
             </div>
 
-            {{-- Skip buttons --}}
-            <button onclick="skipVideo(-10)" class="flex items-center justify-center w-9 h-9 bg-white/10 text-white hover:bg-white/20 transition-colors" title="Back 10s (←)">
-              <svg width="19" height="19" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M11.99 5V1l-5 5 5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6h-2c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-                <text x="7.5" y="15.5" font-size="5.5" font-weight="900" font-family="sans-serif" fill="currentColor" text-anchor="middle">10</text>
-              </svg>
-            </button>
-            <button onclick="skipVideo(10)" class="flex items-center justify-center w-9 h-9 bg-white/10 text-white hover:bg-white/20 transition-colors" title="Forward 10s (→)">
-              <svg width="19" height="19" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12.01 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/>
-                <text x="16.5" y="15.5" font-size="5.5" font-weight="900" font-family="sans-serif" fill="currentColor" text-anchor="middle">10</text>
-              </svg>
+            {{-- Sidebar toggle --}}
+            <button id="toggle-sidebar" class="flex items-center justify-center w-8 h-8 bg-accent/20 text-accent border border-accent/50 hover:bg-accent hover:text-black transition-colors">
+              <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
             </button>
 
-            {{-- Toggle Button --}}
-            <button id="toggle-sidebar" class="flex items-center justify-center w-9 h-9 bg-accent/20 text-accent border border-accent/50 hover:bg-accent hover:text-black transition-colors">
-                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
-            </button>
-            <a href="{{ route('movies.show', $movie) }}" class="flex items-center justify-center w-9 h-9 bg-white/10 text-white hover:bg-white/20 transition-colors">
-              <svg class="h-3 w-3 rotate-180 fill-current" viewBox="0 0 6 10"><path d="M1 1l4 4-4 4"/></svg>
+            {{-- Back link --}}
+            <a href="{{ route('movies.show', $movie) }}" class="flex items-center justify-center w-8 h-8 bg-white/10 text-white hover:bg-white/20 transition-colors">
+              <svg class="h-2.5 w-2.5 rotate-180 fill-current" viewBox="0 0 6 10"><path d="M1 1l4 4-4 4"/></svg>
             </a>
+          </div>
+
+          {{-- Title section --}}
+          <div class="mt-2 pt-2 border-t border-white/[.06]">
+            <span class="text-white font-bold text-sm truncate block leading-snug">{{ $movie->title }}</span>
+            <span class="text-gray-500 text-[11px] uppercase tracking-wide">{{ $movie->genre }} • {{ $movie->year }}</span>
           </div>
         </div>
       </div>
