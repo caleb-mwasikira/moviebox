@@ -1,14 +1,21 @@
 package com.example.moviebox_app.navigation
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -29,6 +36,7 @@ import com.example.moviebox_app.ui.screens.ForgotPasswordScreen
 import com.example.moviebox_app.ui.screens.HomeScreen
 import com.example.moviebox_app.ui.screens.LoginScreen
 import com.example.moviebox_app.ui.screens.MovieDetailScreen
+import com.example.moviebox_app.ui.screens.NoInternetScreen
 import com.example.moviebox_app.ui.screens.ProfileScreen
 import com.example.moviebox_app.ui.screens.RegisterScreen
 import com.example.moviebox_app.ui.screens.SearchScreen
@@ -36,6 +44,7 @@ import com.example.moviebox_app.ui.screens.SeriesDetailScreen
 import com.example.moviebox_app.ui.screens.SplashScreen
 import com.example.moviebox_app.ui.screens.SubscriptionScreen
 import com.example.moviebox_app.ui.screens.VideoPlayerScreen
+import com.example.moviebox_app.util.NetworkMonitor
 
 private val bottomNavRoutes = setOf(
     Screen.Home.route,
@@ -71,10 +80,16 @@ private fun populatePlayerSessionEpisode(
 
 @Composable
 fun AppNavGraph() {
+    val context = LocalContext.current
+    val networkMonitor = remember { NetworkMonitor(context) }
+    DisposableEffect(Unit) { onDispose { networkMonitor.unregister() } }
+    val isOnline by networkMonitor.isOnline.collectAsState()
+
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0),
@@ -281,4 +296,13 @@ fun AppNavGraph() {
             }
         }
     }
+
+    AnimatedVisibility(
+        visible = !isOnline,
+        enter = fadeIn(),
+        exit = fadeOut(),
+    ) {
+        NoInternetScreen()
+    }
+    } // end outer Box
 }
