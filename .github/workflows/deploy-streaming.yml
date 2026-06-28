@@ -20,8 +20,9 @@ jobs:
           port: ${{ secrets.SERVER_SSH_PORT && secrets.SERVER_SSH_PORT || '22' }}
           script: |
             set -e
+            export PATH=$PATH:/usr/local/go/bin:/usr/bin:/snap/bin
 
-            REPO_DIR="/opt/moviebox/repo"
+            REPO_DIR="/home/kibandaski-movies/htdocs/movies.kibandaski.africa"
             BUILD_DIR="/opt/moviebox/streaming"
 
             # Pull latest code
@@ -36,8 +37,7 @@ jobs:
             php artisan view:cache
 
             # --- Go streaming service ---
-            cd "$REPO_DIR/moviebox_streaming"
-            go build -o "$BUILD_DIR/streaming" .
+            /usr/local/go/bin/go build -C "$REPO_DIR/moviebox_streaming" -o "$BUILD_DIR/streaming" .
 
-            sudo systemctl restart moviebox-streaming.service
-            sudo systemctl is-active --quiet moviebox-streaming.service && echo "Streaming service restarted successfully"
+            pkill -f "/opt/moviebox/streaming/streaming" || true
+            echo "Streaming service restarted successfully"
