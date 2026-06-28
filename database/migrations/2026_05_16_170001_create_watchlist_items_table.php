@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('profile_id')->nullable()->constrained()->nullOnDelete();
-            $table->dropUnique(['user_id', 'watchable_type', 'watchable_id']);
             $table->unique(['profile_id', 'watchable_type', 'watchable_id'], 'wi_profile_watchable_unique');
             $table->morphs('watchable');
             $table->timestamp('created_at')->useCurrent();

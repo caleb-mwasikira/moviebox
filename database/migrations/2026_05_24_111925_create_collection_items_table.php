@@ -18,7 +18,7 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->timestamps();
 
-            $table->unique(['collection_id', 'collectible_type', 'collectible_id']);
+            $table->unique(['collection_id', 'collectible_type', 'collectible_id'], 'ci_collection_collectible_unique');
         });
     }
 

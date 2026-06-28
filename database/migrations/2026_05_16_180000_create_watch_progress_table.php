@@ -14,7 +14,6 @@ return new class extends Migration
             $table->foreignId('profile_id')->nullable()->constrained()->nullOnDelete();
             $table->string('watchable_type');   // 'movie' | 'episode'
             $table->unsignedBigInteger('watchable_id');
-            $table->dropUnique(['user_id', 'watchable_type', 'watchable_id']);
             $table->unique(['profile_id', 'watchable_type', 'watchable_id'], 'wp_profile_watchable_unique');
             $table->float('position')->default(0);   // seconds
             $table->float('duration')->default(0);   // seconds
