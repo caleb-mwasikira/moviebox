@@ -35,6 +35,11 @@ return [
         ],
     ],
 
+    'streaming' => [
+        'url'    => env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090'),
+        'secret' => env('APP_SECRET', ''),
+    ],
+
     'mpesa' => [
         'consumer_key'    => env('MPESA_CONSUMER_KEY', ''),
         'consumer_secret' => env('MPESA_CONSUMER_SECRET', ''),

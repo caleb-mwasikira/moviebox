@@ -27,11 +27,11 @@ trait TriggersHlsEncoding
             'path'      => $relativeOutputPath,
         ]);
 
-        $serviceUrl = env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090');
+        $serviceUrl = config('services.streaming.url');
 
         try {
             $response = Http::timeout(10)
-                ->withHeaders(['X-Api-Key' => env('APP_SECRET', '')])
+                ->withHeaders(['X-Api-Key' => config('services.streaming.secret')])
                 ->post($serviceUrl . '/convert-mkv', [
                     'video_uuid'   => $videoUUID,
                     'input_path'   => $inputPath,
@@ -65,11 +65,11 @@ trait TriggersHlsEncoding
 
     public function cancelJob(string $videoUUID): void
     {
-        $serviceUrl = env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090');
+        $serviceUrl = config('services.streaming.url');
 
         try {
             Http::timeout(5)
-                ->withHeaders(['X-Api-Key' => env('APP_SECRET', '')])
+                ->withHeaders(['X-Api-Key' => config('services.streaming.secret')])
                 ->post($serviceUrl . '/cancel-job', ['video_uuid' => $videoUUID]);
         } catch (\Exception $e) {
             Log::warning('cancelJob: could not reach streaming service', [
@@ -98,7 +98,7 @@ trait TriggersHlsEncoding
             'user_id'  => $adminId,
         ]);
 
-        $serviceUrl = env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090');
+        $serviceUrl = config('services.streaming.url');
 
         $payload = [
             'video_uuid'   => $videoUUID,
@@ -115,7 +115,7 @@ trait TriggersHlsEncoding
 
         try {
             $response = Http::timeout(10)
-                ->withHeaders(['X-Api-Key' => env('APP_SECRET', '')])
+                ->withHeaders(['X-Api-Key' => config('services.streaming.secret')])
                 ->post($serviceUrl . '/convert-video', $payload);
 
             if ($response->status() === 409) {

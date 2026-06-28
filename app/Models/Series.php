@@ -83,7 +83,7 @@ class Series extends Model
         if (str_starts_with($this->trailer_path, 'http')) {
             return $this->trailer_path;
         }
-        $baseUrl = rtrim(env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090'), '/');
+        $baseUrl = rtrim(config('services.streaming.url'), '/');
         return $baseUrl . '/' . ltrim($this->trailer_path, '/');
     }
 }

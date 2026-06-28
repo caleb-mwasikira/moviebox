@@ -205,7 +205,7 @@ class MovieController extends Controller
         );
 
         if (!$ok) {
-            return back()->with('error', 'Streaming service is unavailable. Make sure it is running on ' . env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090') . '.');
+            return back()->with('error', 'Streaming service is unavailable. Make sure it is running on ' . config('services.streaming.url') . '.');
         }
 
         return back()->with('status', 'movie-reprocessing');
@@ -231,7 +231,7 @@ class MovieController extends Controller
         );
 
         if (!$ok) {
-            return back()->with('error', 'Streaming service is unavailable. Make sure it is running on ' . env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090') . '.');
+            return back()->with('error', 'Streaming service is unavailable. Make sure it is running on ' . config('services.streaming.url') . '.');
         }
 
         return back()->with('status', 'movie-reprocessing');

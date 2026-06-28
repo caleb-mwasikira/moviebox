@@ -162,7 +162,7 @@ class WatchPartyController extends Controller
         // HLS auth token (valid 2 hours from page load)
         $uid      = $user?->id ?? 0;
         $exp      = time() + 7200;
-        $sig      = hash_hmac('sha256', $uid . ':' . $exp, env('APP_SECRET', ''));
+        $sig      = hash_hmac('sha256', $uid . ':' . $exp, config('services.streaming.secret'));
         $hlsToken = base64_encode($uid . ':' . $exp . ':' . $sig);
 
         // Main video source
@@ -201,7 +201,7 @@ class WatchPartyController extends Controller
         // http:// → ws://   https:// → wss://
         $streamingWsUrl = rtrim(
             str_replace(['https://', 'http://'], ['wss://', 'ws://'],
-                env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090')
+                config('services.streaming.url')
             ),
             '/'
         );
@@ -706,9 +706,9 @@ class WatchPartyController extends Controller
         }
 
         try {
-            Http::withHeaders(['X-Api-Key' => env('APP_SECRET')])
+            Http::withHeaders(['X-Api-Key' => config('services.streaming.secret')])
                 ->timeout(3)
-                ->post(env('STREAMING_SERVICE_URL', 'http://localhost:9090') . '/watch-party/' . $token . '/broadcast', $payload);
+                ->post(config('services.streaming.url') . '/watch-party/' . $token . '/broadcast', $payload);
         } catch (\Throwable $e) {
             \Log::warning('Watch party WS push failed: ' . $e->getMessage());
         }

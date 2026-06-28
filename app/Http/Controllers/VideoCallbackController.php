@@ -136,8 +136,8 @@ class VideoCallbackController extends Controller
      */
     protected function saveSubtitles(Model $model, string $modelUuid, array $subtitles): void
     {
-        $baseUrl = rtrim(env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090'), '/');
-        $apiKey  = env('APP_SECRET', '');
+        $baseUrl = rtrim(config('services.streaming.url'), '/');
+        $apiKey  = config('services.streaming.secret');
 
         foreach ($subtitles as $sub) {
             try {

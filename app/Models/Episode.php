@@ -52,7 +52,7 @@ class Episode extends Model
             return null;
         }
         // Use the env variable as the base, defaulting to local if not set
-        $baseUrl = rtrim(env('STREAMING_SERVICE_URL', 'http://127.0.0.1:9090'), '/');
+        $baseUrl = rtrim(config('services.streaming.url'), '/');
         // Ensure we don't have double slashes when joining
         $path = ltrim($this->streaming_path, '/');
         return "{$baseUrl}/{$path}";

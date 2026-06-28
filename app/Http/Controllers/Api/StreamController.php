@@ -58,7 +58,7 @@ class StreamController extends Controller
     {
         $uid = (string) $userId;
         $exp = now()->addHours(6)->timestamp;
-        $sig = hash_hmac('sha256', $uid . ':' . $exp, env('APP_SECRET', ''));
+        $sig = hash_hmac('sha256', $uid . ':' . $exp, config('services.streaming.secret'));
 
         return base64_encode($uid . ':' . $exp . ':' . $sig);
     }
