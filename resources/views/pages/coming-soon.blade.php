@@ -51,7 +51,7 @@
   @php
     $uid = Auth::id() ?? 0;
     $exp = time() + 7200;
-    $sig = hash_hmac('sha256', $uid . ':' . $exp, env('APP_SECRET', ''));
+    $sig = hash_hmac('sha256', $uid . ':' . $exp, config('services.streaming.secret'));
     $hlsToken = base64_encode($uid . ':' . $exp . ':' . $sig);
   @endphp
   var hlsToken = @json($hlsToken);
