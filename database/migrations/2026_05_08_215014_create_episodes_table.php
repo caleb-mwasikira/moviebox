@@ -15,7 +15,7 @@ return new class extends Migration
             $table->unsignedSmallInteger('episode_number');
             $table->string('title');
             $table->text('description')->nullable();
-            $table->string('video_path')->nullable()->change();
+            $table->string('video_path')->nullable();
             $table->string('streaming_path')->nullable();
             $table->unsignedSmallInteger('duration')->nullable();
             $table->boolean('is_free')->default(false);
