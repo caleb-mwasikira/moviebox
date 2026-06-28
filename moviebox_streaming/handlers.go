@@ -124,10 +124,18 @@ func convertVideo(w http.ResponseWriter, r *http.Request) {
 			if ctx.Err() != nil {
 				return // cancelled — defer already handles cleanup
 			}
-			message = "GPU video conversion failed"
+			log.Printf("GPU video conversion failed, falling back to CPU: %v\n", err)
+			streamPath, err = encoders.NewSplitEncoder(false).EncodeVideo(ctx, req.VideoPath, outputDir, res)
+		}
+
+		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
+			message = "Video conversion failed"
 			log.Printf("%v: %v\n", message, err)
 		} else {
-			message = "GPU video conversion successful"
+			message = "Video conversion successful"
 			streamPath = formatStreamPath(HLSDir, streamPath)
 			log.Printf("%v: %v\n", message, streamPath)
 		}
