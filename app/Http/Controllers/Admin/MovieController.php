@@ -201,17 +201,18 @@ class MovieController extends Controller
             return back()->withErrors(['video' => 'No source video file available for re-encoding.']);
         }
 
+        $videoPath = storage_path('app/public/' . $movie->video_path);
+        if (!file_exists($videoPath)) {
+            if ($request->expectsJson()) return response()->json(['error' => 'Source video file not found on disk: ' . $movie->video_path], 422);
+            return back()->withErrors(['video' => 'Source video file not found on disk. It may have been deleted.']);
+        }
+
         $this->cancelJob($movie->uuid);
 
-        $ok = $this->convertVideo(
-            $movie->uuid,
-            'movies',
-            $movie->title,
-            storage_path('app/public/' . $movie->video_path),
-        );
+        $ok = $this->convertVideo($movie->uuid, 'movies', $movie->title, $videoPath);
 
         if (!$ok) {
-            if ($request->expectsJson()) return response()->json(['error' => 'Streaming service unavailable.'], 503);
+            if ($request->expectsJson()) return response()->json(['error' => 'Streaming service unreachable at ' . config('services.streaming.url')], 503);
             return back()->with('error', 'Streaming service is unavailable. Make sure it is running on ' . config('services.streaming.url') . '.');
         }
 
@@ -244,19 +245,18 @@ class MovieController extends Controller
             return back()->withErrors(['resolution' => 'No source video file available for re-encoding.']);
         }
 
+        $videoPath = storage_path('app/public/' . $movie->video_path);
+        if (!file_exists($videoPath)) {
+            if ($request->expectsJson()) return response()->json(['error' => 'Source video file not found on disk: ' . $movie->video_path], 422);
+            return back()->withErrors(['resolution' => 'Source video file not found on disk. It may have been deleted.']);
+        }
+
         $this->cancelJob($movie->uuid);
 
-        $ok = $this->convertVideo(
-            $movie->uuid,
-            'movies',
-            $movie->title,
-            storage_path('app/public/' . $movie->video_path),
-            null,
-            $request->input('resolution'),
-        );
+        $ok = $this->convertVideo($movie->uuid, 'movies', $movie->title, $videoPath, null, $request->input('resolution'));
 
         if (!$ok) {
-            if ($request->expectsJson()) return response()->json(['error' => 'Streaming service unavailable.'], 503);
+            if ($request->expectsJson()) return response()->json(['error' => 'Streaming service unreachable at ' . config('services.streaming.url')], 503);
             return back()->with('error', 'Streaming service is unavailable. Make sure it is running on ' . config('services.streaming.url') . '.');
         }
 

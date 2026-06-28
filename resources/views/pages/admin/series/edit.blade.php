@@ -372,7 +372,7 @@
                     {{-- ── Encoding Quality ── --}}
                     @if ($episode->video_path)
                     <div class="border-t border-gray-200 dark:border-gray-700 pt-6"
-                      x-data="encodingQuality(@json($episode->streamingUrl()), @json($hlsToken))">
+                      x-data='encodingQuality(@json($episode->streamingUrl()), @json($hlsToken))'>
                       <div class="flex items-center justify-between mb-3">
                         <p class="text-xs font-bold uppercase text-gray-500 tracking-wider">Encoding Quality</p>
                         <form method="POST" action="{{ route('admin.episodes.encode-all', $episode) }}">

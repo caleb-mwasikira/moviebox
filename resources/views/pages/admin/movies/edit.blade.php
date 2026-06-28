@@ -242,15 +242,15 @@
 </section>
 
 {{-- Encoding Quality --}}
-<section class="mb-14" x-data="encodingQuality({
+<section class="mb-14" x-data='encodingQuality({
   streamingUrl: @json($movie->streamingUrl()),
-  statusUrl: @json(route('admin.movies.encoding-status', $movie)),
-  reprocessUrl: @json(route('admin.movies.reprocess', $movie)),
-  encodeQualityUrl: @json(route('admin.movies.encode-quality', $movie)),
+  statusUrl: @json(route("admin.movies.encoding-status", $movie)),
+  reprocessUrl: @json(route("admin.movies.reprocess", $movie)),
+  encodeQualityUrl: @json(route("admin.movies.encode-quality", $movie)),
   hasVideo: @json((bool) $movie->video_path),
   hlsToken: @json($hlsToken),
   csrf: @json(csrf_token()),
-})">
+})'>
   <div class="flex items-center justify-between mb-6 pb-3 border-b border-gray-200 dark:border-gray-600">
     <h3 class="text-lg font-bold text-gray-900 dark:text-white">Encoding Quality</h3>
     @if ($movie->video_path)

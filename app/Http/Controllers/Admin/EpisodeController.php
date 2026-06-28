@@ -161,20 +161,19 @@ class EpisodeController extends Controller
             return back()->withErrors(['video' => 'No source video file available for re-encoding.']);
         }
 
+        $videoPath = storage_path('app/public/' . $episode->video_path);
+        if (!file_exists($videoPath)) {
+            return back()->withErrors(['video' => 'Source video file not found on disk (' . $episode->video_path . '). It may have been deleted.']);
+        }
+
         $series = $episode->season->series;
 
         $this->cancelJob($episode->uuid);
 
-        $ok = $this->convertVideo(
-            $episode->uuid,
-            'series',
-            $episode->label(),
-            storage_path('app/public/' . $episode->video_path),
-            $series->title,
-        );
+        $ok = $this->convertVideo($episode->uuid, 'series', $episode->label(), $videoPath, $series->title);
 
         if (!$ok) {
-            return back()->with('error', 'Streaming service is unavailable.');
+            return back()->with('error', 'Streaming service is unavailable. Make sure it is running on ' . config('services.streaming.url') . '.');
         }
 
         return redirect()->route('admin.series.edit', $series)->with('status', 'episode-reprocessing');
@@ -182,24 +181,22 @@ class EpisodeController extends Controller
 
     public function reprocessQuality(Request $request, Episode $episode)
     {
-        $request->validate(['resolution' => ['required', 'in:360p,720p,1080p']]);
+        $request->validate(['resolution' => ['required', 'in:360p,480p,720p,1080p']]);
 
         if (!$episode->video_path) {
             return back()->withErrors(['resolution' => 'No source video file available for re-encoding.']);
+        }
+
+        $videoPath = storage_path('app/public/' . $episode->video_path);
+        if (!file_exists($videoPath)) {
+            return back()->withErrors(['resolution' => 'Source video file not found on disk (' . $episode->video_path . '). It may have been deleted.']);
         }
 
         $series = $episode->season->series;
 
         $this->cancelJob($episode->uuid);
 
-        $ok = $this->convertVideo(
-            $episode->uuid,
-            'series',
-            $episode->label(),
-            storage_path('app/public/' . $episode->video_path),
-            $series->title,
-            $request->input('resolution'),
-        );
+        $ok = $this->convertVideo($episode->uuid, 'series', $episode->label(), $videoPath, $series->title, $request->input('resolution'));
 
         if (!$ok) {
             return back()->with('error', 'Streaming service is unavailable. Make sure it is running on ' . config('services.streaming.url') . '.');
