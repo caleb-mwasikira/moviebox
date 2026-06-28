@@ -29,7 +29,7 @@ import (
 
 var (
 	validate           = validator.New()
-	defaultResolutions = []encoders.Resolution{encoders.Res480p, encoders.Res720p}
+	defaultResolutions = []encoders.Resolution{encoders.Res360p, encoders.Res480p, encoders.Res720p}
 )
 
 type convertVideoRequest struct {
@@ -122,9 +122,24 @@ func convertVideo(w http.ResponseWriter, r *http.Request) {
 		var lastStreamPath string
 		var lastErr error
 
-		for _, res := range resolutions {
+		for resIdx, res := range resolutions {
 			if ctx.Err() != nil {
 				return
+			}
+
+			n := len(resolutions)
+			resBase := resIdx * 100 / n   // start of this resolution's share
+			resEnd := (resIdx + 1) * 100 / n // end of this resolution's share
+
+			cpuEnc := encoders.NewSplitEncoder(false)
+			capturedBase, capturedEnd := resBase, resEnd
+			cpuEnc.ProgressFn = func(splitPct int) {
+				// split step covers the first 40% of this resolution's share
+				shareWidth := capturedEnd - capturedBase
+				overall := capturedBase + splitPct*shareWidth*40/100/100
+				activeJobsMu.Lock()
+				jobProgress[key] = overall
+				activeJobsMu.Unlock()
 			}
 
 			streamPath, err := encoders.NewGPUEncoder().EncodeVideo(ctx, req.VideoPath, outputDir, res)
@@ -133,7 +148,7 @@ func convertVideo(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				log.Printf("GPU encoding failed for %s, falling back to CPU: %v\n", res.Name, err)
-				streamPath, err = encoders.NewSplitEncoder(false).EncodeVideo(ctx, req.VideoPath, outputDir, res)
+				streamPath, err = cpuEnc.EncodeVideo(ctx, req.VideoPath, outputDir, res)
 			}
 
 			if err != nil {
@@ -146,6 +161,9 @@ func convertVideo(w http.ResponseWriter, r *http.Request) {
 				lastErr = nil
 				lastStreamPath = formatStreamPath(HLSDir, streamPath)
 				log.Printf("Encoding successful for %s: %s\n", res.Name, lastStreamPath)
+				activeJobsMu.Lock()
+				jobProgress[key] = resEnd
+				activeJobsMu.Unlock()
 			}
 		}
 

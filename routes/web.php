@@ -215,6 +215,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
             ->middleware('admin.can:upload movie videos')->name('movies.video');
         Route::post('movies/{movie}/reprocess', [AdminMovieController::class, 'reprocess'])
             ->middleware('admin.can:reprocess movies')->name('movies.reprocess');
+        Route::get('movies/{movie}/encoding-status', [AdminMovieController::class, 'encodingStatus'])
+            ->name('movies.encoding-status');
         Route::post('movies/{movie}/encode-quality', [AdminMovieController::class, 'reprocessQuality'])
             ->middleware('admin.can:reprocess movies')->name('movies.encode-quality');
         Route::post('movies/{movie}/subtitles', [AdminSubtitleController::class, 'storeForMovie'])

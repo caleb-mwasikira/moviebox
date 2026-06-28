@@ -402,7 +402,7 @@
                       @endif
 
                       <div class="flex flex-wrap gap-2">
-                        @foreach (['480p', '720p', '1080p'] as $quality)
+                        @foreach (['360p', '480p', '720p', '1080p'] as $quality)
                           <form method="POST" action="{{ route('admin.episodes.encode-quality', $episode) }}">
                             @csrf
                             <input type="hidden" name="resolution" value="{{ $quality }}">
@@ -675,7 +675,7 @@
 document.addEventListener('alpine:init', function () {
   Alpine.data('encodingQuality', function (streamingUrl, token) {
     return {
-      allQualities: ['480p', '720p', '1080p'],
+      allQualities: ['360p', '480p', '720p', '1080p'],
       encoded: [],
       loading: false,
       init: function () {

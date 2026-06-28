@@ -9,6 +9,7 @@ use App\Models\ActivityLog;
 use App\Models\Movie;
 use App\Models\Series;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -193,8 +194,13 @@ class MovieController extends Controller
         return redirect()->route('admin.movies.edit', $movie)->with('status', 'movie-updated');
     }
 
-    public function reprocess(Movie $movie)
+    public function reprocess(Request $request, Movie $movie)
     {
+        if (!$movie->video_path) {
+            if ($request->expectsJson()) return response()->json(['error' => 'No source video file.'], 422);
+            return back()->withErrors(['video' => 'No source video file available for re-encoding.']);
+        }
+
         $this->cancelJob($movie->uuid);
 
         $ok = $this->convertVideo(
@@ -205,17 +211,36 @@ class MovieController extends Controller
         );
 
         if (!$ok) {
+            if ($request->expectsJson()) return response()->json(['error' => 'Streaming service unavailable.'], 503);
             return back()->with('error', 'Streaming service is unavailable. Make sure it is running on ' . config('services.streaming.url') . '.');
         }
 
+        if ($request->expectsJson()) return response()->json(['status' => 'encoding']);
         return back()->with('status', 'movie-reprocessing');
+    }
+
+    public function encodingStatus(Movie $movie)
+    {
+        try {
+            $response = Http::timeout(5)->get(config('services.streaming.url') . '/status');
+            if ($response->ok()) {
+                foreach ($response->json('jobs', []) as $job) {
+                    if ($job['model_uuid'] === $movie->uuid && $job['film_type'] === 'movies') {
+                        return response()->json(['encoding' => true, 'progress' => $job['progress']]);
+                    }
+                }
+            }
+        } catch (\Exception) {}
+
+        return response()->json(['encoding' => false, 'progress' => 0]);
     }
 
     public function reprocessQuality(Request $request, Movie $movie)
     {
-        $request->validate(['resolution' => ['required', 'in:360p,720p,1080p']]);
+        $request->validate(['resolution' => ['required', 'in:360p,480p,720p,1080p']]);
 
         if (!$movie->video_path) {
+            if ($request->expectsJson()) return response()->json(['error' => 'No source video file.'], 422);
             return back()->withErrors(['resolution' => 'No source video file available for re-encoding.']);
         }
 
@@ -231,9 +256,11 @@ class MovieController extends Controller
         );
 
         if (!$ok) {
+            if ($request->expectsJson()) return response()->json(['error' => 'Streaming service unavailable.'], 503);
             return back()->with('error', 'Streaming service is unavailable. Make sure it is running on ' . config('services.streaming.url') . '.');
         }
 
+        if ($request->expectsJson()) return response()->json(['status' => 'encoding']);
         return back()->with('status', 'movie-reprocessing');
     }
 

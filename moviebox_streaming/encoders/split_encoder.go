@@ -21,13 +21,12 @@ const (
 var _ HLSEncoder = (*SplitEncoder)(nil)
 
 type SplitEncoder struct {
-	UseGPU bool
+	UseGPU     bool
+	ProgressFn func(int)
 }
 
 func NewSplitEncoder(useGPU bool) *SplitEncoder {
-	return &SplitEncoder{
-		UseGPU: useGPU,
-	}
+	return &SplitEncoder{UseGPU: useGPU}
 }
 
 func (e *SplitEncoder) EncodeVideo(ctx context.Context, inputPath, outputDir string, res Resolution) (string, error) {
@@ -37,7 +36,7 @@ func (e *SplitEncoder) EncodeVideo(ctx context.Context, inputPath, outputDir str
 	resDir := filepath.Join(outputDir, res.Name)
 
 	// Phase 1: Split into chunks
-	chunks, err := splitIntoChunks(ctx, inputPath, chunksDir, nil)
+	chunks, err := splitIntoChunks(ctx, inputPath, chunksDir, e.ProgressFn)
 	if err != nil {
 		return "", err
 	}

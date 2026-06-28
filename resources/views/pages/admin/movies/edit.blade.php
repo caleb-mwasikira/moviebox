@@ -242,52 +242,76 @@
 </section>
 
 {{-- Encoding Quality --}}
-<section class="mb-14" x-data="encodingQuality(@json($movie->streamingUrl()), @json($hlsToken))">
-  <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6 pb-3 border-b border-gray-200 dark:border-gray-600">
-    Encoding Quality
-  </h3>
+<section class="mb-14" x-data="encodingQuality({
+  streamingUrl: @json($movie->streamingUrl()),
+  statusUrl: @json(route('admin.movies.encoding-status', $movie)),
+  reprocessUrl: @json(route('admin.movies.reprocess', $movie)),
+  encodeQualityUrl: @json(route('admin.movies.encode-quality', $movie)),
+  hasVideo: @json((bool) $movie->video_path),
+  hlsToken: @json($hlsToken),
+  csrf: @json(csrf_token()),
+})">
+  <div class="flex items-center justify-between mb-6 pb-3 border-b border-gray-200 dark:border-gray-600">
+    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Encoding Quality</h3>
+    @if ($movie->video_path)
+      <button type="button" @click="reencodeAll()" :disabled="encoding"
+        class="inline-flex items-center gap-x-2 text-xs font-bold uppercase tracking-wider py-2 px-4 bg-accent text-gray-900 hover:bg-accent/80 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+        <svg class="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+        Re-encode All
+      </button>
+    @endif
+  </div>
 
-  @if (session('status') === 'movie-reprocessing')
-    <div class="mb-5 flex items-center gap-x-3 py-3 px-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 max-w-xl">
-      <svg class="h-4 w-4 fill-yellow-500 shrink-0" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-      <span class="text-sm font-bold text-yellow-700 dark:text-yellow-400">Encoding started — this may take several minutes.</span>
+  {{-- Progress bar --}}
+  <div x-show="encoding" style="display:none" class="mb-6 max-w-xl">
+    <div class="flex items-center justify-between mb-1.5">
+      <span class="text-xs font-bold uppercase text-gray-500 tracking-wider">
+        <span x-text="activeQuality ? 'Encoding ' + activeQuality + '…' : 'Encoding…'">Encoding…</span>
+      </span>
+      <span class="text-xs font-bold text-gray-500 tabular-nums" x-text="progress + '%'">0%</span>
     </div>
-  @endif
+    <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 overflow-hidden">
+      <div class="h-2 bg-accent transition-all duration-700"
+        :class="progress === 0 ? 'animate-pulse w-full opacity-60' : ''"
+        :style="progress > 0 ? 'width:' + progress + '%' : ''">
+      </div>
+    </div>
+    <p class="mt-2 text-xs text-gray-400">This may take several minutes. You can leave this page.</p>
+  </div>
 
+  {{-- Quality badges --}}
   <div class="mb-6">
     <p class="text-xs font-bold uppercase text-gray-500 tracking-widest mb-3">Available Encodings</p>
-    <div class="flex flex-wrap items-center gap-3">
-      @if ($movie->streaming_path)
-        <template x-for="q in allQualities" :key="q">
-          <span :class="encoded.includes(q) ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'"
-            class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-full">
-            <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="encoded.includes(q) ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'"></span>
-            <span x-text="q"></span>
+    <div class="flex flex-wrap items-center gap-2.5">
+      <template x-for="q in allQualities" :key="q">
+        <span :class="encoded.includes(q)
+            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+            : (encoding && activeQuality === q
+                ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500')"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-full">
+          <span class="w-1.5 h-1.5 rounded-full shrink-0"
+            :class="encoded.includes(q) ? 'bg-green-500' : (encoding && activeQuality === q ? 'bg-yellow-400 animate-pulse' : 'bg-gray-300 dark:bg-gray-600')">
           </span>
-        </template>
-        <span x-show="loading" class="text-xs text-gray-400 italic">Checking…</span>
-      @else
-        <span class="text-sm text-gray-400">No HLS stream yet — upload and encode a video first.</span>
-      @endif
+          <span x-text="q"></span>
+        </span>
+      </template>
+      <span x-show="loading && !encoded.length" class="text-xs text-gray-400 italic">Checking…</span>
     </div>
   </div>
 
+  {{-- Per-quality re-encode buttons --}}
   @if ($movie->video_path)
-    <p class="text-xs font-bold uppercase text-gray-500 tracking-widest mb-3">Re-encode at Quality</p>
-    <div class="flex flex-wrap gap-3">
-      @foreach (['360p', '720p', '1080p'] as $quality)
-        <form method="POST" action="{{ route('admin.movies.encode-quality', $movie) }}">
-          @csrf
-          <input type="hidden" name="resolution" value="{{ $quality }}">
-          <button type="submit"
-            class="inline-flex items-center gap-x-2 text-xs font-bold uppercase tracking-wider py-2.5 px-5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-accent hover:text-accent dark:hover:text-accent transition-colors">
-            <svg class="h-3 w-3 fill-current" viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-            {{ $quality }}
-          </button>
-        </form>
+    <div class="flex flex-wrap gap-2">
+      @foreach (['360p', '480p', '720p', '1080p'] as $quality)
+        <button type="button" @click="reencode('{{ $quality }}')" :disabled="encoding"
+          class="inline-flex items-center gap-x-1.5 text-xs font-bold uppercase tracking-wider py-2 px-4 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-accent hover:text-accent dark:hover:text-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+          <svg class="h-2.5 w-2.5 fill-current" viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+          {{ $quality }}
+        </button>
       @endforeach
     </div>
-    <p class="mt-3 text-xs text-gray-400">Encoding a quality level preserves existing encodings — the master playlist is updated additively.</p>
+    <p class="mt-3 text-xs text-gray-400">Each quality encodes independently — the master playlist is updated additively.</p>
   @else
     <p class="text-sm text-gray-400">Upload a source video file to enable re-encoding.</p>
   @endif
@@ -648,28 +672,117 @@ document.addEventListener('alpine:init', function () {
     };
   });
 
-  Alpine.data('encodingQuality', function (streamingUrl, token) {
+  Alpine.data('encodingQuality', function (opts) {
     return {
-      allQualities: ['360p', '720p', '1080p'],
+      allQualities: ['360p', '480p', '720p', '1080p'],
       encoded: [],
       loading: false,
+      encoding: false,
+      progress: 0,
+      activeQuality: null,
+      _pollTimer: null,
+
       init: function () {
-        if (!streamingUrl) return;
+        this.loadQualities();
+        this.pollStatus();
+      },
+
+      destroy: function () {
+        if (this._pollTimer) { clearInterval(this._pollTimer); this._pollTimer = null; }
+      },
+
+      loadQualities: function () {
+        if (!opts.streamingUrl) return;
         var self = this;
         self.loading = true;
-        fetch(streamingUrl, { headers: { 'Authorization': 'Bearer ' + token } })
+        fetch(opts.streamingUrl, { headers: { 'Authorization': 'Bearer ' + opts.hlsToken } })
           .then(function (r) { return r.ok ? r.text() : ''; })
           .then(function (text) {
-            self.encoded = [];
+            var found = [];
             text.split('\n').forEach(function (line) {
               line = line.trim();
-              if (line === '360p/index.m3u8') self.encoded.push('360p');
-              else if (line === '720p/index.m3u8') self.encoded.push('720p');
-              else if (line === '1080p/index.m3u8') self.encoded.push('1080p');
+              if (line === '360p/index.m3u8') found.push('360p');
+              else if (line === '480p/index.m3u8') found.push('480p');
+              else if (line === '720p/index.m3u8') found.push('720p');
+              else if (line === '1080p/index.m3u8') found.push('1080p');
             });
+            self.encoded = found;
             self.loading = false;
           })
           .catch(function () { self.loading = false; });
+      },
+
+      pollStatus: function () {
+        var self = this;
+        fetch(opts.statusUrl)
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data.encoding) {
+              self.encoding = true;
+              self.progress = data.progress;
+              if (!self._pollTimer) {
+                self._pollTimer = setInterval(function () { self.pollStatus(); }, 3000);
+              }
+            } else {
+              var wasEncoding = self.encoding;
+              self.encoding = false;
+              self.progress = 0;
+              self.activeQuality = null;
+              if (self._pollTimer) { clearInterval(self._pollTimer); self._pollTimer = null; }
+              if (wasEncoding) { self.loadQualities(); }
+            }
+          })
+          .catch(function () {});
+      },
+
+      _postEncode: function (url, body, onSuccess) {
+        var self = this;
+        var params = new URLSearchParams(body);
+        params.append('_token', opts.csrf);
+        fetch(url, {
+          method: 'POST',
+          headers: { 'Accept': 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: params.toString(),
+        })
+          .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+          .then(function (res) {
+            if (!res.ok) {
+              self.encoding = false;
+              alert(res.data.error || 'Re-encode failed. Check the streaming service.');
+              return;
+            }
+            onSuccess();
+          })
+          .catch(function (err) {
+            self.encoding = false;
+            alert('Request failed: ' + err.message);
+          });
+      },
+
+      reencode: function (quality) {
+        if (!confirm('Re-encode at ' + quality + '? This will cancel any running job.')) return;
+        var self = this;
+        self.activeQuality = quality;
+        self.encoding = true;
+        self.progress = 0;
+        self._postEncode(opts.encodeQualityUrl, { resolution: quality }, function () {
+          if (!self._pollTimer) {
+            self._pollTimer = setInterval(function () { self.pollStatus(); }, 3000);
+          }
+        });
+      },
+
+      reencodeAll: function () {
+        if (!confirm('Re-encode at all qualities (360p, 480p, 720p)? This will cancel any running job.')) return;
+        var self = this;
+        self.activeQuality = null;
+        self.encoding = true;
+        self.progress = 0;
+        self._postEncode(opts.reprocessUrl, {}, function () {
+          if (!self._pollTimer) {
+            self._pollTimer = setInterval(function () { self.pollStatus(); }, 3000);
+          }
+        });
       }
     };
   });
