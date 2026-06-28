@@ -1,0 +1,39 @@
+name: Deploy Streaming Service
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "moviebox_streaming/**"
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_SSH_PORT || 22 }}
+          script: |
+            set -e
+
+            REPO_DIR="/opt/moviebox/repo"
+            BUILD_DIR="/opt/moviebox/streaming"
+
+            # Pull latest code
+            cd "$REPO_DIR"
+            git pull origin main
+
+            # Build the Go binary
+            cd "$REPO_DIR/moviebox_streaming"
+            go build -o "$BUILD_DIR/streaming" .
+
+            # Restart the systemd service
+            sudo systemctl restart moviebox-streaming.service
+            sudo systemctl is-active --quiet moviebox-streaming.service && echo "Service restarted successfully"
