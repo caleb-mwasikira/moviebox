@@ -7,15 +7,17 @@ import (
 	"os/exec"
 )
 
-// remuxMkvToMp4 copies the video stream from an MKV into an MP4 container and
-// re-encodes audio to AAC. Video is stream-copied (fast, lossless). Audio
-// re-encoding is necessary because MKV files commonly carry AC3/DTS/TrueHD
-// tracks that browsers cannot decode, which causes crackling during playback.
-// -movflags +faststart moves the moov atom to the front for progressive playback.
+// remuxMkvToMp4 transcodes an MKV file to a browser-compatible H.264/AAC MP4.
+// Full video re-encode is necessary because MKV files often carry HEVC/VP9/10-bit
+// video that browsers cannot decode. yuv420p ensures 8-bit output compatible with
+// all browsers. -movflags +faststart moves the moov atom to the front for
+// progressive playback.
 func remuxMkvToMp4(ctx context.Context, inputPath, outputPath string) error {
 	cmd := exec.CommandContext(ctx, "ffmpeg", "-y",
 		"-i", inputPath,
-		"-c:v", "copy",
+		"-c:v", "libx264",
+		"-preset", "fast",
+		"-pix_fmt", "yuv420p",
 		"-c:a", "aac",
 		"-b:a", "192k",
 		"-movflags", "+faststart",
@@ -24,7 +26,7 @@ func remuxMkvToMp4(ctx context.Context, inputPath, outputPath string) error {
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("ffmpeg remux failed: %w\n%s", err, stderr.String())
+		return fmt.Errorf("ffmpeg transcode failed: %w\n%s", err, stderr.String())
 	}
 	return nil
 }

@@ -155,6 +155,31 @@ class EpisodeController extends Controller
             ->with('status', 'episode-processing');
     }
 
+    public function reprocessAll(Episode $episode)
+    {
+        if (!$episode->video_path) {
+            return back()->withErrors(['video' => 'No source video file available for re-encoding.']);
+        }
+
+        $series = $episode->season->series;
+
+        $this->cancelJob($episode->uuid);
+
+        $ok = $this->convertVideo(
+            $episode->uuid,
+            'series',
+            $episode->label(),
+            storage_path('app/public/' . $episode->video_path),
+            $series->title,
+        );
+
+        if (!$ok) {
+            return back()->with('error', 'Streaming service is unavailable.');
+        }
+
+        return redirect()->route('admin.series.edit', $series)->with('status', 'episode-reprocessing');
+    }
+
     public function reprocessQuality(Request $request, Episode $episode)
     {
         $request->validate(['resolution' => ['required', 'in:360p,720p,1080p']]);

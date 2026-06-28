@@ -370,11 +370,23 @@
                     </div>
 
                     {{-- ── Encoding Quality ── --}}
-                    @if ($episode->streaming_path)
+                    @if ($episode->video_path)
                     <div class="border-t border-gray-200 dark:border-gray-700 pt-6"
                       x-data="encodingQuality(@json($episode->streamingUrl()), @json($hlsToken))">
-                      <p class="text-xs font-bold uppercase text-gray-500 tracking-wider mb-3">Encoding Quality</p>
+                      <div class="flex items-center justify-between mb-3">
+                        <p class="text-xs font-bold uppercase text-gray-500 tracking-wider">Encoding Quality</p>
+                        <form method="POST" action="{{ route('admin.episodes.encode-all', $episode) }}">
+                          @csrf
+                          <button type="submit"
+                            class="inline-flex items-center gap-x-1.5 text-[10px] font-bold uppercase tracking-wider py-1.5 px-3 bg-accent text-gray-900 hover:bg-accent/80 transition-colors"
+                            onclick="return confirm('Re-encode {{ addslashes($episode->label()) }} at all qualities?')">
+                            <svg class="h-2.5 w-2.5 fill-current" viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                            Re-encode
+                          </button>
+                        </form>
+                      </div>
 
+                      @if ($episode->streaming_path)
                       <div class="flex flex-wrap items-center gap-2 mb-3">
                         <template x-for="q in allQualities" :key="q">
                           <span :class="encoded.includes(q) ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'"
@@ -385,10 +397,12 @@
                         </template>
                         <span x-show="loading" class="text-[10px] text-gray-400 italic">Checking…</span>
                       </div>
+                      @else
+                      <p class="text-[10px] text-yellow-600 dark:text-yellow-400 mb-3">Processing — not yet encoded</p>
+                      @endif
 
-                      @if ($episode->video_path)
                       <div class="flex flex-wrap gap-2">
-                        @foreach (['360p', '720p', '1080p'] as $quality)
+                        @foreach (['480p', '720p', '1080p'] as $quality)
                           <form method="POST" action="{{ route('admin.episodes.encode-quality', $episode) }}">
                             @csrf
                             <input type="hidden" name="resolution" value="{{ $quality }}">
@@ -400,7 +414,6 @@
                           </form>
                         @endforeach
                       </div>
-                      @endif
                     </div>
                     @endif
 
@@ -662,7 +675,7 @@
 document.addEventListener('alpine:init', function () {
   Alpine.data('encodingQuality', function (streamingUrl, token) {
     return {
-      allQualities: ['360p', '720p', '1080p'],
+      allQualities: ['480p', '720p', '1080p'],
       encoded: [],
       loading: false,
       init: function () {
@@ -676,6 +689,7 @@ document.addEventListener('alpine:init', function () {
             text.split('\n').forEach(function (line) {
               line = line.trim();
               if (line === '360p/index.m3u8') self.encoded.push('360p');
+              else if (line === '480p/index.m3u8') self.encoded.push('480p');
               else if (line === '720p/index.m3u8') self.encoded.push('720p');
               else if (line === '1080p/index.m3u8') self.encoded.push('1080p');
             });

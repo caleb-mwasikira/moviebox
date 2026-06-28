@@ -344,9 +344,11 @@
       if (Hls.isSupported()) {
         if (hlsInst) hlsInst.destroy();
         hlsInst = new Hls({
-          xhrSetup: function (xhr) {
-            xhr.setRequestHeader('Authorization', 'Bearer ' + hlsToken);
-          },
+          xhrSetup: function (xhr) { xhr.setRequestHeader('Authorization', 'Bearer ' + hlsToken); },
+          startLevel: -1,
+          abrEwmaDefaultEstimate: 1000000,
+          maxBufferLength: 20,
+          maxMaxBufferLength: 40,
         });
         hlsInst.loadSource(src);
         hlsInst.attachMedia(video);

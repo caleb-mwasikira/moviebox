@@ -20,6 +20,7 @@ type Resolution struct {
 
 var (
 	Res360p  = Resolution{"360p", 360, "800k", 800_000}
+	Res480p  = Resolution{"480p", 480, "1200k", 1_200_000}
 	Res720p  = Resolution{"720p", 720, "2800k", 2_800_000}
 	Res1080p = Resolution{"1080p", 1080, "5000k", 5_000_000}
 )

@@ -378,9 +378,11 @@
       function loadHls(src) {
         if (Hls.isSupported()) {
           const hls = new Hls({
-            xhrSetup: function (xhr) {
-              xhr.setRequestHeader('Authorization', 'Bearer ' + hlsToken);
-            },
+            xhrSetup: function (xhr) { xhr.setRequestHeader('Authorization', 'Bearer ' + hlsToken); },
+            startLevel: -1,
+            abrEwmaDefaultEstimate: 1000000,
+            maxBufferLength: 20,
+            maxMaxBufferLength: 40,
           });
           hls.loadSource(src);
           hls.attachMedia(video);

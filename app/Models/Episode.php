@@ -61,7 +61,10 @@ class Episode extends Model
     public function videoIsReady(): bool
     {
         if ($this->streaming_path) return true;
-        return (bool) $this->video_path && !str_starts_with($this->video_path, 'videos/staging/');
+        if (!$this->video_path) return false;
+        if (str_starts_with($this->video_path, 'videos/staging/')) return false;
+        if (str_ends_with(strtolower($this->video_path), '.mkv')) return false;
+        return true;
     }
 
     public function label(): string

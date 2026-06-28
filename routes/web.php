@@ -239,6 +239,8 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
             ->middleware('admin.can:upload series videos')->name('episodes.video');
         Route::post('episodes/{episode}/encode-quality', [AdminEpisodeController::class, 'reprocessQuality'])
             ->middleware('admin.can:reprocess movies')->name('episodes.encode-quality');
+        Route::post('episodes/{episode}/encode-all', [AdminEpisodeController::class, 'reprocessAll'])
+            ->middleware('admin.can:reprocess movies')->name('episodes.encode-all');
         Route::delete('episodes/{episode}', [AdminEpisodeController::class, 'destroy'])->name('episodes.destroy');
         Route::post('episodes/{episode}/subtitles', [AdminSubtitleController::class, 'storeForEpisode'])
             ->middleware('admin.can:manage subtitles')->name('episodes.subtitles.store');

@@ -65,23 +65,33 @@ func (e *SplitEncoder) EncodeVideo(ctx context.Context, inputPath, outputDir str
 			defer func() { <-sem }()
 
 			if e.UseGPU {
-				// CALL THE GPU ENCODER:
-				// Pass the individual 'chunkPath' as the input and 'chunkOutDir' as output
 				_, err := NewGPUEncoder().EncodeVideo(ctx, in, out, r)
 				if err != nil {
 					log.Printf("GPU chunk encode failed [%s]: %v", in, err)
 				}
 			} else {
-				// CPU fallback
 				os.MkdirAll(out, 0755)
 
-				cmd := exec.CommandContext(ctx, "ffmpeg", "-y", "-i", in, "-c:v", "libx264", "-b:v", r.Bitrate,
-					"-hls_time", "6", "-hls_list_size", "0", filepath.Join(out, "index.m3u8"))
+				vf := fmt.Sprintf("scale=-2:%d", r.Height)
+				cmd := exec.CommandContext(ctx, "ffmpeg", "-y",
+					"-i", in,
+					"-c:v", "libx264",
+					"-preset", "fast",
+					"-pix_fmt", "yuv420p",
+					"-vf", vf,
+					"-b:v", r.Bitrate,
+					"-c:a", "aac",
+					"-b:a", "128k",
+					"-hls_time", "4",
+					"-hls_list_size", "0",
+					"-hls_segment_filename", filepath.Join(out, "seg%03d.ts"),
+					filepath.Join(out, "index.m3u8"),
+				)
 				var stderr bytes.Buffer
 				cmd.Stderr = &stderr
 
 				if err := cmd.Run(); err != nil {
-					log.Printf("GPU Encode failed for chunk %s: %v — %s", in, err, stderr.String())
+					log.Printf("CPU encode failed for chunk %s: %v — %s", in, err, stderr.String())
 				}
 			}
 		}(res, chunkPath, chunkOutDir)
@@ -275,7 +285,7 @@ func readMasterResolutions(playlistPath string) []Resolution {
 	if err != nil {
 		return nil
 	}
-	known := []Resolution{Res360p, Res720p, Res1080p}
+	known := []Resolution{Res360p, Res480p, Res720p, Res1080p}
 	var found []Resolution
 	for _, line := range strings.Split(string(data), "\n") {
 		line = strings.TrimSpace(line)
@@ -299,7 +309,7 @@ func mergeResolutions(existing, incoming []Resolution) []Resolution {
 		seen[r.Name] = true
 	}
 	var result []Resolution
-	for _, r := range []Resolution{Res360p, Res720p, Res1080p} {
+	for _, r := range []Resolution{Res360p, Res480p, Res720p, Res1080p} {
 		if seen[r.Name] {
 			result = append(result, r)
 		}

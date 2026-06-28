@@ -28,8 +28,8 @@ import (
 )
 
 var (
-	validate          = validator.New()
-	defaultResolution = encoders.Res720p
+	validate           = validator.New()
+	defaultResolutions = []encoders.Resolution{encoders.Res480p, encoders.Res720p}
 )
 
 type convertVideoRequest struct {
@@ -46,6 +46,8 @@ func resolutionFromString(s string) (encoders.Resolution, bool) {
 	switch s {
 	case "360p":
 		return encoders.Res360p, true
+	case "480p":
+		return encoders.Res480p, true
 	case "720p":
 		return encoders.Res720p, true
 	case "1080p":
@@ -88,10 +90,10 @@ func convertVideo(w http.ResponseWriter, r *http.Request) {
 	jobProgress[key] = 0
 	activeJobsMu.Unlock()
 
-	res := defaultResolution
+	resolutions := defaultResolutions
 	if req.Resolution != "" {
 		if r, ok := resolutionFromString(req.Resolution); ok {
-			res = r
+			resolutions = []encoders.Resolution{r}
 		}
 	}
 
@@ -117,34 +119,49 @@ func convertVideo(w http.ResponseWriter, r *http.Request) {
 			subtitles = extractSubtitles(ctx, req.VideoPath, outputDir)
 		}
 
-		var message string
+		var lastStreamPath string
+		var lastErr error
 
-		streamPath, err := encoders.NewGPUEncoder().EncodeVideo(ctx, req.VideoPath, outputDir, res)
-		if err != nil {
-			if ctx.Err() != nil {
-				return // cancelled — defer already handles cleanup
-			}
-			log.Printf("GPU video conversion failed, falling back to CPU: %v\n", err)
-			streamPath, err = encoders.NewSplitEncoder(false).EncodeVideo(ctx, req.VideoPath, outputDir, res)
-		}
-
-		if err != nil {
+		for _, res := range resolutions {
 			if ctx.Err() != nil {
 				return
 			}
-			message = "Video conversion failed"
-			log.Printf("%v: %v\n", message, err)
-		} else {
+
+			streamPath, err := encoders.NewGPUEncoder().EncodeVideo(ctx, req.VideoPath, outputDir, res)
+			if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
+				log.Printf("GPU encoding failed for %s, falling back to CPU: %v\n", res.Name, err)
+				streamPath, err = encoders.NewSplitEncoder(false).EncodeVideo(ctx, req.VideoPath, outputDir, res)
+			}
+
+			if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
+				lastErr = err
+				log.Printf("Encoding failed for %s: %v\n", res.Name, err)
+			} else {
+				lastErr = nil
+				lastStreamPath = formatStreamPath(HLSDir, streamPath)
+				log.Printf("Encoding successful for %s: %s\n", res.Name, lastStreamPath)
+			}
+		}
+
+		var message string
+		if lastStreamPath != "" {
 			message = "Video conversion successful"
-			streamPath = formatStreamPath(HLSDir, streamPath)
-			log.Printf("%v: %v\n", message, streamPath)
+		} else {
+			message = "Video conversion failed"
+			log.Printf("%v: %v\n", message, lastErr)
 		}
 
 		sendVideoConversionResponse(req.VideoUUID, req.FilmType, req.CallbackURL, convertVideoResult{
-			Success:   err == nil,
+			Success:   lastStreamPath != "",
 			ModelUUID: req.VideoUUID,
 			FilmType:  req.FilmType,
-			Path:      streamPath,
+			Path:      lastStreamPath,
 			Message:   message,
 			Subtitles: subtitles,
 		})
