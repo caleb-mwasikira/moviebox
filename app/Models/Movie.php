@@ -99,7 +99,7 @@ class Movie extends Model
             return null;
         }
         // Use the env variable as the base, defaulting to local if not set
-        $baseUrl = rtrim(config('services.streaming.url'), '/');
+        $baseUrl = rtrim(config('services.streaming.base_url'), '/');
         // Ensure we don't have double slashes when joining
         $path = ltrim($this->streaming_path, '/');
         return "{$baseUrl}/{$path}";
@@ -113,7 +113,7 @@ class Movie extends Model
         if (str_starts_with($this->trailer_path, 'http')) {
             return $this->trailer_path;
         }
-        $baseUrl = rtrim(config('services.streaming.url'), '/');
+        $baseUrl = rtrim(config('services.streaming.base_url'), '/');
         return $baseUrl . '/' . ltrim($this->trailer_path, '/');
     }
 }

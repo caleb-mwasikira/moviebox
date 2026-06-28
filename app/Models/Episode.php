@@ -52,7 +52,7 @@ class Episode extends Model
             return null;
         }
         // Use the env variable as the base, defaulting to local if not set
-        $baseUrl = rtrim(config('services.streaming.url'), '/');
+        $baseUrl = rtrim(config('services.streaming.base_url'), '/');
         // Ensure we don't have double slashes when joining
         $path = ltrim($this->streaming_path, '/');
         return "{$baseUrl}/{$path}";

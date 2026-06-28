@@ -83,7 +83,7 @@ class Series extends Model
         if (str_starts_with($this->trailer_path, 'http')) {
             return $this->trailer_path;
         }
-        $baseUrl = rtrim(config('services.streaming.url'), '/');
+        $baseUrl = rtrim(config('services.streaming.base_url'), '/');
         return $baseUrl . '/' . ltrim($this->trailer_path, '/');
     }
 }

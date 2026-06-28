@@ -197,11 +197,9 @@ class WatchPartyController extends Controller
         $currentEpisodeId = $party->current_episode_id;
         $startsAt         = $party->starts_at?->timestamp;
 
-        // Upgrade the STREAMING_SERVICE_URL HTTP endpoint to a WebSocket URL:
-        // http:// → ws://   https:// → wss://
         $streamingWsUrl = rtrim(
             str_replace(['https://', 'http://'], ['wss://', 'ws://'],
-                config('services.streaming.url')
+                config('app.url')
             ),
             '/'
         );
