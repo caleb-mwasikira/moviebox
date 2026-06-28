@@ -381,8 +381,9 @@
             xhrSetup: function (xhr) { xhr.setRequestHeader('Authorization', 'Bearer ' + hlsToken); },
             startLevel: -1,
             abrEwmaDefaultEstimate: 1000000,
-            maxBufferLength: 20,
-            maxMaxBufferLength: 40,
+            maxBufferLength: 60,
+            maxMaxBufferLength: 120,
+            maxBufferSize: 60 * 1000 * 1000,
           });
           hls.loadSource(src);
           hls.attachMedia(video);

@@ -142,9 +142,12 @@
     if (Hls.isSupported()) {
       if (trailerHls) trailerHls.destroy();
       trailerHls = new Hls({
-        xhrSetup: function (xhr) {
-          xhr.setRequestHeader('Authorization', 'Bearer ' + hlsToken);
-        }
+        xhrSetup: function (xhr) { xhr.setRequestHeader('Authorization', 'Bearer ' + hlsToken); },
+        startLevel: -1,
+        abrEwmaDefaultEstimate: 1000000,
+        maxBufferLength: 60,
+        maxMaxBufferLength: 120,
+        maxBufferSize: 60 * 1000 * 1000,
       });
       trailerHls.loadSource(url);
       trailerHls.attachMedia(video);

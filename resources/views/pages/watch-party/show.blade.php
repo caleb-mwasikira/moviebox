@@ -1872,7 +1872,14 @@
           if (!src) return;
           if (hlsInst) { hlsInst.destroy(); hlsInst = null; }
           if (useHls && Hls.isSupported()) {
-            hlsInst = new Hls({ xhrSetup: xhr => xhr.setRequestHeader('Authorization', 'Bearer ' + HLS_TOKEN) });
+            hlsInst = new Hls({
+              xhrSetup: xhr => xhr.setRequestHeader('Authorization', 'Bearer ' + HLS_TOKEN),
+              startLevel: -1,
+              abrEwmaDefaultEstimate: 1000000,
+              maxBufferLength: 60,
+              maxMaxBufferLength: 120,
+              maxBufferSize: 60 * 1000 * 1000,
+            });
             hlsInst.loadSource(src);
             hlsInst.attachMedia(video);
             if (autoplay) hlsInst.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => { }));

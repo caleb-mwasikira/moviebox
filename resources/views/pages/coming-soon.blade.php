@@ -61,7 +61,14 @@
     var video = document.getElementById('trailer-modal-video');
 
     if (Hls.isSupported() && url.includes('.m3u8')) {
-      var hls = new Hls({ xhrSetup: function (xhr) { xhr.setRequestHeader('Authorization', 'Bearer ' + hlsToken); } });
+      var hls = new Hls({
+        xhrSetup: function (xhr) { xhr.setRequestHeader('Authorization', 'Bearer ' + hlsToken); },
+        startLevel: -1,
+        abrEwmaDefaultEstimate: 1000000,
+        maxBufferLength: 60,
+        maxMaxBufferLength: 120,
+        maxBufferSize: 60 * 1000 * 1000,
+      });
       hls.loadSource(url);
       hls.attachMedia(video);
     } else {

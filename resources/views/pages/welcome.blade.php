@@ -555,7 +555,14 @@
 
     if (typeof Hls !== 'undefined' && Hls.isSupported() && url.indexOf('.m3u8') !== -1) {
       if (_hlsInst) { _hlsInst.destroy(); }
-      _hlsInst = new Hls({ xhrSetup: function (xhr) { xhr.setRequestHeader('Authorization', 'Bearer ' + _hlsToken); } });
+      _hlsInst = new Hls({
+        xhrSetup: function (xhr) { xhr.setRequestHeader('Authorization', 'Bearer ' + _hlsToken); },
+        startLevel: -1,
+        abrEwmaDefaultEstimate: 1000000,
+        maxBufferLength: 60,
+        maxMaxBufferLength: 120,
+        maxBufferSize: 60 * 1000 * 1000,
+      });
       _hlsInst.loadSource(url);
       _hlsInst.attachMedia(video);
     } else {
