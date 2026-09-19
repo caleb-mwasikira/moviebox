@@ -56,7 +56,11 @@ class AnalyticsController extends Controller
         $revenueMonthRows = DB::table('mpesa_payments')
             ->where('status', 'paid')
             ->where('created_at', '>=', now()->subMonths(11)->startOfMonth())
-            ->selectRaw("TO_CHAR(created_at, 'YYYY-MM') as month, SUM(amount) as revenue")
+            ->selectRaw(match (DB::getDriverName()) {
+                'pgsql'  => "TO_CHAR(created_at, 'YYYY-MM')",
+                'sqlite' => "strftime('%Y-%m', created_at)",
+                default  => "DATE_FORMAT(created_at, '%Y-%m')",
+            } . ' as month, SUM(amount) as revenue')
             ->groupBy('month')
             ->orderBy('month')
             ->pluck('revenue', 'month');
