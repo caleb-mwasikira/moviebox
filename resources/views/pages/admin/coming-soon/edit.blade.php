@@ -3,277 +3,145 @@
 @section('admin-title', 'Edit Coming Soon')
 
 @section('admin-content')
-<div class="mb-10 flex items-start justify-between gap-x-6">
-  <div>
-    <h2 class="text-2xl font-bold tracking-tighter text-gray-900 dark:text-white lg:text-4xl">{{ $film->title }}</h2>
-    <p class="mt-1 text-gray-500 dark:text-gray text-sm">Manage details, trailer, and release video.</p>
-  </div>
-  <form action="{{ route('admin.coming-soon.toggle-featured', $film) }}" method="POST" class="shrink-0 mt-1">
-    @csrf @method('PATCH')
-    <button type="submit"
-      class="inline-flex items-center gap-x-1.5 text-xs font-bold uppercase tracking-wide py-2 px-4 border transition-colors
-        {{ $film->featured
-          ? 'border-accent text-accent hover:bg-accent/10'
-          : 'border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-accent hover:text-accent' }}">
-      <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
-      </svg>
-      {{ $film->featured ? 'Featured' : 'Mark as Featured' }}
-    </button>
-  </form>
-</div>
+@php $videoAccept = 'video/mp4,video/webm,video/ogg,video/x-matroska,.mkv'; @endphp
 
-@if (session('status') === 'coming-soon-updated')
-  <div class="mb-6 border border-green-500 bg-green-500/10 px-4 py-3 text-sm font-medium text-green-700 dark:text-green-400">
-    Film details updated.
-  </div>
-@elseif (session('status') === 'trailer-processing')
-  <div class="mb-6 border border-yellow-500 bg-yellow-500/10 px-4 py-3 text-sm font-medium text-yellow-700 dark:text-yellow-400">
-    Trailer uploaded and is being processed for streaming.
-  </div>
+<x-ui.page-header :title="$film->title" subtitle="Manage details, trailer, and release video.">
+  <x-slot:actions>
+    <form action="{{ route('admin.coming-soon.toggle-featured', $film) }}" method="POST">
+      @csrf @method('PATCH')
+      <button type="submit" class="btn btn-sm {{ $film->featured ? 'btn-outline !border-brand !text-brand' : 'btn-secondary' }}">{{ $film->featured ? '★ Featured' : '☆ Mark as featured' }}</button>
+    </form>
+    <a href="{{ route('admin.coming-soon.index') }}" class="btn btn-secondary btn-sm"><x-ui.icon name="arrow-left" class="size-3.5" /> Back</a>
+  </x-slot:actions>
+</x-ui.page-header>
+
+@if (session('status') === 'trailer-processing')
+  <div class="alert alert-success"><x-ui.icon name="check-circle" class="mt-0.5 size-5 shrink-0" />Trailer uploaded and is being processed for streaming.</div>
 @endif
 
-{{-- ── Metadata ── --}}
-<section class="mb-14">
-  <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6 pb-3 border-b border-gray-200 dark:border-gray-600">
-    Film Details
-  </h3>
+{{-- Metadata --}}
+<form method="POST" action="{{ route('admin.coming-soon.update', $film) }}" enctype="multipart/form-data" class="card">
+  @csrf @method('PUT')
+  <div class="card-header"><h2 class="card-title">Film details</h2></div>
+  <div class="space-y-5 p-5 sm:p-6">
+    <div class="grid gap-5 sm:grid-cols-2">
+      <div class="sm:col-span-2"><x-ui.field name="title" label="Title" :value="old('title', $film->title)" /></div>
+      <x-ui.select name="genre" label="Genre" placeholder="— Select genre —" :selected="old('genre', $film->genre)"
+        :options="['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Fantasy', 'Horror', 'Musical', 'Mystery', 'Romance', 'Science Fiction', 'Thriller', 'Western']" />
+      <x-ui.field name="year" type="number" label="Release year" :value="old('year', $film->year)" />
+    </div>
+    <x-ui.textarea name="description" label="Description" :value="old('description', $film->description)" rows="5" />
 
-  <form method="POST" action="{{ route('admin.coming-soon.update', $film) }}" enctype="multipart/form-data"
-    class="flex flex-col gap-y-6 max-w-2xl">
-    @csrf @method('PUT')
-
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-      <div class="sm:col-span-2">
-        <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="title">Title</label>
-        <input class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full @error('title') border-danger @enderror"
-          type="text" name="title" id="title" value="{{ old('title', $film->title) }}">
-        @error('title')<p class="mt-1.5 text-xs text-danger">{{ $message }}</p>@enderror
-      </div>
-
-      <div>
-        <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="genre">Genre</label>
-        <select class="w-full border-base bg-white/40 px-4 h-12.5 font-medium text-gray-900 transition-all duration-150 bg-caret bg-[length:10px_6px] bg-[position:right_18px_center] focus:border-accent focus:outline-0 focus:ring-0 focus:text-gray-900 hover:cursor-pointer dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:text-white dark:bg-caret-white dark:focus:bg-gray-900"
-          name="genre" id="genre">
-          <option value="">— Select genre —</option>
-          @foreach (['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Fantasy', 'Horror', 'Musical', 'Mystery', 'Romance', 'Science Fiction', 'Thriller', 'Western'] as $genre)
-            <option value="{{ $genre }}" {{ old('genre', $film->genre) === $genre ? 'selected' : '' }}>{{ $genre }}</option>
-          @endforeach
-        </select>
-      </div>
-
-      <div>
-        <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="year">Release Year</label>
-        <input class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full"
-          type="number" name="year" id="year" value="{{ old('year', $film->year) }}">
-      </div>
+    <div>
+      <label class="label">Thumbnail</label>
+      @if ($film->thumbnail)<img src="{{ $film->thumbnailUrl() }}" alt="" class="mb-3 h-32 w-auto rounded-lg border border-line object-cover">@endif
+      <x-ui.file name="thumbnail" id="cs-edit-thumb" accept="image/*" hint="Leave blank to keep current thumbnail" />
+      <div id="cs-edit-thumb-preview" class="mt-3 flex flex-wrap gap-3"></div>
     </div>
 
     <div>
-      <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="description">Description</label>
-      <textarea class="block px-4 py-2 border-base bg-white/40 font-medium tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full h-32"
-        name="description" id="description">{{ old('description', $film->description) }}</textarea>
-    </div>
-
-    <div>
-      <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Thumbnail</label>
-      @if ($film->thumbnail)
-        <img src="{{ $film->thumbnailUrl() }}" class="w-20 h-28 object-cover mb-3" alt="">
-      @endif
-      <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer"
-        type="file" name="thumbnail" id="cs-edit-thumb" accept="image/*">
-      <p class="mt-1 text-xs text-gray-500">Leave blank to keep current thumbnail</p>
-      <div id="cs-edit-thumb-preview" class="flex flex-wrap gap-2 mt-3"></div>
-    </div>
-
-    <div>
-      <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Posters</label>
+      <label class="label">Posters</label>
       @if ($film->posters->isNotEmpty())
-        <div class="flex flex-wrap gap-3 mb-4">
+        <div class="mb-3 flex flex-wrap gap-3">
           @foreach ($film->posters as $poster)
-            <div class="relative group">
-              <img src="{{ $poster->url() }}" class="w-24 h-32 object-cover" alt="">
-              <form method="POST" action="{{ route('admin.posters.destroy', $poster) }}"
-                onsubmit="return confirm('Remove this poster?')" class="absolute top-1 right-1">
+            <div class="group relative">
+              <img src="{{ $poster->url() }}" alt="" class="h-28 w-auto rounded-lg border border-line object-cover">
+              <form method="POST" action="{{ route('admin.posters.destroy', $poster) }}" onsubmit="return confirm('Remove this poster?')" class="absolute right-1.5 top-1.5">
                 @csrf @method('DELETE')
-                <button type="submit"
-                  class="w-6 h-6 flex items-center justify-center bg-black/70 text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity hover:bg-danger">✕</button>
+                <button type="submit" class="grid size-6 place-items-center rounded-full bg-black/70 text-xs text-white opacity-0 transition hover:bg-red-500 group-hover:opacity-100">✕</button>
               </form>
             </div>
           @endforeach
         </div>
       @endif
-      <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer"
-        type="file" name="posters[]" id="cs-edit-posters" accept="image/*" multiple>
-      <p class="mt-1 text-xs text-gray-500">Select multiple to add more posters</p>
-      <div id="cs-edit-posters-preview" class="flex flex-wrap gap-2 mt-3"></div>
+      <x-ui.file name="posters[]" id="cs-edit-posters" accept="image/*" multiple hint="Select multiple to add more posters" />
+      <div id="cs-edit-posters-preview" class="mt-3 flex flex-wrap gap-3"></div>
     </div>
 
-    <div>
-      <button type="submit"
-        class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-4 px-8 text-sm text-gray-900 bg-accent hover:bg-accent/90">
-        Save Details
-      </button>
-    </div>
-  </form>
+    <button type="submit" class="btn btn-primary">Save details</button>
+  </div>
+</form>
+
+{{-- Trailer --}}
+<section class="card">
+  <div class="card-header"><h2 class="card-title">Trailer</h2></div>
+  <div class="space-y-5 p-5 sm:p-6">
+    @if ($film->trailerIsReady())
+      <div>
+        <video id="cs-trailer-preview" controls preload="metadata" class="aspect-video w-full max-w-xl rounded-xl bg-black"></video>
+        <p class="mt-2 text-xs text-muted">{{ basename($film->trailer_path) }}</p>
+      </div>
+    @elseif ($film->trailer_path)
+      <span class="badge badge-warning"><span class="size-1.5 animate-pulse rounded-full bg-amber-500"></span> Trailer processing…</span>
+    @endif
+
+    <form method="POST" action="{{ route('admin.coming-soon.trailer', $film) }}" enctype="multipart/form-data" id="cs-trailer-form" class="max-w-xl space-y-4">
+      @csrf
+      <x-ui.file name="trailer" id="cs-trailer-input" :label="$film->trailer_path ? 'Replace trailer' : 'Upload trailer'" hint="MP4, WebM, OGG or MKV — transcoded to HLS for streaming" :accept="$videoAccept" />
+      <div id="cs-tprogress-wrap" class="panel hidden space-y-2 p-4">
+        <div class="flex justify-between text-xs font-semibold uppercase tracking-wider text-muted"><span>Uploading trailer…</span><span id="cs-tprogress-label">0%</span></div>
+        <div class="progress"><span id="cs-tprogress-bar" class="transition-all" style="width:0%"></span></div>
+        <p class="text-xs text-muted">Do not close this tab until the upload completes.</p>
+      </div>
+      <button type="submit" id="cs-trailer-submit" class="btn btn-primary">Upload trailer</button>
+    </form>
+  </div>
 </section>
 
-{{-- ── Trailer ── --}}
-<section class="mb-14">
-  <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6 pb-3 border-b border-gray-200 dark:border-gray-600">
-    Trailer
-  </h3>
+{{-- Release video --}}
+<section class="card">
+  <div class="card-header"><div><h2 class="card-title">Release video</h2><p class="mt-0.5 text-sm text-muted">Upload the full film video to move this title out of Coming Soon and publish it immediately.</p></div></div>
 
-  @if ($film->trailerIsReady())
-    <div class="mb-5">
-      <video id="cs-trailer-preview" class="w-full max-w-xl bg-black" style="aspect-ratio:16/9;" controls preload="metadata"></video>
-      <p class="mt-2 text-xs text-gray-500">{{ basename($film->trailer_path) }}</p>
-    </div>
-  @elseif ($film->trailer_path)
-    <div class="mb-5 flex items-center gap-x-3 py-3 px-4 bg-gray-50 dark:bg-gray-800 max-w-xl">
-      <svg class="h-4 w-4 fill-gray-400 shrink-0" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-      <span class="text-xs font-bold uppercase text-gray-400 tracking-widest">Trailer processing…</span>
-    </div>
-  @endif
-
-  <form method="POST" action="{{ route('admin.coming-soon.trailer', $film) }}" enctype="multipart/form-data"
-    id="cs-trailer-form" class="flex flex-col gap-y-4 max-w-xl">
-    @csrf
-
-    <div>
-      <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="cs-trailer-input">
-        {{ $film->trailer_path ? 'Replace Trailer' : 'Upload Trailer' }}
-      </label>
-      <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer"
-        type="file" name="trailer" id="cs-trailer-input" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv">
-      <p class="mt-1 text-xs text-gray-500">MP4, WebM, OGG or MKV — transcoded to HLS for streaming</p>
-    </div>
-
-    <div id="cs-tprogress-wrap" class="hidden flex flex-col gap-y-2">
-      <div class="flex justify-between text-xs font-bold uppercase text-gray-500">
-        <span>Uploading trailer…</span>
-        <span id="cs-tprogress-label">0%</span>
-      </div>
-      <div class="w-full h-2 bg-gray-200 dark:bg-gray-700">
-        <div id="cs-tprogress-bar" class="h-2 bg-accent transition-all duration-150" style="width:0%"></div>
-      </div>
-      <p class="text-xs text-gray-500">Do not close this tab until the upload completes.</p>
-    </div>
-
-    <div>
-      <button type="submit" id="cs-trailer-submit"
-        class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-4 px-8 text-sm text-gray-900 bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed">
-        Upload Trailer
-      </button>
-    </div>
-  </form>
-</section>
-
-{{-- ── Release Video ── --}}
-<section class="mb-14">
-  <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3 pb-3 border-b border-gray-200 dark:border-gray-600">
-    Release Video
-  </h3>
-  <p class="text-sm text-gray-500 mb-6">
-    Upload the full film video to move this title out of Coming Soon and publish it immediately.
-  </p>
-
-  {{-- Tabs --}}
-  <div class="flex border-b border-gray-200 dark:border-gray-600 mb-7">
-    <button type="button" id="cs-tab-btn-movie" data-tab="movie"
-      onclick="switchReleaseTab('movie')"
-      class="px-5 py-3 text-xs font-bold uppercase transition-colors border-b-2 border-accent text-gray-900 dark:text-white -mb-px">
-      Movie
-    </button>
-    <button type="button" id="cs-tab-btn-series" data-tab="series"
-      onclick="switchReleaseTab('series')"
-      class="px-5 py-3 text-xs font-bold uppercase transition-colors text-gray-500 hover:text-gray-900 dark:hover:text-white">
-      Series — S01E01
-    </button>
+  <div class="flex gap-1 border-b border-line px-5 sm:px-6">
+    <button type="button" id="cs-tab-btn-movie" data-tab="movie" onclick="switchReleaseTab('movie')" class="-mb-px border-b-2 border-brand px-4 py-3 text-sm font-semibold text-fg transition">Movie</button>
+    <button type="button" id="cs-tab-btn-series" data-tab="series" onclick="switchReleaseTab('series')" class="-mb-px border-b-2 border-transparent px-4 py-3 text-sm font-semibold text-muted transition hover:text-fg">Series — S01E01</button>
   </div>
 
   {{-- Movie tab --}}
-  <div id="cs-tab-movie">
-    <form method="POST" action="{{ route('admin.coming-soon.video', $film) }}" enctype="multipart/form-data"
-      id="cs-video-form" class="flex flex-col gap-y-5 max-w-xl">
+  <div id="cs-tab-movie" class="p-5 sm:p-6">
+    <form method="POST" action="{{ route('admin.coming-soon.video', $film) }}" enctype="multipart/form-data" id="cs-video-form" class="max-w-xl space-y-4">
       @csrf
-
-      <label for="cs-video-input"
-        class="flex flex-col items-center justify-center gap-y-3 w-full border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-accent dark:hover:border-accent transition-colors cursor-pointer py-10 px-6 text-center bg-gray-50 dark:bg-gray-800/40 group">
-        <svg class="h-8 w-8 fill-gray-400 group-hover:fill-accent transition-colors" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
-        <span class="text-sm font-bold text-gray-700 dark:text-gray-300 group-hover:text-accent transition-colors">
-          Click to select video<span class="hidden sm:inline"> or drag &amp; drop</span>
-        </span>
-        <span id="cs-video-filename" class="text-xs text-gray-500">MP4, WebM, OGG, MKV</span>
+      <label for="cs-video-input" class="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-line-strong px-6 py-10 text-center transition hover:border-brand">
+        <x-ui.icon name="upload" class="size-7 text-muted" />
+        <span class="text-sm font-semibold text-fg">Click to select video<span class="font-normal text-muted"> or drag &amp; drop</span></span>
+        <span id="cs-video-filename" class="text-xs text-muted">MP4, WebM, OGG, MKV</span>
       </label>
-      <input id="cs-video-input" type="file" name="video" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv" class="sr-only">
-
-      <div id="cs-vprogress-wrap" class="hidden flex flex-col gap-y-1.5">
-        <div class="flex justify-between text-xs font-bold uppercase text-gray-500">
-          <span>Uploading…</span><span id="cs-vprogress-label">0%</span>
-        </div>
-        <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div id="cs-vprogress-bar" class="h-1.5 bg-accent transition-all duration-150 rounded-full" style="width:0%"></div>
-        </div>
-        <p class="text-xs text-gray-500">Do not close this tab until the upload completes.</p>
+      <input id="cs-video-input" type="file" name="video" accept="{{ $videoAccept }}" class="sr-only">
+      <div id="cs-vprogress-wrap" class="panel hidden space-y-2 p-4">
+        <div class="flex justify-between text-xs font-semibold uppercase tracking-wider text-muted"><span>Uploading…</span><span id="cs-vprogress-label">0%</span></div>
+        <div class="progress"><span id="cs-vprogress-bar" class="transition-all" style="width:0%"></span></div>
+        <p class="text-xs text-muted">Do not close this tab until the upload completes.</p>
       </div>
-
-      <div>
-        <button type="submit" id="cs-video-submit"
-          class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-3 px-6 text-sm text-gray-900 bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed">
-          Upload &amp; Publish
-        </button>
-        <p class="mt-2 text-xs text-gray-400">The film will be published immediately after encoding completes.</p>
+      <div class="flex flex-wrap items-center gap-3">
+        <button type="submit" id="cs-video-submit" class="btn btn-primary">Upload &amp; publish</button>
+        <p class="text-xs text-muted">The film will be published immediately after encoding completes.</p>
       </div>
     </form>
   </div>
 
   {{-- Series tab --}}
-  <div id="cs-tab-series" style="display:none">
-    <p class="text-sm text-gray-500 mb-5">
-      Creates <strong class="text-gray-700 dark:text-gray-300">Season 1</strong> with Episode 1. Additional seasons and episodes can be added from the series page afterward.
-    </p>
-
-    <form method="POST" action="{{ route('admin.coming-soon.promote-series', $film) }}" enctype="multipart/form-data"
-      id="cs-series-form" class="flex flex-col gap-y-5 max-w-xl">
+  <div id="cs-tab-series" class="p-5 sm:p-6" style="display:none">
+    <p class="mb-4 text-sm text-muted">Creates <strong class="text-fg">Season 1</strong> with Episode 1. Additional seasons and episodes can be added from the series page afterward.</p>
+    <form method="POST" action="{{ route('admin.coming-soon.promote-series', $film) }}" enctype="multipart/form-data" id="cs-series-form" class="max-w-xl space-y-4">
       @csrf
-
-      <div>
-        <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="cs-episode-title">Episode 1 Title</label>
-        <input class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full"
-          type="text" name="episode_title" id="cs-episode-title" required placeholder="e.g. Pilot">
-      </div>
-
-      <label for="cs-series-video-input"
-        class="flex flex-col items-center justify-center gap-y-3 w-full border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-accent dark:hover:border-accent transition-colors cursor-pointer py-10 px-6 text-center bg-gray-50 dark:bg-gray-800/40 group">
-        <svg class="h-8 w-8 fill-gray-400 group-hover:fill-accent transition-colors" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
-        <span class="text-sm font-bold text-gray-700 dark:text-gray-300 group-hover:text-accent transition-colors">
-          Click to select episode video<span class="hidden sm:inline"> or drag &amp; drop</span>
-        </span>
-        <span id="cs-series-video-filename" class="text-xs text-gray-500">MP4, WebM, OGG, MKV</span>
+      <div><label class="label" for="cs-episode-title">Episode 1 title</label><input type="text" name="episode_title" id="cs-episode-title" required placeholder="e.g. Pilot" class="input"></div>
+      <label for="cs-series-video-input" class="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-line-strong px-6 py-10 text-center transition hover:border-brand">
+        <x-ui.icon name="upload" class="size-7 text-muted" />
+        <span class="text-sm font-semibold text-fg">Click to select episode video<span class="font-normal text-muted"> or drag &amp; drop</span></span>
+        <span id="cs-series-video-filename" class="text-xs text-muted">MP4, WebM, OGG, MKV</span>
       </label>
-      <input id="cs-series-video-input" type="file" name="video" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv" class="sr-only">
-
-      <div id="cs-sprogress-wrap" class="hidden flex flex-col gap-y-1.5">
-        <div class="flex justify-between text-xs font-bold uppercase text-gray-500">
-          <span>Uploading…</span><span id="cs-sprogress-label">0%</span>
-        </div>
-        <div class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div id="cs-sprogress-bar" class="h-1.5 bg-accent transition-all duration-150 rounded-full" style="width:0%"></div>
-        </div>
-        <p class="text-xs text-gray-500">Do not close this tab until the upload completes.</p>
+      <input id="cs-series-video-input" type="file" name="video" accept="{{ $videoAccept }}" class="sr-only">
+      <div id="cs-sprogress-wrap" class="panel hidden space-y-2 p-4">
+        <div class="flex justify-between text-xs font-semibold uppercase tracking-wider text-muted"><span>Uploading…</span><span id="cs-sprogress-label">0%</span></div>
+        <div class="progress"><span id="cs-sprogress-bar" class="transition-all" style="width:0%"></span></div>
+        <p class="text-xs text-muted">Do not close this tab until the upload completes.</p>
       </div>
-
-      <div>
-        <button type="submit" id="cs-series-submit"
-          class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-3 px-6 text-sm text-gray-900 bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed">
-          Create Series &amp; Go Live
-        </button>
-        <p class="mt-2 text-xs text-gray-400">Series will be published immediately after encoding completes.</p>
+      <div class="flex flex-wrap items-center gap-3">
+        <button type="submit" id="cs-series-submit" class="btn btn-primary">Create series &amp; go live</button>
+        <p class="text-xs text-muted">Series will be published immediately after encoding completes.</p>
       </div>
     </form>
   </div>
-
 </section>
 
 <script>
@@ -281,20 +149,13 @@ function switchReleaseTab(tab) {
   var isMovie = tab === 'movie';
   document.getElementById('cs-tab-movie').style.display  = isMovie ? '' : 'none';
   document.getElementById('cs-tab-series').style.display = isMovie ? 'none' : '';
-  var activeClass   = 'border-b-2 border-accent text-gray-900 dark:text-white -mb-px';
-  var inactiveClass = 'text-gray-500 hover:text-gray-900 dark:hover:text-white';
-  var base = 'px-5 py-3 text-xs font-bold uppercase transition-colors ';
+  var activeClass   = 'border-brand text-fg';
+  var inactiveClass = 'border-transparent text-muted hover:text-fg';
+  var base = '-mb-px border-b-2 px-4 py-3 text-sm font-semibold transition ';
   document.getElementById('cs-tab-btn-movie').className  = base + (isMovie  ? activeClass : inactiveClass);
   document.getElementById('cs-tab-btn-series').className = base + (!isMovie ? activeClass : inactiveClass);
 }
 </script>
-
-<div>
-  <a href="{{ route('admin.coming-soon.index') }}"
-    class="text-sm font-bold text-gray-500 hover:text-accent dark:hover:text-accent transition-colors uppercase">
-    ← Back to Coming Soon
-  </a>
-</div>
 @endsection
 
 @push('scripts')
@@ -337,7 +198,7 @@ function switchReleaseTab(tab) {
           var wrap = document.createElement('div');
           var img = document.createElement('img');
           img.src = e.target.result;
-          img.className = 'h-24 w-auto object-cover border border-gray-200 dark:border-gray-600';
+          img.className = 'h-24 w-auto rounded-lg border border-line object-cover';
           wrap.appendChild(img);
           container.appendChild(wrap);
         };
@@ -420,11 +281,11 @@ function switchReleaseTab(tab) {
       });
     }
     if (zone && input) {
-      zone.addEventListener('dragover',  function (e) { e.preventDefault(); zone.classList.add('border-accent'); });
-      zone.addEventListener('dragleave', function ()  { zone.classList.remove('border-accent'); });
+      zone.addEventListener('dragover',  function (e) { e.preventDefault(); zone.classList.add('border-brand', 'bg-brand-soft'); });
+      zone.addEventListener('dragleave', function ()  { zone.classList.remove('border-brand', 'bg-brand-soft'); });
       zone.addEventListener('drop', function (e) {
         e.preventDefault();
-        zone.classList.remove('border-accent');
+        zone.classList.remove('border-brand', 'bg-brand-soft');
         if (e.dataTransfer.files.length) {
           input.files = e.dataTransfer.files;
           if (nameEl) nameEl.textContent = e.dataTransfer.files[0].name;

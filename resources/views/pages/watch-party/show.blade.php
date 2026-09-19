@@ -2,1823 +2,397 @@
 
 @section('title', 'Watch Party — ' . $party->title())
 
-@push('head')
-  <style>
-    .wp-wrap {
-      position: relative;
-      overflow: hidden;
-      height: calc(100svh - 64px);
-      display: flex;
-      flex-direction: column;
-    }
-
-    @media (min-width: 1024px) {
-      .wp-wrap {
-        height: calc(100vh - 90px);
-      }
-    }
-
-    .wp-video-col {
-      background: #000;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .wp-video-col video {
-      display: block;
-      width: 100%;
-      background: #000;
-      flex: 1;
-      min-height: 0;
-      object-fit: contain;
-    }
-
-    /* ── Bottom bar ─────────────────────────────────────────────── */
-    .wp-bar {
-      width: 100%;
-      min-height: 72px;
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: #080e1a;
-      border-top: 1px solid #1e293b;
-      flex-shrink: 0;
-      box-sizing: border-box;
-      position: relative;
-    }
-
-    .wp-bar-info {
-      flex: 1;
-      min-width: 0;
-      overflow: hidden;
-    }
-
-    .wp-bar-title {
-      font-size: .8rem;
-      font-weight: 700;
-      color: #fff;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      line-height: 1.2;
-    }
-
-    .wp-bar-episode {
-      font-size: .6rem;
-      color: #475569;
-      margin-top: 1px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* Live / status pill */
-    .wp-bar-status {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      margin-top: 3px;
-    }
-
-    .wp-status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .wp-status-dot.live {
-      background: #4ade80;
-      animation: wp-pulse 2.2s ease-in-out infinite;
-    }
-
-    .wp-status-dot.syncing {
-      background: #facc15;
-      animation: wp-pulse 1s ease-in-out infinite;
-    }
-
-    .wp-status-dot.idle {
-      background: #334155;
-    }
-
-    @keyframes wp-pulse {
-
-      0%,
-      100% {
-        opacity: 1;
-      }
-
-      50% {
-        opacity: .3;
-      }
-    }
-
-    .wp-status-label {
-      font-size: .58rem;
-      font-weight: 700;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-    }
-
-    .wp-bar-sep {
-      width: 1px;
-      height: 28px;
-      background: #1e293b;
-      flex-shrink: 0;
-    }
-
-    /* ── Icon buttons ───────────────────────────────────────────── */
-    .wp-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 36px;
-      height: 36px;
-      background: transparent;
-      color: #475569;
-      border: none;
-      cursor: pointer;
-      transition: color .15s, background .15s;
-      position: relative;
-      flex-shrink: 0;
-      border-radius: 2px;
-    }
-
-    .wp-btn:hover {
-      color: #e2e8f0;
-      background: rgba(255, 255, 255, .07);
-    }
-
-    .wp-btn.wp-active {
-      color: #facc15;
-      background: rgba(250, 204, 21, .12);
-    }
-
-    .wp-btn:disabled {
-      opacity: .25;
-      cursor: default;
-      pointer-events: none;
-    }
-
-    /* Grouped buttons section */
-    .wp-bar-btns {
-      display: flex;
-      align-items: center;
-      gap: 2px;
-      background: #0f172a;
-      border: 1px solid #1e293b;
-      padding: 2px;
-      flex-shrink: 0;
-    }
-
-    /* Destructive (end) button */
-    .wp-btn-danger {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 36px;
-      height: 36px;
-      background: rgba(239, 68, 68, .1);
-      color: #ef4444;
-      border: 1px solid rgba(239, 68, 68, .2);
-      cursor: pointer;
-      transition: background .15s, border-color .15s;
-      flex-shrink: 0;
-      border-radius: 2px;
-    }
-
-    .wp-btn-danger:hover {
-      background: rgba(239, 68, 68, .2);
-      border-color: rgba(239, 68, 68, .4);
-    }
-
-    /* Leave button */
-    .wp-btn-leave {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 36px;
-      height: 36px;
-      background: rgba(255, 255, 255, .04);
-      color: #94a3b8;
-      border: 1px solid #1e293b;
-      cursor: pointer;
-      transition: background .15s, color .15s;
-      flex-shrink: 0;
-      border-radius: 2px;
-    }
-
-    .wp-btn-leave:hover {
-      background: rgba(255, 255, 255, .08);
-      color: #e2e8f0;
-    }
-
-    .wp-badge {
-      position: absolute;
-      top: 2px;
-      right: 2px;
-      min-width: 14px;
-      height: 14px;
-      border-radius: 7px;
-      background: #ef4444;
-      color: #fff;
-      font-size: .48rem;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 3px;
-      line-height: 1;
-    }
-
-    /* ── Sidebar ────────────────────────────────────────────────── */
-    .wp-sidebar {
-      position: fixed;
-      top: 0;
-      right: 0;
-      width: min(320px, 100vw);
-      height: 100%;
-      z-index: 9999;
-      background: #0f172a;
-      box-shadow: -4px 0 28px rgba(0, 0, 0, .7);
-      transform: translateX(100%);
-      transition: transform .28s cubic-bezier(.4, 0, .2, 1);
-      display: flex;
-      flex-direction: column;
-      border-left: 1px solid #1e293b;
-      overflow: hidden;
-    }
-
-    .wp-sidebar.open {
-      transform: translateX(0);
-    }
-
-    .wp-sidebar-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, .6);
-      z-index: 9998;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity .28s;
-    }
-
-    .wp-sidebar-overlay.show {
-      opacity: 1;
-      visibility: visible;
-    }
-
-    /* ── Sidebar tabs ───────────────────────────────────────────── */
-    .wp-tabs {
-      display: flex;
-      align-items: stretch;
-      border-bottom: 1px solid #1e293b;
-      flex-shrink: 0;
-    }
-
-    .wp-tab {
-      flex: 1;
-      padding: 11px 4px;
-      font-size: .6rem;
-      font-weight: 700;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      text-align: center;
-      color: #6b7280;
-      cursor: pointer;
-      border: none;
-      background: none;
-      border-bottom: 2px solid transparent;
-      transition: color .15s, border-color .15s;
-    }
-
-    .wp-tab:hover {
-      color: #d1d5db;
-    }
-
-    .wp-tab.active {
-      color: #facc15;
-      border-bottom-color: #facc15;
-    }
-
-    .wp-tab-close {
-      width: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #6b7280;
-      cursor: pointer;
-      border: none;
-      background: none;
-      border-bottom: 2px solid transparent;
-      flex-shrink: 0;
-    }
-
-    .wp-tab-close:hover {
-      color: #fff;
-    }
-
-    /* ── Sidebar panels ─────────────────────────────────────────── */
-    .wp-sidebar-body {
-      flex: 1;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .wp-panel {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .wp-panel-scroll {
-      flex: 1;
-      overflow-y: auto;
-      min-height: 0;
-    }
-
-    /* ── Chat ───────────────────────────────────────────────────── */
-    .wp-chat-list {
-      flex: 1;
-      overflow-y: auto;
-      min-height: 0;
-      padding: 12px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .wp-chat-msg {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .wp-chat-msg.mine {
-      align-items: flex-end;
-    }
-
-    .wp-chat-bubble {
-      padding: 6px 10px;
-      font-size: .78rem;
-      color: #e2e8f0;
-      background: #1e293b;
-      word-break: break-word;
-      border-radius: 2px;
-    }
-
-    .wp-chat-msg.mine .wp-chat-bubble {
-      background: rgba(250, 204, 21, .15);
-      color: #fef9c3;
-    }
-
-    .wp-chat-msg.system {
-      justify-content: center;
-    }
-
-    .wp-chat-msg.system .wp-chat-bubble {
-      background: rgba(255, 255, 255, .05);
-      color: #475569;
-      font-size: .65rem;
-      font-style: italic;
-      text-align: center;
-      max-width: 100%;
-    }
-
-    .wp-chat-meta {
-      font-size: .58rem;
-      color: #64748b;
-    }
-
-    .wp-chat-input {
-      display: flex;
-      border-top: 1px solid #1e293b;
-      flex-shrink: 0;
-    }
-
-    .wp-chat-input input {
-      flex: 1;
-      background: #0a0f1a;
-      border: none;
-      outline: none;
-      color: #e2e8f0;
-      padding: 10px 12px;
-      font-size: .78rem;
-    }
-
-    .wp-chat-input input::placeholder {
-      color: #475569;
-    }
-
-    .wp-chat-input button {
-      padding: 10px 14px;
-      background: #facc15;
-      color: #111827;
-      font-size: .65rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      border: none;
-      cursor: pointer;
-      flex-shrink: 0;
-      transition: background .15s;
-    }
-
-    .wp-chat-input button:hover {
-      background: #fde047;
-    }
-
-    /* ── Members ────────────────────────────────────────────────── */
-    .wp-members-header {
-      padding: 14px 16px 10px;
-      border-bottom: 1px solid #1e293b;
-      flex-shrink: 0;
-    }
-
-    .wp-members-header-label {
-      font-size: .58rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .1em;
-      color: #475569;
-    }
-
-    .wp-member-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 9px 16px;
-      border-bottom: 1px solid rgba(30, 41, 59, .6);
-      transition: background .1s;
-    }
-
-    .wp-member-row:hover {
-      background: rgba(255, 255, 255, .03);
-    }
-
-    .wp-member-avatar {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      background: #1e293b;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: .6rem;
-      font-weight: 800;
-      color: #facc15;
-      flex-shrink: 0;
-      text-transform: uppercase;
-    }
-
-    .wp-member-avatar.is-host {
-      background: rgba(250, 204, 21, .15);
-    }
-
-    .wp-member-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .wp-member-name {
-      font-size: .78rem;
-      font-weight: 600;
-      color: #e2e8f0;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .wp-member-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      font-size: .5rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: .07em;
-      color: #facc15;
-      background: rgba(250, 204, 21, .1);
-      padding: 1px 5px;
-      margin-left: 5px;
-      vertical-align: middle;
-    }
-
-    .wp-member-status {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: .6rem;
-      color: #4ade80;
-      margin-top: 1px;
-    }
-
-    .wp-member-dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      background: #4ade80;
-    }
-
-    /* ── Episode rows ───────────────────────────────────────────── */
-    .wp-ep-row {
-      display: flex;
-      align-items: center;
-      gap: 11px;
-      padding: 10px 14px;
-      border-bottom: 1px solid #1e293b;
-      transition: background .1s;
-    }
-
-    .wp-ep-row.ep-clickable {
-      cursor: pointer;
-    }
-
-    .wp-ep-row.ep-clickable:hover {
-      background: rgba(255, 255, 255, .04);
-    }
-
-    .wp-ep-row.ep-active {
-      background: rgba(250, 204, 21, .07);
-      padding-left: 11px;
-      border-left: 3px solid #facc15;
-    }
-
-    .wp-ep-num {
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 28px;
-      height: 28px;
-      background: #1e293b;
-      font-size: .65rem;
-      font-weight: 700;
-      color: #475569;
-    }
-
-    .wp-ep-num.now {
-      background: #facc15;
-      color: #111;
-    }
-
-    /* ── Chat improvements ──────────────────────────────────────── */
-    .wp-chat-avatar {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      background: #1e293b;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: .5rem;
-      font-weight: 800;
-      color: #94a3b8;
-      flex-shrink: 0;
-      text-transform: uppercase;
-      align-self: flex-end;
-    }
-
-    .wp-chat-msg {
-      display: flex;
-      align-items: flex-end;
-      gap: 6px;
-    }
-
-    .wp-chat-msg.mine {
-      flex-direction: row-reverse;
-    }
-
-    .wp-chat-content {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      max-width: 82%;
-      min-width: 0;
-    }
-
-    .wp-chat-msg.mine .wp-chat-content {
-      align-items: flex-end;
-    }
-
-    .wp-chat-msg.system .wp-chat-content {
-      max-width: 90%;
-      align-items: center;
-    }
-
-    @media (min-width: 1024px) {
-      .wp-sidebar {
-        width: 340px;
-      }
-    }
-
-    /* ── Share popover ──────────────────────────────────────────── */
-    /* Combined progress bar — overlaid on top of the controls bar (non-host only) */
-    .wp-progress-bar {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: rgba(255, 255, 255, .06);
-      pointer-events: none;
-      z-index: 10;
-    }
-
-    .wp-progress-mine {
-      position: absolute;
-      top: 0;
-      left: 0;
-      height: 100%;
-      background: rgba(148, 163, 184, .45);
-      transition: width .5s linear;
-    }
-
-    .wp-progress-host-tick {
-      position: absolute;
-      top: -1px;
-      width: 2px;
-      height: 5px;
-      background: #facc15;
-      box-shadow: 0 0 5px rgba(250, 204, 21, .7);
-      transform: translateX(-50%);
-      transition: left .8s linear;
-    }
-
-    /* Go Live button */
-    .wp-go-live {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 3px 9px;
-      background: rgba(250, 204, 21, .15);
-      border: 1px solid rgba(250, 204, 21, .35);
-      color: #facc15;
-      font-size: .52rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      cursor: pointer;
-      flex-shrink: 0;
-      transition: background .15s, border-color .15s;
-      border-radius: 2px;
-      white-space: nowrap;
-    }
-
-    .wp-go-live:hover {
-      background: rgba(250, 204, 21, .28);
-      border-color: rgba(250, 204, 21, .6);
-    }
-
-    .wp-share-pop {
-      position: absolute;
-      bottom: calc(100% + 8px);
-      right: 0;
-      width: 260px;
-      background: #0a0f1a;
-      border: 1px solid #1e293b;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, .7);
-      padding: 12px;
-      z-index: 1000;
-    }
-
-    .wp-share-pop-label {
-      font-size: .55rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .1em;
-      color: #475569;
-      margin-bottom: 8px;
-    }
-
-    .wp-share-row {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 8px;
-    }
-
-    .wp-share-input {
-      flex: 1;
-      min-width: 0;
-      background: #0f172a;
-      border: 1px solid #1e293b;
-      color: #64748b;
-      padding: 7px 9px;
-      font-size: .68rem;
-      outline: none;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .wp-share-copy {
-      flex-shrink: 0;
-      padding: 7px 10px;
-      background: #1e293b;
-      border: none;
-      cursor: pointer;
-      color: #e2e8f0;
-      font-size: .6rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      transition: background .15s;
-    }
-
-    .wp-share-copy:hover {
-      background: #334155;
-    }
-
-    .wp-share-wa {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 7px;
-      width: 100%;
-      padding: 8px 10px;
-      background: #25D366;
-      color: #fff;
-      font-size: .62rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      text-decoration: none;
-      transition: background .15s;
-    }
-
-    .wp-share-wa:hover {
-      background: #1ebe5d;
-    }
-
-    /* ── Lobby ──────────────────────────────────────────────── */
-    .wp-lobby {
-      position: absolute;
-      inset: 0;
-      z-index: 20;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-
-    .wp-lobby-bg {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      opacity: .2;
-    }
-
-    .wp-lobby-grad {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to top, #020408 0%, rgba(2, 4, 8, .8) 50%, rgba(2, 4, 8, .5) 100%);
-    }
-
-    .wp-lobby-body {
-      position: relative;
-      z-index: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      gap: 22px;
-      padding: 28px 24px;
-      max-width: 460px;
-      width: 100%;
-    }
-
-    .wp-lobby-label {
-      font-size: .58rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: .18em;
-      color: #facc15;
-    }
-
-    .wp-lobby-title {
-      font-size: clamp(1.1rem, 5vw, 1.75rem);
-      font-weight: 800;
-      color: #fff;
-      line-height: 1.2;
-      margin-top: -6px;
-    }
-
-    .wp-lobby-subtitle {
-      font-size: .7rem;
-      color: #475569;
-      margin-top: -10px;
-    }
-
-    .wp-lobby-avatars {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .wp-lobby-avatar {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      background: #1e293b;
-      border: 2px solid #020408;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: .55rem;
-      font-weight: 800;
-      color: #facc15;
-      text-transform: uppercase;
-      margin-left: -7px;
-      flex-shrink: 0;
-    }
-
-    .wp-lobby-avatar:first-child {
-      margin-left: 0;
-    }
-
-    .wp-lobby-count {
-      font-size: .62rem;
-      color: #475569;
-      margin-top: 4px;
-    }
-
-    .wp-lobby-start-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 9px;
-      padding: 11px 32px;
-      background: #facc15;
-      color: #111827;
-      font-size: .75rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      border: none;
-      cursor: pointer;
-      border-radius: 2px;
-      transition: background .15s, transform .1s;
-    }
-
-    .wp-lobby-start-btn:hover {
-      background: #fde047;
-    }
-
-    .wp-lobby-start-btn:active {
-      transform: scale(.97);
-    }
-
-    .wp-lobby-waiting {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: .68rem;
-      color: #475569;
-    }
-
-    .wp-lobby-pulse {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #facc15;
-      flex-shrink: 0;
-      animation: wp-pulse 1.4s ease-in-out infinite;
-    }
-
-    .wp-lobby-host {
-      font-size: .58rem;
-      color: #1e293b;
-    }
-
-    .wp-lobby-actions {
-      position: absolute;
-      bottom: 14px;
-      right: 14px;
-      display: flex;
-      gap: 4px;
-    }
-
-    /* ── Panels pop-menu ────────────────────────────────────────── */
-    .wp-panels-pop {
-      position: absolute;
-      bottom: calc(100% + 6px);
-      right: 0;
-      background: #0a0f1a;
-      border: 1px solid #1e293b;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, .6);
-      min-width: 130px;
-      z-index: 1000;
-    }
-
-    .wp-panels-pop-item {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 9px 14px;
-      font-size: .7rem;
-      font-weight: 600;
-      color: #94a3b8;
-      cursor: pointer;
-      border: none;
-      background: none;
-      width: 100%;
-      text-align: left;
-      transition: background .1s, color .1s;
-    }
-
-    .wp-panels-pop-item:hover {
-      background: rgba(255, 255, 255, .05);
-      color: #e2e8f0;
-    }
-
-    .wp-panels-pop-item.pop-active {
-      color: #facc15;
-      background: rgba(250, 204, 21, .08);
-    }
-
-    .wp-panels-pop-item+.wp-panels-pop-item {
-      border-top: 1px solid #1e293b;
-    }
-
-    .wp-panels-pop-badge {
-      margin-left: auto;
-      background: #ef4444;
-      color: #fff;
-      border-radius: 4px;
-      font-size: .5rem;
-      font-weight: 800;
-      padding: 1px 5px;
-    }
-
-    /* ── Play / pause flash ─────────────────────────────────────── */
-    .wp-playpause-flash {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 16;
-      pointer-events: none;
-      width: 72px;
-      height: 72px;
-      border-radius: 50%;
-      background: rgba(0, 0, 0, .42);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-    }
-
-    @keyframes wp-pp-show {
-      0% {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(.68);
-      }
-
-      14% {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1.06);
-      }
-
-      42% {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
-      }
-
-      100% {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(.9);
-      }
-    }
-
-    .wp-playpause-flash.active {
-      animation: wp-pp-show .65s ease-out forwards;
-    }
-
-    /* ── Double-tap skip flash ──────────────────────────────────── */
-    .wp-skip-flash {
-      position: absolute;
-      top: 40%;
-      transform: translateY(-50%);
-      z-index: 16;
-      pointer-events: none;
-      width: 68px;
-      height: 68px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, .14);
-      backdrop-filter: blur(2px);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
-      opacity: 0;
-    }
-
-    .wp-skip-flash.left {
-      left: 20px;
-    }
-
-    .wp-skip-flash.right {
-      right: 20px;
-    }
-
-    .wp-skip-flash svg {
-      width: 20px;
-      height: 20px;
-      color: #fff;
-    }
-
-    .wp-skip-flash span {
-      font-size: .52rem;
-      font-weight: 800;
-      color: #fff;
-      letter-spacing: .04em;
-    }
-
-    @keyframes wp-skip-show {
-      0% {
-        opacity: 0;
-        transform: translateY(-50%) scale(.72);
-      }
-
-      14% {
-        opacity: 1;
-        transform: translateY(-50%) scale(1.06);
-      }
-
-      45% {
-        opacity: 1;
-        transform: translateY(-50%) scale(1);
-      }
-
-      100% {
-        opacity: 0;
-        transform: translateY(-56%) scale(.88);
-      }
-    }
-
-    .wp-skip-flash.active {
-      animation: wp-skip-show .68s ease-out forwards;
-    }
-
-    .wp-lobby-trailer-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      padding: 9px 22px;
-      background: transparent;
-      border: 1px solid rgba(255, 255, 255, .18);
-      color: #e2e8f0;
-      font-size: .72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .07em;
-      cursor: pointer;
-      border-radius: 2px;
-      transition: border-color .15s, background .15s;
-    }
-
-    .wp-lobby-trailer-btn:hover {
-      border-color: rgba(255, 255, 255, .4);
-      background: rgba(255, 255, 255, .06);
-    }
-
-    [x-cloak] {
-      display: none !important;
-    }
-  </style>
-@endpush
+@section('no-footer', '1')
 
 @section('content')
-  @php $user = auth()->user(); @endphp
+@php $user = auth()->user(); @endphp
 
-  {{-- ── Continue Watching Alone modal ──────────────────────────────────── --}}
-  @if ($watchAloneUrl || $isSeries)
-    <div id="wp-alone-modal"
-      style="display:none;position:fixed;inset:0;z-index:10000;align-items:center;justify-content:center;padding:1rem;background:rgba(0,0,0,.88);"
-      onclick="if(event.target===this) wpAloneClose()">
-      <div style="background:#0f172a;border:1px solid #1e293b;box-shadow:0 24px 60px rgba(0,0,0,.8);max-width:380px;width:100%;padding:2rem 2rem 1.5rem;text-align:center;position:relative;">
-        <button onclick="wpAloneClose()"
-          style="position:absolute;top:.75rem;right:.75rem;background:none;border:none;cursor:pointer;color:#475569;padding:.25rem;line-height:1;"
-          onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#475569'"
-          title="Close">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </button>
-        <p style="font-size:.52rem;font-weight:800;text-transform:uppercase;letter-spacing:.18em;color:#475569;margin-bottom:.75rem;">
-          Continue Watching Alone
-        </p>
-        <h2 style="font-size:1.1rem;font-weight:800;color:#f1f5f9;line-height:1.3;margin-bottom:.5rem;">
-          {{ $party->title() }}
-        </h2>
-        <p style="font-size:.72rem;color:#475569;margin-bottom:1.5rem;">
-          Watch this on your own account.<br>A subscription is required.
-        </p>
-        <div style="display:flex;flex-direction:column;gap:.5rem;margin-bottom:1.25rem;">
-          <a id="wp-alone-login-link" href="{{ $watchAloneUrl ?? '#' }}"
-            style="display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.8rem 1.5rem;background:#facc15;color:#111827;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;text-decoration:none;transition:background .15s;"
-            onmouseover="this.style.background='#fde047'" onmouseout="this.style.background='#facc15'">
-            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-            </svg>
-            I have an account — Log In
-          </a>
-          <a href="{{ route('register') }}"
-            style="display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.8rem 1.5rem;background:transparent;border:1px solid #1e293b;color:#94a3b8;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;text-decoration:none;transition:border-color .15s,color .15s;"
-            onmouseover="this.style.borderColor='#334155';this.style.color='#e2e8f0'" onmouseout="this.style.borderColor='#1e293b';this.style.color='#94a3b8'">
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
-            </svg>
-            I'm new — Create Account
-          </a>
-        </div>
-        <button onclick="wpAloneClose()"
-          style="font-size:.62rem;color:#64748b;text-decoration:underline;background:none;border:none;cursor:pointer;padding:.25rem;"
-          onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">
-          Stay in party
-        </button>
+{{-- ── Continue watching alone modal ─────────────────────────────── --}}
+@if ($watchAloneUrl || $isSeries)
+  <div id="wp-alone-modal" class="fixed inset-0 z-[10000] hidden items-center justify-center bg-black/85 p-4 backdrop-blur-sm" onclick="if(event.target===this) wpAloneClose()">
+    <div class="card relative w-full max-w-sm p-8 text-center shadow-pop">
+      <button type="button" onclick="wpAloneClose()" class="btn btn-ghost btn-icon absolute right-3 top-3" title="Close"><x-ui.icon name="x" class="size-4" /></button>
+      <p class="eyebrow mb-3">Continue watching alone</p>
+      <h2 class="text-xl font-bold text-fg">{{ $party->title() }}</h2>
+      <p class="mb-6 mt-2 text-sm text-muted">Watch this on your own account.<br>A subscription is required.</p>
+      <div class="mb-4 flex flex-col gap-2.5">
+        <a id="wp-alone-login-link" href="{{ $watchAloneUrl ?? '#' }}" class="btn btn-primary"><x-ui.icon name="log-out" class="size-4 rotate-180" /> I have an account — log in</a>
+        <a href="{{ route('register') }}" class="btn btn-secondary"><x-ui.icon name="user" class="size-4" /> I'm new — create account</a>
+      </div>
+      <button type="button" onclick="wpAloneClose()" class="text-xs text-muted underline hover:text-fg">Stay in party</button>
+    </div>
+  </div>
+  <script>
+    function wpAloneOpen(url) {
+      const modal = document.getElementById('wp-alone-modal');
+      const link  = document.getElementById('wp-alone-login-link');
+      if (url && link) link.href = url;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+    function wpAloneClose() {
+      const modal = document.getElementById('wp-alone-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+    window.addEventListener('wp:continue-alone', function (e) {
+      wpAloneOpen(e.detail?.url || null);
+    });
+  </script>
+@endif
+
+{{-- ── Non-room states ─────────────────────────────────────────── --}}
+@if ($party->isEnded())
+  <div class="flex min-h-[70vh] items-center justify-center px-6">
+    <div class="max-w-sm text-center">
+      <span class="mx-auto mb-6 grid size-16 place-items-center rounded-2xl bg-surface-2 text-muted"><x-ui.icon name="popcorn" class="size-8" /></span>
+      <p class="eyebrow mb-2">Party ended</p>
+      <h1 class="text-2xl font-bold text-fg">This party has ended</h1>
+      <p class="mb-8 mt-3 text-sm text-muted">The host ended the session. Thanks for watching!</p>
+      <a href="{{ route('browse') }}" class="btn btn-primary">Browse content</a>
+    </div>
+  </div>
+
+@elseif (!$user && !$isMember)
+  <div class="flex min-h-[70vh] items-center justify-center px-6 py-12" x-data>
+    <div class="w-full max-w-sm text-center">
+      <span class="mx-auto mb-6 grid size-16 place-items-center rounded-2xl bg-brand-soft text-brand"><x-ui.icon name="popcorn" class="size-8" /></span>
+      <p class="eyebrow mb-2">You're invited</p>
+      <h1 class="text-2xl font-bold text-fg">Join the watch party</h1>
+      <p class="mt-3 text-sm text-muted"><strong class="text-fg">{{ $party->host->name }}</strong> is watching <strong class="text-fg">{{ $party->title() }}</strong>.</p>
+      <p class="mb-6 mt-1 text-sm text-muted">{{ $party->members->count() }} {{ Str::plural('person', $party->members->count()) }} already watching.</p>
+
+      <form method="POST" action="{{ route('watch-party.guest-join', $party->token) }}" class="text-left" x-data x-init="$nextTick(() => $el.querySelector('[name=name]')?.focus())">
+        @csrf
+        <input type="text" name="name" placeholder="Your name (shows in chat)" required minlength="2" maxlength="50"
+          class="input @error('name') input-error @enderror" value="{{ old('name') }}" @keydown.stop>
+        @error('name')<p class="field-error">{{ $message }}</p>@enderror
+        <button type="submit" class="btn btn-primary btn-lg btn-block mt-3">Join as guest</button>
+      </form>
+
+      @if ($watchAloneUrl)
+        <button type="button" @click="$dispatch('wp:continue-alone')" class="mt-4 text-xs text-muted underline hover:text-fg">Continue watching alone instead</button>
+      @endif
+
+      <p class="divider my-6">have an account?</p>
+      <div class="flex gap-3">
+        <a href="{{ route('login') }}" class="btn btn-secondary flex-1">Log in</a>
+        <a href="{{ route('register') }}" class="btn btn-secondary flex-1">Create account</a>
       </div>
     </div>
-    <script>
-      function wpAloneOpen(url) {
-        const modal = document.getElementById('wp-alone-modal');
-        const link  = document.getElementById('wp-alone-login-link');
-        if (url && link) link.href = url;
-        modal.style.display = 'flex';
-      }
-      function wpAloneClose() {
-        document.getElementById('wp-alone-modal').style.display = 'none';
-      }
-      window.addEventListener('wp:continue-alone', function (e) {
-        wpAloneOpen(e.detail?.url || null);
-      });
-    </script>
-  @endif
+  </div>
 
-  {{-- ── Non-room states ─────────────────────────────────────────────────── --}}
-
-  @if ($party->isEnded())
-    <div class="flex items-center justify-center min-h-[70vh] px-6">
-      <div class="text-center max-w-sm">
-        <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-800 mb-6">
-          <svg class="w-7 h-7 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </div>
-        <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Party Ended</p>
-        <h1 class="text-xl font-bold text-white mb-3">This party has ended</h1>
-        <p class="text-sm text-gray-400 mb-8">The host ended the session. Thanks for watching!</p>
-        <a href="{{ route('browse') }}"
-          class="inline-flex font-bold uppercase py-3 px-8 text-xs bg-accent text-gray-900 hover:bg-accent/90 transition-colors">
-          Browse Content
-        </a>
-      </div>
+@elseif (!$canAccess)
+  <div class="flex min-h-[70vh] items-center justify-center px-6">
+    <div class="max-w-sm text-center">
+      <span class="mx-auto mb-6 grid size-16 place-items-center rounded-2xl bg-surface-2 text-muted"><x-ui.icon name="lock" class="size-8" /></span>
+      <p class="eyebrow mb-2">Upgrade required</p>
+      <h1 class="text-2xl font-bold text-fg">Watch party is a premium feature</h1>
+      <p class="mb-8 mt-3 text-sm text-muted"><strong class="text-fg">{{ $party->host->name }}</strong> is waiting. Upgrade to join.</p>
+      <a href="{{ route('pricing') }}" class="btn btn-primary btn-lg">View plans</a>
     </div>
+  </div>
 
-  @elseif (!$user && !$isMember)
-    <div class="flex items-center justify-center min-h-[70vh] px-6 py-12" x-data>
-      <div class="text-center max-w-sm">
-        <div class="inline-flex items-center justify-center w-16 h-16 bg-accent/10 mb-6">
-          <svg class="w-7 h-7 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-        </div>
-        <p class="text-xs font-bold uppercase tracking-widest text-accent mb-2">You're Invited</p>
-        <h1 class="text-xl font-bold text-white mb-2">Join the Watch Party</h1>
-        <p class="text-sm text-gray-400 mb-1">
-          <strong class="text-white">{{ $party->host->name }}</strong> is watching
-          <strong class="text-white">{{ $party->title() }}</strong>.
-        </p>
-        <p class="text-sm text-gray-400 mb-6">
-          {{ $party->members->count() }} {{ Str::plural('person', $party->members->count()) }} already watching.
-        </p>
-
-        {{-- Guest join form --}}
-        <form method="POST" action="{{ route('watch-party.guest-join', $party->token) }}"
-              class="max-w-xs mx-auto"
-              x-data x-init="$nextTick(() => $el.querySelector('[name=name]')?.focus())">
-          @csrf
-          <input type="text" name="name" placeholder="Your name (shows in chat)"
-            required minlength="2" maxlength="50"
-            class="w-full mb-3 bg-gray-900 border {{ $errors->has('name') ? 'border-red-500' : 'border-gray-700' }} text-white placeholder-gray-600 px-4 py-3 text-sm focus:border-accent focus:outline-none"
-            value="{{ old('name') }}"
-            @keydown.stop>
-          @error('name')
-            <p class="text-xs text-red-400 mb-3 text-left">{{ $message }}</p>
-          @enderror
-          <button type="submit"
-            class="w-full inline-flex justify-center font-bold uppercase py-3 px-8 text-sm bg-accent text-gray-900 hover:bg-accent/90 transition-colors">
-            Join as Guest
-          </button>
-        </form>
-
-        @if ($watchAloneUrl)
-          <button @click="$dispatch('wp:continue-alone')"
-            class="mt-4 text-xs text-gray-600 hover:text-gray-400 underline transition-colors cursor-pointer">
-            Continue watching alone instead
-          </button>
-        @endif
-
-        <div class="flex items-center gap-3 mt-6 mb-4 max-w-xs mx-auto">
-          <div class="flex-1 h-px bg-gray-800"></div>
-          <span class="text-xs text-gray-700">have an account?</span>
-          <div class="flex-1 h-px bg-gray-800"></div>
-        </div>
-        <div class="flex gap-3 max-w-xs mx-auto">
-          <a href="{{ route('login') }}"
-            class="flex-1 inline-flex justify-center font-bold uppercase py-2.5 text-xs border border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300 transition-colors">
-            Log In
-          </a>
-          <a href="{{ route('register') }}"
-            class="flex-1 inline-flex justify-center font-bold uppercase py-2.5 text-xs border border-gray-700 text-gray-500 hover:border-gray-500 hover:text-gray-300 transition-colors">
-            Create Account
-          </a>
-        </div>
-      </div>
+@elseif (!$isMember)
+  <div class="flex min-h-[70vh] items-center justify-center px-6" x-data>
+    <div class="max-w-sm text-center">
+      <span class="mx-auto mb-6 grid size-16 place-items-center rounded-2xl bg-brand-soft text-brand"><x-ui.icon name="popcorn" class="size-8" /></span>
+      <p class="eyebrow mb-2">You're invited</p>
+      <h1 class="text-2xl font-bold text-fg">Join the party?</h1>
+      <p class="mt-3 text-sm text-muted"><strong class="text-fg">{{ $party->host->name }}</strong> is watching <strong class="text-fg">{{ $party->title() }}</strong>.</p>
+      <p class="mb-8 mt-1 text-sm text-muted">{{ $party->members->count() }} {{ Str::plural('person', $party->members->count()) }} already watching.</p>
+      <a href="{{ route('watch-party.join', $party->token) }}" class="btn btn-primary btn-lg">Join party</a>
+      @if ($watchAloneUrl)
+        <div class="mt-4"><button type="button" @click="$dispatch('wp:continue-alone')" class="text-xs text-muted underline hover:text-fg">Continue watching alone instead</button></div>
+      @endif
     </div>
+  </div>
 
-  @elseif (!$canAccess)
-    <div class="flex items-center justify-center min-h-[70vh] px-6">
-      <div class="text-center max-w-sm">
-        <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-800 mb-6">
-          <svg class="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-        </div>
-        <p class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Upgrade Required</p>
-        <h1 class="text-xl font-bold text-white mb-3">Watch Party is a premium feature</h1>
-        <p class="text-sm text-gray-400 mb-8">
-          <strong class="text-white">{{ $party->host->name }}</strong> is waiting. Upgrade to join.
-        </p>
-        <a href="{{ route('pricing') }}"
-          class="inline-flex font-bold uppercase py-3 px-8 text-sm bg-accent text-gray-900 hover:bg-accent/90 transition-colors">
-          View Plans
-        </a>
-      </div>
-    </div>
+@else
+  {{-- ── Party room ────────────────────────────────────────────── --}}
+  <div class="relative flex h-[calc(100svh-4rem)] flex-col overflow-hidden bg-black" x-data="watchParty()" x-init="init()">
 
-  @elseif (!$isMember)
-    <div class="flex items-center justify-center min-h-[70vh] px-6" x-data>
-      <div class="text-center max-w-sm">
-        <div class="inline-flex items-center justify-center w-16 h-16 bg-accent/10 mb-6">
-          <svg class="w-7 h-7 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-              d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-              d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <p class="text-xs font-bold uppercase tracking-widest text-accent mb-2">You're Invited</p>
-        <h1 class="text-xl font-bold text-white mb-2">Join the party?</h1>
-        <p class="text-sm text-gray-400 mb-1">
-          <strong class="text-white">{{ $party->host->name }}</strong> is watching
-          <strong class="text-white">{{ $party->title() }}</strong>.
-        </p>
-        <p class="text-sm text-gray-400 mb-8">
-          {{ $party->members->count() }} {{ Str::plural('person', $party->members->count()) }} already watching.
-        </p>
-        <a href="{{ route('watch-party.join', $party->token) }}"
-          class="inline-flex font-bold uppercase py-3 px-8 text-sm bg-accent text-gray-900 hover:bg-accent/90 transition-colors">
-          Join Party
-        </a>
-        @if ($watchAloneUrl)
-          <div class="mt-4">
-            <button @click="$dispatch('wp:continue-alone')"
-              class="text-xs text-gray-600 hover:text-gray-400 underline transition-colors cursor-pointer">
-              Continue watching alone instead
-            </button>
-          </div>
+    {{-- Kicked --}}
+    <div x-show="kicked" x-cloak class="flex flex-1 items-center justify-center bg-bg px-6">
+      <div class="max-w-sm text-center">
+        <span class="mx-auto mb-6 grid size-16 place-items-center rounded-2xl bg-red-500/12 text-red-500"><x-ui.icon name="ban" class="size-8" /></span>
+        <p class="mb-2 text-xs font-semibold uppercase tracking-widest text-red-500">Removed</p>
+        <h1 class="text-2xl font-bold text-fg">You were removed from this party</h1>
+        <p class="mb-8 mt-3 text-sm text-muted">The host removed you. Contact them to get back in.</p>
+        @if ($isGuest)
+          <a href="{{ route('browse') }}" class="btn btn-primary">Browse content</a>
+        @else
+          <a href="{{ route('account.watch-party.index') }}" class="btn btn-primary">Back to parties</a>
         @endif
       </div>
     </div>
 
-  @else
+    {{-- Sidebar overlay --}}
+    <div class="absolute inset-0 z-30 bg-black/60 transition-opacity" :class="activeSidebar ? 'opacity-100' : 'pointer-events-none opacity-0'" @click="activeSidebar = null"></div>
 
-    {{-- ── Party room ──────────────────────────────────────────────────────── --}}
-    <div class="wp-wrap" x-data="watchParty()" x-init="init()">
-
-      {{-- Kicked screen --}}
-      <div x-show="kicked" x-cloak class="flex items-center justify-center min-h-[70vh] px-6">
-        <div class="text-center max-w-sm">
-          <div class="inline-flex items-center justify-center w-16 h-16 bg-red-900/30 mb-6">
-            <svg class="w-7 h-7 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-            </svg>
-          </div>
-          <p class="text-xs font-bold uppercase tracking-widest text-red-400 mb-2">Removed</p>
-          <h1 class="text-xl font-bold text-white mb-3">You were removed from this party</h1>
-          <p class="text-sm text-gray-400 mb-8">The host removed you. Contact them to get back in.</p>
-          @if ($isGuest)
-            <a href="{{ route('browse') }}"
-              class="inline-flex font-bold uppercase py-3 px-8 text-xs bg-accent text-gray-900 hover:bg-accent/90 transition-colors">
-              Browse Content
-            </a>
-          @else
-            <a href="{{ route('account.watch-party.index') }}"
-              class="inline-flex font-bold uppercase py-3 px-8 text-xs bg-accent text-gray-900 hover:bg-accent/90 transition-colors">
-              Back to Parties
-            </a>
-          @endif
-        </div>
+    {{-- Sidebar --}}
+    <aside class="absolute inset-y-0 right-0 z-40 flex w-[22rem] max-w-[92vw] flex-col border-l border-line bg-surface shadow-pop transition-transform duration-300"
+      :class="activeSidebar ? 'translate-x-0' : 'translate-x-full'">
+      <div class="flex items-center gap-1 border-b border-line p-2">
+        <button type="button" class="nav-link flex-1 text-center" :class="activeSidebar === 'members' && 'is-active'" @click="activeSidebar = 'members'">Members</button>
+        @if ($isSeries)
+          <button type="button" class="nav-link flex-1 text-center" :class="activeSidebar === 'episodes' && 'is-active'" @click="activeSidebar = 'episodes'">Episodes</button>
+        @endif
+        <button type="button" class="nav-link flex-1 text-center" :class="activeSidebar === 'chat' && 'is-active'" @click="switchToChat()">Chat</button>
+        <button type="button" class="btn btn-ghost btn-icon" @click="activeSidebar = null" aria-label="Close"><x-ui.icon name="x" class="size-4" /></button>
       </div>
 
-      {{-- Sidebar overlay --}}
-      <div class="wp-sidebar-overlay" :class="activeSidebar ? 'show' : ''" @click="activeSidebar = null"></div>
-
-      {{-- ── Sidebar ─────────────────────────────────────────────────────── --}}
-      <div class="wp-sidebar" :class="activeSidebar ? 'open' : ''">
-
-        {{-- Tab bar --}}
-        <div class="wp-tabs">
-          <button class="wp-tab" :class="activeSidebar === 'members' ? 'active' : ''"
-            @click="activeSidebar = 'members'">Members</button>
-          @if ($isSeries)
-            <button class="wp-tab" :class="activeSidebar === 'episodes' ? 'active' : ''"
-              @click="activeSidebar = 'episodes'">Episodes</button>
-          @endif
-          <button class="wp-tab" :class="activeSidebar === 'chat' ? 'active' : ''" @click="switchToChat()">Chat</button>
-          <button class="wp-tab-close" @click="activeSidebar = null">
-            <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-              <path
-                d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-            </svg>
-          </button>
+      <div class="relative min-h-0 flex-1">
+        {{-- Members --}}
+        <div class="absolute inset-0 flex flex-col" x-show="activeSidebar === 'members'" x-cloak>
+          <p class="border-b border-line px-4 py-3 text-[11px] font-semibold uppercase tracking-widest text-muted">Online · <span x-text="members.length">{{ $party->members->count() }}</span></p>
+          <div class="flex-1 overflow-y-auto p-2">
+            <template x-for="m in members" :key="m.id">
+              <div class="flex items-center gap-3 rounded-xl px-3 py-2.5">
+                <span class="grid size-9 shrink-0 place-items-center rounded-full text-sm font-bold uppercase" :class="m.is_host ? 'bg-brand text-white' : 'bg-surface-3 text-fg'" x-text="m.name.charAt(0)"></span>
+                <div class="min-w-0">
+                  <p class="flex items-center gap-2 truncate text-sm font-semibold text-fg"><span x-text="m.name" class="truncate"></span><span x-show="m.is_host" class="badge badge-brand">Host</span></p>
+                  <p class="flex items-center gap-1.5 text-xs text-muted"><span class="size-1.5 rounded-full bg-emerald-500"></span> Online</p>
+                </div>
+              </div>
+            </template>
+          </div>
         </div>
 
-        <div class="wp-sidebar-body">
-
-          {{-- Members panel --}}
-          <div class="wp-panel" x-show="activeSidebar === 'members'" x-cloak>
-            <div class="wp-members-header">
-              <p class="wp-members-header-label">
-                Online · <span x-text="members.length">{{ $party->members->count() }}</span>
-              </p>
+        {{-- Episodes --}}
+        @if ($isSeries)
+          <div class="absolute inset-0 flex flex-col" x-show="activeSidebar === 'episodes'" x-cloak>
+            <div class="flex items-center justify-between border-b border-line px-4 py-3">
+              <p class="text-[11px] font-semibold uppercase tracking-widest text-muted">Playlist</p>
+              <p class="text-xs text-muted">{{ $episodePlaylist->count() }} episodes</p>
             </div>
-            <div class="wp-panel-scroll">
-              <template x-for="m in members" :key="m.name">
-                <div class="wp-member-row">
-                  <div class="wp-member-avatar" :class="m.is_host ? 'is-host' : ''" x-text="m.name.charAt(0)"></div>
-                  <div class="wp-member-info">
-                    <p class="wp-member-name">
-                      <span x-text="m.name"></span>
-                      <span x-show="m.is_host" class="wp-member-badge">Host</span>
-                    </p>
-                    <p class="wp-member-status">
-                      <span class="wp-member-dot"></span> Online
-                    </p>
+            <div class="flex-1 overflow-y-auto">
+              @foreach ($episodePlaylist as $i => $ep)
+                <div class="flex items-center gap-3 border-b border-line px-4 py-3 transition"
+                  x-bind:class="{
+                    'bg-brand-soft': currentEpisodeId === {{ $ep['id'] }},
+                    'cursor-pointer hover:bg-surface-2': {{ ($isHost || $isGuest) ? 'true' : 'false' }} && currentEpisodeId !== {{ $ep['id'] }},
+                  }"
+                  @if ($isHost)
+                    @click="currentEpisodeId !== {{ $ep['id'] }} && jumpToEpisode({{ $ep['id'] }})"
+                  @elseif ($isGuest)
+                    @click="currentEpisodeId !== {{ $ep['id'] }} && $dispatch('wp:continue-alone', { url: {{ Js::from($ep['url'] ?? '') }} })"
+                  @endif>
+                  <span class="grid size-8 shrink-0 place-items-center rounded-lg text-xs font-bold" :class="currentEpisodeId === {{ $ep['id'] }} ? 'bg-brand text-white' : 'bg-surface-3 text-muted'">
+                    <span x-show="currentEpisodeId === {{ $ep['id'] }}">▶</span>
+                    <span x-show="currentEpisodeId !== {{ $ep['id'] }}">{{ str_pad($i + 1, 2, '0', STR_PAD_LEFT) }}</span>
+                  </span>
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm" :class="currentEpisodeId === {{ $ep['id'] }} ? 'font-semibold text-brand' : 'text-fg-soft'">{{ $ep['label'] }}</p>
+                    @if ($isHost)<p x-show="currentEpisodeId === {{ $ep['id'] }}" class="text-[11px] text-muted">Now playing</p>@endif
                   </div>
                 </div>
-              </template>
+              @endforeach
             </div>
-          </div>
-
-          {{-- Episodes panel --}}
-          @if ($isSeries)
-            <div class="wp-panel" x-show="activeSidebar === 'episodes'" x-cloak>
-              <div class="px-4 py-3 border-b border-gray-800 flex items-center justify-between flex-shrink-0">
-                <p class="text-[10px] font-bold uppercase tracking-widest text-gray-500">
-                  Playlist
-                </p>
-                <p class="text-[10px] text-gray-600">{{ $episodePlaylist->count() }} episodes</p>
-              </div>
-              <div class="wp-panel-scroll">
-                @foreach ($episodePlaylist as $i => $ep)
-                  <div class="wp-ep-row" x-bind:class="{
-                          'ep-active': currentEpisodeId === {{ $ep['id'] }},
-                          'ep-clickable': {{ ($isHost || $isGuest) ? 'true' : 'false' }} && currentEpisodeId !== {{ $ep['id'] }},
-                        }"
-                        @if ($isHost)
-                          @click="currentEpisodeId !== {{ $ep['id'] }} && jumpToEpisode({{ $ep['id'] }})"
-                        @elseif ($isGuest)
-                          @click="currentEpisodeId !== {{ $ep['id'] }} && $dispatch('wp:continue-alone', { url: {{ Js::from($ep['url'] ?? '') }} })"
-                        @endif>
-                    <div class="wp-ep-num" :class="currentEpisodeId === {{ $ep['id'] }} ? 'now' : ''">
-                      <span x-show="currentEpisodeId === {{ $ep['id'] }}">▶</span>
-                      <span x-show="currentEpisodeId !== {{ $ep['id'] }}">{{ str_pad($i + 1, 2, '0', STR_PAD_LEFT) }}</span>
-                    </div>
-                    <div style="flex:1; min-width:0;">
-                      <p class="text-sm leading-tight truncate transition-colors"
-                        :class="currentEpisodeId === {{ $ep['id'] }} ? 'text-accent font-bold' : 'text-gray-300'">
-                        {{ $ep['label'] }}
-                      </p>
-                      @if ($isHost)
-                        <p x-show="currentEpisodeId === {{ $ep['id'] }}" class="text-[10px] text-gray-600 mt-0.5">Now playing</p>
-                      @endif
-                    </div>
-                    @if ($isHost || $isGuest)
-                      <svg x-show="currentEpisodeId !== {{ $ep['id'] }}"
-                        class="w-3.5 h-3.5 text-gray-700 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                        fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
-                    @endif
-                  </div>
-                @endforeach
-              </div>
-            </div>
-          @endif
-
-          {{-- Chat panel --}}
-          <div class="wp-panel" x-show="activeSidebar === 'chat'" x-cloak>
-            <div class="wp-chat-list" id="chat-scroll">
-              <template x-for="msg in messages" :key="msg.id">
-                <div class="wp-chat-msg" :class="msg.is_system ? 'system' : (msg.is_mine ? 'mine' : '')">
-                  {{-- Avatar: other-user messages only --}}
-                  <div x-show="!msg.is_mine && !msg.is_system" class="wp-chat-avatar" x-text="msg.name.charAt(0)"></div>
-                  <div class="wp-chat-content">
-                    <div class="wp-chat-meta" x-show="!msg.is_mine && !msg.is_system">
-                      <span x-text="msg.name"></span>
-                      <span x-show="msg.is_host" style="color:#facc15"> · Host</span>
-                      <span x-text="' · ' + msg.time" style="color:#334155"></span>
-                    </div>
-                    <div class="wp-chat-meta" x-show="msg.is_mine && !msg.is_system" x-text="msg.time"></div>
-                    <div class="wp-chat-bubble" x-text="msg.message"></div>
-                  </div>
-                </div>
-              </template>
-              <div x-show="messages.length === 0"
-                class="flex flex-col items-center justify-center h-full gap-2 text-center px-4">
-                <svg class="w-8 h-8 text-gray-700" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z" />
-                </svg>
-                <p class="text-xs text-gray-600">No messages yet</p>
-                <p class="text-[10px] text-gray-700">Say hi to the group!</p>
-              </div>
-            </div>
-            <div class="wp-chat-input">
-              <input type="text" x-model="chatMessage"
-                placeholder="{{ $isHost ? 'Message… /kick name to remove' : 'Say something…' }}"
-                @keydown.enter.prevent="sendChat()" maxlength="500">
-              <button @click="sendChat()">Send</button>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      {{-- ── Video area ───────────────────────────────────────────────────── --}}
-      <div class="wp-video-col" x-show="!kicked" x-cloak>
-
-        {{-- Play / pause flash indicator --}}
-        <div id="wp-playpause-flash" class="wp-playpause-flash">
-          <svg id="wp-pp-play" width="30" height="30" fill="#fff" viewBox="0 0 24 24" style="display:none">
-            <path d="M8 5v14l11-7z" />
-          </svg>
-          <svg id="wp-pp-pause" width="30" height="30" fill="#fff" viewBox="0 0 24 24" style="display:none">
-            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-          </svg>
-        </div>
-
-        {{-- Double-tap skip flash indicators --}}
-        <div id="wp-skip-flash-left" class="wp-skip-flash left">
-          <svg fill="currentColor" viewBox="0 0 24 24">
-            <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" />
-          </svg>
-          <span>10s</span>
-        </div>
-        <div id="wp-skip-flash-right" class="wp-skip-flash right">
-          <svg fill="currentColor" viewBox="0 0 24 24">
-            <path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 3.9V8.1L8.5 12zM16 6h2v12h-2z" />
-          </svg>
-          <span>10s</span>
-        </div>
-
-        {{-- ── Lobby overlay ────────────────────────────────────────────────── --}}
-        <div class="wp-lobby" x-show="(inLobby || hostOnline === false) && !watchingTrailer" x-cloak>
-          @php $lobbyPoster = $party->watchable?->thumbnailUrl(); @endphp
-          @if ($lobbyPoster)
-            <img class="wp-lobby-bg" src="{{ $lobbyPoster }}" alt="">
-          @endif
-          <div class="wp-lobby-grad"></div>
-          <div class="wp-lobby-body">
-            <p class="wp-lobby-label">Watch Party · Lobby</p>
-            <h2 class="wp-lobby-title">{{ $party->title() }}</h2>
-            <p class="wp-lobby-subtitle"
-              x-text="members.length + ' ' + (members.length === 1 ? 'person' : 'people') + ' in the lobby'"></p>
-
-            {{-- Stacked member avatars --}}
-            <div>
-              <div class="wp-lobby-avatars">
-                <template x-for="(m, i) in members.slice(0, 6)" :key="m.id">
-                  <div class="wp-lobby-avatar" x-text="m.name.charAt(0)"></div>
-                </template>
-              </div>
-              <p class="wp-lobby-count"
-                x-text="members.length + (members.length === 1 ? ' person' : ' people') + ' waiting'"></p>
-            </div>
-
-            @if ($isHost)
-              <button class="wp-lobby-start-btn" @click="toggleLobby()">
-                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-                Start Party
-              </button>
-              <p class="wp-lobby-host">You can return to lobby anytime from the controls bar</p>
-            @else
-              <div class="wp-lobby-waiting">
-                <span class="wp-lobby-pulse"></span>
-                Waiting for host to start…
-              </div>
-              @if ($trailerSrc)
-                <button class="wp-lobby-trailer-btn cursor-pointer" @click="watchTrailer()">
-                  <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                  Watch Trailer
-                </button>
-              @endif
-              @if ($watchAloneUrl)
-                <button @click="$dispatch('wp:continue-alone')" class="wp-lobby-trailer-btn"
-                  style="border-color:rgba(148,163,184,.15);color:#475569;font-size:.6rem;">
-                  Watch Alone
-                </button>
-              @endif
-            @endif
-          </div>
-        </div>
-
-        {{-- Back to lobby pill shown while trailer plays --}}
-        @if (!$isHost && $trailerSrc)
-          <div x-show="watchingTrailer" x-cloak
-            style="position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:25;display:flex;gap:8px;align-items:center;">
-            <button @click="stopTrailer()" class="wp-lobby-trailer-btn" style="padding:6px 14px;font-size:.6rem;">
-              <svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-              </svg>
-              Back to Lobby
-            </button>
           </div>
         @endif
 
-        <video id="party-video" controls preload="metadata" @if ($isHost) @play="onHostPlay()" @pause="onHostPause()"
-        @seeked="onHostSeeked()" @endif>
-        </video>
-
-        {{-- ── Bottom controls bar ────────────────────────────────────────── --}}
-        <div class="wp-bar">
-
-          {{-- Combined progress bar: my position (gray) + host position (yellow tick) --}}
-          @if (!$isHost)
-            <div class="wp-progress-bar">
-              <div class="wp-progress-mine" :style="'width:' + myProgressPct + '%'"></div>
-              <div class="wp-progress-host-tick" :style="'left:' + hostProgressPct + '%'"></div>
-            </div>
-          @endif
-
-          {{-- Left: title + status --}}
-          <div class="wp-bar-info">
-            <p class="wp-bar-title">{{ $party->title() }}</p>
-            @if ($isSeries)
-              <p class="wp-bar-episode" x-text="currentEpisodeLabel || ''">&nbsp;</p>
-              @if (!$isHost)
-                <div class="wp-bar-status">
-                  <span class="wp-status-dot" x-cloak :class="isLive ? 'live' : 'syncing'"></span>
-                  <span class="wp-status-label" x-cloak :style="isLive ? 'color:#4ade80' : 'color:#facc15'"
-                    x-text="isLive ? 'Watching' : 'Behind'"></span>
+        {{-- Chat --}}
+        <div class="absolute inset-0 flex flex-col" x-show="activeSidebar === 'chat'" x-cloak>
+          <div class="flex-1 space-y-3 overflow-y-auto p-4" id="chat-scroll">
+            <template x-for="msg in messages" :key="msg.id">
+              <div :class="msg.is_system ? 'text-center' : (msg.is_mine ? 'flex flex-row-reverse gap-2' : 'flex gap-2')">
+                <span x-show="!msg.is_mine && !msg.is_system" class="grid size-7 shrink-0 place-items-center rounded-full bg-surface-3 text-xs font-bold uppercase text-fg" x-text="msg.name.charAt(0)"></span>
+                <div :class="msg.is_mine ? 'items-end' : ''" class="flex min-w-0 max-w-[85%] flex-col" x-bind:style="msg.is_system ? 'max-width:100%' : ''">
+                  <p class="mb-0.5 text-[11px] text-muted" x-show="!msg.is_mine && !msg.is_system">
+                    <span x-text="msg.name" class="font-semibold text-fg-soft"></span>
+                    <span x-show="msg.is_host" class="text-brand"> · Host</span>
+                    <span x-text="' · ' + msg.time"></span>
+                  </p>
+                  <p class="mb-0.5 text-[11px] text-muted" x-show="msg.is_mine && !msg.is_system" x-text="msg.time"></p>
+                  <p class="break-words text-sm" :class="msg.is_system ? 'text-xs italic text-muted' : (msg.is_mine ? 'rounded-2xl rounded-tr-sm bg-brand px-3.5 py-2 text-white' : 'rounded-2xl rounded-tl-sm bg-surface-2 px-3.5 py-2 text-fg')" x-text="msg.message"></p>
                 </div>
-              @endif
-            @else
-              <div class="wp-bar-status">
-                @if ($isHost)
-                  <span class="wp-status-dot live"></span>
-                  <span class="wp-status-label" style="color:#4ade80">Host · Live</span>
-                @else
-                  <span class="wp-status-dot" x-cloak :class="isLive ? 'live' : 'syncing'"></span>
-                  <span class="wp-status-label" x-cloak :style="isLive ? 'color:#4ade80' : 'color:#facc15'"
-                    x-text="isLive ? 'Watching' : 'Behind'"></span>
-                @endif
               </div>
-            @endif
-          </div>
-
-          {{-- Guest badge --}}
-          @if ($isGuest)
-            <a href="{{ route('login') }}" class="wp-go-live"
-              style="border-color:rgba(148,163,184,.2);color:#475569;font-size:.5rem;"
-              title="You're watching as a guest. Log in to save your history.">
-              Guest · {{ $guestName }}
-            </a>
-          @endif
-
-          {{-- Go Live: snap member to host position --}}
-          @if (!$isHost)
-            <button x-show="!isLive" @click="goLive()" class="wp-go-live" x-cloak title="Jump to host's position">
-              <svg width="9" height="9" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
-              </svg>
-              Go Live
-            </button>
-          @endif
-
-          {{-- Skip ±10 s --}}
-          <div class="wp-bar-btns">
-            <button @click="skip(-10)" class="wp-btn" title="Rewind 10 s (←)">
-              <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-                <path
-                  d="M11.99 5V1l-5 5 5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6h-2c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" />
-                <text x="7.5" y="15.5" font-size="5.5" font-weight="900" font-family="sans-serif" fill="currentColor"
-                  text-anchor="middle">10</text>
-              </svg>
-            </button>
-            <button @click="skip(10)" class="wp-btn" title="Forward 10 s (→)">
-              <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-                <path
-                  d="M12.01 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z" />
-                <text x="16.5" y="15.5" font-size="5.5" font-weight="900" font-family="sans-serif" fill="currentColor"
-                  text-anchor="middle">10</text>
-              </svg>
-            </button>
-          </div>
-
-          {{-- Episode prev / next (series) --}}
-          @if ($isSeries)
-            <div class="wp-bar-btns">
-              <button @click="prevEpisodeAction()" :disabled="{{ ($isHost || $isGuest) ? '!hasPrevEpisode' : 'true' }}" class="wp-btn"
-                title="Previous episode">
-                <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" />
-                </svg>
-              </button>
-              <button @click="nextEpisodeAction()" :disabled="{{ ($isHost || $isGuest) ? '!hasNextEpisode' : 'true' }}" class="wp-btn"
-                title="Next episode">
-                <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6 18l8.5-6L6 6v12zm2.5-6 5.5 3.9V8.1L8.5 12zM16 6h2v12h-2z" />
-                </svg>
-              </button>
+            </template>
+            <div x-show="messages.length === 0" class="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
+              <x-ui.icon name="message" class="size-8 text-muted" />
+              <p class="text-sm font-medium text-fg-soft">No messages yet</p>
+              <p class="text-xs text-muted">Say hi to the group!</p>
             </div>
-          @endif
+          </div>
+          <div class="flex gap-2 border-t border-line p-3">
+            <input type="text" x-model="chatMessage" class="input" placeholder="{{ $isHost ? 'Message… /kick name to remove' : 'Say something…' }}" @keydown.enter.prevent="sendChat()" maxlength="500">
+            <button type="button" @click="sendChat()" class="btn btn-primary btn-icon shrink-0" aria-label="Send"><x-ui.icon name="send" class="size-4" /></button>
+          </div>
+        </div>
+      </div>
+    </aside>
 
-          {{-- Return to Lobby (host only, shown when lobby is off) --}}
+    {{-- ── Video area ─────────────────────────────────────────── --}}
+    <div class="relative min-h-0 flex-1 bg-black" x-show="!kicked" x-cloak>
+      <div id="wp-playpause-flash" class="wp-playpause-flash">
+        <svg id="wp-pp-play" width="30" height="30" fill="#fff" viewBox="0 0 24 24" style="display:none"><path d="M8 5v14l11-7z"/></svg>
+        <svg id="wp-pp-pause" width="30" height="30" fill="#fff" viewBox="0 0 24 24" style="display:none"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+      </div>
+      <div id="wp-skip-flash-left" class="wp-skip-flash left">
+        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M11.99 5V1l-5 5 5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6h-2c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+        <span>10s</span>
+      </div>
+      <div id="wp-skip-flash-right" class="wp-skip-flash right">
+        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12.01 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/></svg>
+        <span>10s</span>
+      </div>
+
+      {{-- Lobby overlay --}}
+      <div class="absolute inset-0 z-[15] flex items-center justify-center overflow-hidden bg-neutral-950" x-show="(inLobby || hostOnline === false) && !watchingTrailer" x-cloak>
+        @php $lobbyPoster = $party->watchable?->thumbnailUrl(); @endphp
+        @if ($lobbyPoster)<img class="absolute inset-0 size-full scale-110 object-cover opacity-30 blur-xl" src="{{ $lobbyPoster }}" alt="">@endif
+        <div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/30"></div>
+        <div class="relative flex max-w-md flex-col items-center gap-5 px-6 text-center">
+          <p class="eyebrow">Watch party · Lobby</p>
+          <h2 class="text-3xl font-extrabold !text-white sm:text-4xl">{{ $party->title() }}</h2>
+          <p class="text-sm text-white/60" x-text="members.length + ' ' + (members.length === 1 ? 'person' : 'people') + ' in the lobby'"></p>
+          <div class="flex -space-x-2">
+            <template x-for="(m, i) in members.slice(0, 6)" :key="m.id">
+              <span class="grid size-10 place-items-center rounded-full border-2 border-black bg-surface-3 text-sm font-bold uppercase text-fg" x-text="m.name.charAt(0)"></span>
+            </template>
+          </div>
+
           @if ($isHost)
-            <button x-show="!inLobby" @click="toggleLobby()" class="wp-go-live" x-cloak title="Send everyone to lobby">
-              <svg width="9" height="9" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-              </svg>
-              Lobby
-            </button>
-          @endif
-
-          <div class="wp-bar-sep"></div>
-
-          {{-- Right: panel toggles --}}
-          <div class="wp-bar-btns">
-
-            {{-- Picture-in-Picture --}}
-            <button id="pip-btn" class="wp-btn" title="Picture in Picture" style="display:none">
-              <svg id="pip-icon-enter" width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                <path
-                  d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3C1.9 3 1 3.88 1 4.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V5h18v14.02z" />
-              </svg>
-              <svg id="pip-icon-exit" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="display:none">
-                <path
-                  d="M21 3H3C1.9 3 1 3.88 1 4.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V4.98C23 3.88 22.1 3 21 3zm-2 16.02H5V5h14v14.02zM11 11H7v4h4v-4z" />
-              </svg>
-            </button>
-
-            {{-- Panels (Chat + Members + Episodes collapsed) --}}
-            <div x-data="{ panelsOpen: false }" class="relative">
-              <button @click="panelsOpen = !panelsOpen"
-                :class="(activeSidebar === 'chat' || activeSidebar === 'members' || activeSidebar === 'episodes') ? 'wp-active' : ''"
-                class="wp-btn" title="Panels">
-                <span x-show="unreadChat > 0" class="wp-badge" x-text="unreadChat > 9 ? '9+' : unreadChat"></span>
-                <svg width="17" height="17" fill="currentColor" viewBox="0 0 24 24">
-                  <path
-                    d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z" />
-                </svg>
-              </button>
-              <div x-show="panelsOpen" @click.away="panelsOpen = false" class="wp-panels-pop" style="display:none">
-                <button @click="switchToChat(); panelsOpen = false" :class="activeSidebar === 'chat' ? 'pop-active' : ''"
-                  class="wp-panels-pop-item">
-                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z" />
-                  </svg>
-                  Chat
-                  <span x-show="unreadChat > 0" class="wp-panels-pop-badge"
-                    x-text="unreadChat > 9 ? '9+' : unreadChat"></span>
-                </button>
-                <button @click="activeSidebar = activeSidebar === 'members' ? null : 'members'; panelsOpen = false"
-                  :class="activeSidebar === 'members' ? 'pop-active' : ''" class="wp-panels-pop-item">
-                  <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                    <path
-                      d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
-                  </svg>
-                  Members
-                </button>
-                @if ($isSeries)
-                  <button @click="activeSidebar = activeSidebar === 'episodes' ? null : 'episodes'; panelsOpen = false"
-                    :class="activeSidebar === 'episodes' ? 'pop-active' : ''" class="wp-panels-pop-item">
-                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-                      <path
-                        d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z" />
-                    </svg>
-                    Episodes
-                  </button>
-                @endif
-              </div>
-            </div>
-
-            {{-- Share (host: popover; guest: copy) --}}
-            @if ($isHost)
-              <div x-data="{ shareOpen: false, copied: false }" class="relative">
-                <button @click="shareOpen = !shareOpen" :class="shareOpen ? 'wp-active' : ''" class="wp-btn"
-                  title="Share party">
-                  <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-                    <path
-                      d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" />
-                  </svg>
-                </button>
-                <div x-show="shareOpen" @click.away="shareOpen = false" class="wp-share-pop" style="display:none">
-                  <p class="wp-share-pop-label">Invite link</p>
-                  <div class="wp-share-row">
-                    <input type="text" readonly class="wp-share-input" value="{{ route('watch-party.show', $party->token) }}"
-                      onclick="this.select()">
-                    <button class="wp-share-copy"
-                      @click="navigator.clipboard.writeText('{{ route('watch-party.show', $party->token) }}'); copied = true; setTimeout(() => { copied = false; }, 2000)"
-                      x-text="copied ? '✓ Copied' : 'Copy'"></button>
-                  </div>
-                  <a href="https://wa.me/?text={{ urlencode('Join my Watch Party on ' . config('app.name') . '! 🎬 ' . $party->title() . ': ' . route('watch-party.show', $party->token)) }}"
-                    target="_blank" rel="noopener" class="wp-share-wa">
-                    <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24">
-                      <path
-                        d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347" />
-                    </svg>
-                    Share on WhatsApp
-                  </a>
-                </div>
-              </div>
-            @else
-              <button x-data="{ copied: false }"
-                @click="navigator.clipboard.writeText('{{ route('watch-party.show', $party->token) }}'); copied = true; setTimeout(() => copied = false, 2000)"
-                :class="copied ? 'wp-active' : ''" class="wp-btn" title="Copy invite link">
-                <svg x-show="!copied" width="15" height="15" fill="currentColor" viewBox="0 0 24 24">
-                  <path
-                    d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
-                </svg>
-                <svg x-show="copied" width="15" height="15" fill="currentColor" viewBox="0 0 24 24" style="color:#facc15">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                </svg>
-              </button>
-            @endif
-
-          </div>
-
-          <div class="wp-bar-sep"></div>
-
-          {{-- Leave / End --}}
-          @if ($isHost)
-            <form method="POST" action="{{ route('watch-party.end', $party->token) }}" x-data
-              @submit.prevent="if(confirm('End the party for everyone?')) $el.submit()">
-              @csrf @method('DELETE')
-              <button type="submit" class="wp-btn-danger" title="End party">
-                <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24">
-                  <path
-                    d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-                </svg>
-              </button>
-            </form>
-          @elseif ($isGuest)
-            {{-- Guests just navigate away — no server-side leave record --}}
-            <a href="{{ route('home') }}" class="wp-btn-leave" title="Leave party"
-              onclick="return confirm('Leave this watch party?')">
-              <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24">
-                <path
-                  d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
-              </svg>
-            </a>
+            <button type="button" class="btn btn-primary btn-lg" @click="toggleLobby()"><x-ui.icon name="play" class="size-4" /> Start party</button>
+            <p class="text-xs text-white/40">You can return to the lobby anytime from the controls bar</p>
           @else
-            <form method="POST" action="{{ route('watch-party.leave', $party->token) }}" x-data
-              @submit.prevent="if(confirm('Leave this watch party?')) $el.submit()">
-              @csrf
-              <button type="submit" class="wp-btn-leave" title="Leave party">
-                <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24">
-                  <path
-                    d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
-                </svg>
-              </button>
-            </form>
+            <div class="inline-flex items-center gap-2.5 text-sm text-white/70"><span class="size-2 animate-pulse rounded-full bg-brand"></span> Waiting for host to start…</div>
+            <div class="flex flex-wrap justify-center gap-2">
+              @if ($trailerSrc)<button type="button" class="wp-pill" @click="watchTrailer()"><x-ui.icon name="play" class="size-3" /> Watch trailer</button>@endif
+              @if ($watchAloneUrl)<button type="button" class="wp-pill" @click="$dispatch('wp:continue-alone')">Watch alone</button>@endif
+            </div>
           @endif
         </div>
       </div>
 
-    </div>
-  @endif
+      @if (!$isHost && $trailerSrc)
+        <div x-show="watchingTrailer" x-cloak class="absolute left-1/2 top-3 z-[25] -translate-x-1/2">
+          <button type="button" @click="stopTrailer()" class="wp-pill bg-black/60 backdrop-blur"><x-ui.icon name="arrow-left" class="size-3" /> Back to lobby</button>
+        </div>
+      @endif
 
+      <video id="party-video" controls preload="metadata" class="size-full bg-black object-contain" @if ($isHost) @play="onHostPlay()" @pause="onHostPause()" @seeked="onHostSeeked()" @endif></video>
+    </div>
+
+    {{-- ── Controls bar ───────────────────────────────────────── --}}
+    <div class="relative z-10 border-t border-white/10 bg-neutral-950 text-white" x-show="!kicked" x-cloak>
+      @if (!$isHost)
+        <div class="relative h-1 w-full bg-white/10">
+          <div class="h-full bg-white/50" :style="'width:' + myProgressPct + '%'"></div>
+          <div class="absolute inset-y-[-2px] w-0.5 bg-brand" :style="'left:' + hostProgressPct + '%'"></div>
+        </div>
+      @endif
+
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+        {{-- Info --}}
+        <div class="mr-auto min-w-0">
+          <p class="truncate text-sm font-semibold">{{ $party->title() }}</p>
+          @if ($isSeries)
+            <p class="truncate text-xs text-white/50" x-text="currentEpisodeLabel || ''">&nbsp;</p>
+          @endif
+          <div class="flex items-center gap-1.5 text-[11px] font-semibold">
+            @if ($isHost)
+              <span class="size-1.5 rounded-full bg-emerald-400"></span><span class="text-emerald-400">Host · Live</span>
+            @else
+              <span class="size-1.5 rounded-full" x-cloak :class="isLive ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'"></span>
+              <span x-cloak :class="isLive ? 'text-emerald-400' : 'text-amber-400'" x-text="isLive ? 'Watching' : 'Behind'"></span>
+            @endif
+          </div>
+        </div>
+
+        @if ($isGuest)
+          <a href="{{ route('login') }}" class="wp-pill" title="You're watching as a guest. Log in to save your history.">Guest · {{ $guestName }}</a>
+        @endif
+
+        @if (!$isHost)
+          <button type="button" x-show="!isLive" @click="goLive()" class="wp-pill !border-brand !text-brand" x-cloak title="Jump to host's position"><x-ui.icon name="play" class="size-3" /> Go live</button>
+        @endif
+
+        <div class="flex items-center gap-1.5">
+          <button type="button" @click="skip(-10)" class="wp-btn" title="Rewind 10 s (←)"><x-ui.icon name="rewind" class="size-[18px]" /></button>
+          <button type="button" @click="skip(10)" class="wp-btn" title="Forward 10 s (→)"><x-ui.icon name="forward" class="size-[18px]" /></button>
+        </div>
+
+        @if ($isSeries)
+          <div class="flex items-center gap-1.5">
+            <button type="button" @click="prevEpisodeAction()" :disabled="{{ ($isHost || $isGuest) ? '!hasPrevEpisode' : 'true' }}" class="wp-btn" title="Previous episode"><x-ui.icon name="chevron-left" class="size-[18px]" /></button>
+            <button type="button" @click="nextEpisodeAction()" :disabled="{{ ($isHost || $isGuest) ? '!hasNextEpisode' : 'true' }}" class="wp-btn" title="Next episode"><x-ui.icon name="chevron-right" class="size-[18px]" /></button>
+          </div>
+        @endif
+
+        @if ($isHost)
+          <button type="button" x-show="!inLobby" @click="toggleLobby()" class="wp-pill" x-cloak title="Send everyone to lobby">Lobby</button>
+        @endif
+
+        <span class="hidden h-6 w-px bg-white/10 sm:block"></span>
+
+        <div class="flex items-center gap-1.5">
+          <button type="button" id="pip-btn" class="wp-btn" title="Picture in picture" style="display:none">
+            <svg id="pip-icon-enter" width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3C1.9 3 1 3.88 1 4.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V5h18v14.02z"/></svg>
+            <svg id="pip-icon-exit" width="16" height="16" fill="currentColor" viewBox="0 0 24 24" style="display:none"><path d="M21 3H3C1.9 3 1 3.88 1 4.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V4.98C23 3.88 22.1 3 21 3zm-2 16.02H5V5h14v14.02zM11 11H7v4h4v-4z"/></svg>
+          </button>
+
+          {{-- Panels --}}
+          <div x-data="{ panelsOpen: false }" class="relative">
+            <button type="button" @click="panelsOpen = !panelsOpen" :class="['chat','members','episodes'].includes(activeSidebar) && 'wp-active'" class="wp-btn" title="Panels">
+              <span x-show="unreadChat > 0" class="absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-4" x-text="unreadChat > 9 ? '9+' : unreadChat"></span>
+              <x-ui.icon name="message" class="size-[18px]" />
+            </button>
+            <div x-show="panelsOpen" x-cloak @click.away="panelsOpen = false" class="menu-panel absolute bottom-full right-0 mb-2 w-44">
+              <button type="button" @click="switchToChat(); panelsOpen = false" :class="activeSidebar === 'chat' && '!text-brand'" class="menu-item"><x-ui.icon name="message" class="size-4" /> Chat <span x-show="unreadChat > 0" class="ml-auto badge bg-red-500 text-white" x-text="unreadChat > 9 ? '9+' : unreadChat"></span></button>
+              <button type="button" @click="activeSidebar = activeSidebar === 'members' ? null : 'members'; panelsOpen = false" :class="activeSidebar === 'members' && '!text-brand'" class="menu-item"><x-ui.icon name="users" class="size-4" /> Members</button>
+              @if ($isSeries)
+                <button type="button" @click="activeSidebar = activeSidebar === 'episodes' ? null : 'episodes'; panelsOpen = false" :class="activeSidebar === 'episodes' && '!text-brand'" class="menu-item"><x-ui.icon name="list" class="size-4" /> Episodes</button>
+              @endif
+            </div>
+          </div>
+
+          {{-- Share --}}
+          @if ($isHost)
+            <div x-data="{ shareOpen: false, copied: false }" class="relative">
+              <button type="button" @click="shareOpen = !shareOpen" :class="shareOpen && 'wp-active'" class="wp-btn" title="Share party"><x-ui.icon name="share" class="size-4" /></button>
+              <div x-show="shareOpen" x-cloak @click.away="shareOpen = false" class="menu-panel absolute bottom-full right-0 mb-2 w-80 p-3">
+                <p class="label">Invite link</p>
+                <div class="flex gap-1.5">
+                  <input type="text" readonly class="input !py-2 text-xs" value="{{ route('watch-party.show', $party->token) }}" onclick="this.select()">
+                  <button type="button" class="btn btn-primary btn-sm"
+                    @click="navigator.clipboard.writeText('{{ route('watch-party.show', $party->token) }}'); copied = true; setTimeout(() => { copied = false; }, 2000)"
+                    x-text="copied ? '✓ Copied' : 'Copy'"></button>
+                </div>
+                <a href="https://wa.me/?text={{ urlencode('Join my Watch Party on ' . config('app.name') . '! 🎬 ' . $party->title() . ': ' . route('watch-party.show', $party->token)) }}"
+                  target="_blank" rel="noopener" class="btn btn-block mt-2 bg-[#25D366] text-white hover:bg-[#1ebe5d]">Share on WhatsApp</a>
+              </div>
+            </div>
+          @else
+            <button type="button" x-data="{ copied: false }"
+              @click="navigator.clipboard.writeText('{{ route('watch-party.show', $party->token) }}'); copied = true; setTimeout(() => copied = false, 2000)"
+              :class="copied && 'wp-active'" class="wp-btn" title="Copy invite link">
+              <x-ui.icon name="copy" class="size-4" x-show="!copied" /><x-ui.icon name="check" class="size-4" x-show="copied" x-cloak />
+            </button>
+          @endif
+        </div>
+
+        <span class="hidden h-6 w-px bg-white/10 sm:block"></span>
+
+        {{-- Leave / end --}}
+        @if ($isHost)
+          <form method="POST" action="{{ route('watch-party.end', $party->token) }}" x-data @submit.prevent="if(confirm('End the party for everyone?')) $el.submit()">
+            @csrf @method('DELETE')
+            <button type="submit" class="wp-btn !bg-red-500/20 !text-red-400 hover:!bg-red-500 hover:!text-white" title="End party"><x-ui.icon name="x" class="size-4" /></button>
+          </form>
+        @elseif ($isGuest)
+          <a href="{{ route('home') }}" class="wp-btn !bg-red-500/20 !text-red-400 hover:!bg-red-500 hover:!text-white" title="Leave party" onclick="return confirm('Leave this watch party?')"><x-ui.icon name="log-out" class="size-4" /></a>
+        @else
+          <form method="POST" action="{{ route('watch-party.leave', $party->token) }}" x-data @submit.prevent="if(confirm('Leave this watch party?')) $el.submit()">
+            @csrf
+            <button type="submit" class="wp-btn !bg-red-500/20 !text-red-400 hover:!bg-red-500 hover:!text-white" title="Leave party"><x-ui.icon name="log-out" class="size-4" /></button>
+          </form>
+        @endif
+      </div>
+    </div>
+  </div>
+@endif
 @endsection
 
 @if ($isMember && !$party->isEnded())

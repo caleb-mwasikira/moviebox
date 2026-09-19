@@ -1,294 +1,107 @@
 @extends('layouts.admin')
 
+@section('admin-title', isset($package) ? 'Edit Package' : 'Create Package')
+
 @section('admin-content')
 @php
   $p = $package ?? null;
   $isEdit = isset($package);
+  $isFree = (int) old('price', $p?->price ?? 1) === 0;
+  $intervals = ['week' => 'Weekly', 'month' => 'Monthly', 'year' => 'Yearly'];
+  $features = [
+    ['download_enabled', 'Downloads', 'Subscribers can download content for offline viewing.', 'download', (bool) old('download_enabled', $p?->download_enabled ?? true)],
+    ['watch_party_enabled', 'Watch party', 'Subscribers can create and join synchronised watch parties.', 'popcorn', (bool) old('watch_party_enabled', $p?->watch_party_enabled ?? false)],
+    ['is_giftable', 'Giftable', 'Allow subscribers to gift this plan to others.', 'gift', (bool) old('is_giftable', $p?->is_giftable ?? true)],
+    ['has_ads', 'Show ads', 'Display advertisements during playback on this plan.', 'tv', (bool) old('has_ads', $p?->has_ads ?? false)],
+    ['is_active', 'Published', 'Visible on the pricing page and available for sign-up.', 'globe', (bool) old('is_active', $p?->is_active ?? true)],
+  ];
 @endphp
 
-<div class="max-w-3xl">
+<x-ui.page-header :title="($isEdit ? 'Edit' : 'Create') . ' package'" subtitle="Configure pricing and feature access for this subscription tier." />
 
-  <div class="mb-8">
-    <h2 class="text-3xl font-black uppercase tracking-tighter text-gray-900 dark:text-white">
-      {{ $isEdit ? 'Edit' : 'Create' }} <span class="text-accent">Package</span>
-    </h2>
-    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-      Configure pricing and feature access for this subscription tier.
-    </p>
+<form action="{{ $isEdit ? route('admin.packages.update', $p) : route('admin.packages.store') }}" method="POST" class="max-w-3xl space-y-6">
+  @csrf
+  @if ($isEdit) @method('PUT') @endif
+
+  @if ($errors->any())
+    <div class="alert alert-error !block"><ul class="list-inside list-disc space-y-0.5">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
+  @endif
+
+  {{-- General --}}
+  <div class="card card-pad space-y-5">
+    <h2 class="card-title">General</h2>
+    <div class="grid gap-5 sm:grid-cols-2">
+      <div><label class="label">Package name</label><input type="text" name="name" value="{{ old('name', $p?->name) }}" required placeholder="e.g. Standard" class="input"></div>
+      <div><label class="label">Display order</label><input type="number" name="sort_order" value="{{ old('sort_order', $p?->sort_order ?? 0) }}" min="0" class="input"><p class="hint">Lower numbers appear first on the pricing page.</p></div>
+      <div class="sm:col-span-2"><label class="label">Description</label><textarea name="description" rows="3" placeholder="Briefly describe what's included in this package…" class="textarea">{{ old('description', $p?->description) }}</textarea></div>
+    </div>
   </div>
 
-  <form action="{{ $isEdit ? route('admin.packages.update', $p) : route('admin.packages.store') }}" method="POST">
-    @csrf
-    @if ($isEdit) @method('PUT') @endif
-
-    @if ($errors->any())
-      <div class="mb-6 border border-red-400 bg-red-50 dark:bg-red-900/20 p-4">
-        <ul class="text-sm text-red-600 dark:text-red-400 list-disc list-inside space-y-1">
-          @foreach ($errors->all() as $error)
-            <li>{{ $error }}</li>
-          @endforeach
-        </ul>
-      </div>
-    @endif
-
-    <div class="flex flex-col gap-y-6">
-
-      {{-- ── Identity ── --}}
-      <div class="bg-white dark:bg-gray-700 p-6 md:p-8 border-l-4 border-accent">
-        <h3 class="text-[10px] font-bold uppercase tracking-widest text-accent mb-6">General</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div class="sm:col-span-2">
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Package Name</label>
-            <input type="text" name="name" value="{{ old('name', $p?->name) }}" required
-              class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors @error('name') border-red-400 @enderror"
-              placeholder="e.g. Standard">
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Display Order</label>
-            <input type="number" name="sort_order" value="{{ old('sort_order', $p?->sort_order ?? 0) }}" min="0"
-              class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors">
-            <p class="mt-1 text-[11px] text-gray-400">Lower numbers appear first on the pricing page.</p>
-          </div>
-          <div class="sm:col-span-2">
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Description</label>
-            <textarea name="description" rows="3"
-              class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors resize-none @error('description') border-red-400 @enderror"
-              placeholder="Briefly describe what's included in this package…">{{ old('description', $p?->description) }}</textarea>
-          </div>
-        </div>
-      </div>
-
-      {{-- ── Pricing ── --}}
-      @php $isFree = (int) old('price', $p?->price ?? 1) === 0; @endphp
-      <div class="bg-white dark:bg-gray-700 p-6 md:p-8"
-        x-data="{ free: {{ $isFree ? 'true' : 'false' }} }">
-
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Pricing</h3>
-
-          <label class="flex items-center gap-x-2.5 cursor-pointer select-none">
-            <div @click="free = !free"
-              :class="free ? 'bg-accent' : 'bg-gray-200 dark:bg-gray-600'"
-              class="relative w-9 h-5 rounded-full transition-colors shrink-0">
-              <div :class="free ? 'translate-x-4' : 'translate-x-0.5'"
-                class="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-150"></div>
-            </div>
-            <span class="text-xs font-bold text-gray-500 dark:text-gray-400">Free Package</span>
-          </label>
-        </div>
-
-        {{-- Paid fields --}}
-        <template x-if="!free">
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            <div>
-              <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Currency</label>
-              <input type="text" name="currency" value="{{ old('currency', $p?->currency ?? 'KES') }}" maxlength="3"
-                class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors @error('currency') border-red-400 @enderror"
-                placeholder="KES">
-            </div>
-            <div>
-              <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Price</label>
-              <input type="number" name="price" value="{{ old('price', $p?->price) }}" min="1"
-                class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors @error('price') border-red-400 @enderror"
-                placeholder="0">
-            </div>
-            <div>
-              <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Billing Interval</label>
-              <select name="interval"
-                class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors">
-                @foreach (['week' => 'Weekly', 'month' => 'Monthly', 'year' => 'Yearly'] as $val => $label)
-                  <option value="{{ $val }}" {{ old('interval', $p?->interval) === $val ? 'selected' : '' }}>{{ $label }}</option>
-                @endforeach
-              </select>
-            </div>
-          </div>
-        </template>
-
-        {{-- Free fields — price hidden as 0, currency omitted, interval kept --}}
-        <template x-if="free">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <input type="hidden" name="price" value="0">
-            <div>
-              <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Access Duration</label>
-              <select name="interval"
-                class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors">
-                @foreach (['week' => 'Weekly', 'month' => 'Monthly', 'year' => 'Yearly'] as $val => $label)
-                  <option value="{{ $val }}" {{ old('interval', $p?->interval) === $val ? 'selected' : '' }}>{{ $label }}</option>
-                @endforeach
-              </select>
-              <p class="mt-1 text-[11px] text-gray-400">How long access lasts before expiring.</p>
-            </div>
-          </div>
-        </template>
-
-      </div>
-
-      {{-- ── Limits ── --}}
-      <div class="bg-white dark:bg-gray-700 p-6 md:p-8">
-        <h3 class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-6">Limits</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Max Resolution</label>
-            <select name="max_resolution"
-              class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors">
-              @foreach (['720p' => '720p — HD', '1080p' => '1080p — Full HD', '4K' => '4K — Ultra HD'] as $val => $label)
-                <option value="{{ $val }}" {{ old('max_resolution', $p?->max_resolution) === $val ? 'selected' : '' }}>{{ $label }}</option>
-              @endforeach
-            </select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Simultaneous Screens</label>
-            <input type="number" name="max_screens" value="{{ old('max_screens', $p?->max_screens ?? 1) }}" required min="1"
-              class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors @error('max_screens') border-red-400 @enderror">
-            <p class="mt-1 text-[11px] text-gray-400">Profiles that can stream at the same time.</p>
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Max Shared Links</label>
-            <input type="number" name="max_shared_links" value="{{ old('max_shared_links', $p?->max_shared_links ?? 5) }}" required min="0"
-              class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors @error('max_shared_links') border-red-400 @enderror">
-            <p class="mt-1 text-[11px] text-gray-400">Shared links a subscriber can create. Set to 0 for unlimited.</p>
-          </div>
-        </div>
-      </div>
-
-      {{-- ── Features ── --}}
-      <div class="bg-white dark:bg-gray-700 p-6 md:p-8">
-        <h3 class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Features</h3>
-        <p class="text-xs text-gray-400 mb-6">Click a card to toggle the feature on or off.</p>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-
-          {{-- Downloads --}}
-          @php $dlChecked = (bool) old('download_enabled', $p?->download_enabled ?? true); @endphp
-          <label x-data="{ on: {{ $dlChecked ? 'true' : 'false' }} }"
-            :class="on ? 'border-accent bg-accent/5 dark:bg-accent/10' : 'border-gray-200 dark:border-gray-600'"
-            class="relative flex flex-col gap-y-4 p-5 border-2 cursor-pointer select-none transition-colors">
-            <input type="checkbox" name="download_enabled" value="1" x-model="on" class="sr-only">
-            <div class="flex items-start justify-between gap-x-3">
-              <div :class="on ? 'bg-accent/10 dark:bg-accent/20 text-accent' : 'bg-gray-100 dark:bg-gray-600 text-gray-400'"
-                class="p-2 transition-colors">
-                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>
-              </div>
-              <div :class="on ? 'bg-accent border-accent' : 'border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800'"
-                class="w-5 h-5 border-2 flex items-center justify-center shrink-0 transition-colors mt-0.5">
-                <svg x-show="on" class="w-3 h-3 fill-gray-900" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-              </div>
-            </div>
-            <div>
-              <p :class="on ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
-                class="font-bold text-sm transition-colors">Downloads</p>
-              <p class="text-xs text-gray-400 mt-0.5 leading-snug">Subscribers can download content for offline viewing.</p>
-            </div>
-          </label>
-
-          {{-- Watch Party --}}
-          @php $wpChecked = (bool) old('watch_party_enabled', $p?->watch_party_enabled ?? false); @endphp
-          <label x-data="{ on: {{ $wpChecked ? 'true' : 'false' }} }"
-            :class="on ? 'border-accent bg-accent/5 dark:bg-accent/10' : 'border-gray-200 dark:border-gray-600'"
-            class="relative flex flex-col gap-y-4 p-5 border-2 cursor-pointer select-none transition-colors">
-            <input type="checkbox" name="watch_party_enabled" value="1" x-model="on" class="sr-only">
-            <div class="flex items-start justify-between gap-x-3">
-              <div :class="on ? 'bg-accent/10 dark:bg-accent/20 text-accent' : 'bg-gray-100 dark:bg-gray-600 text-gray-400'"
-                class="p-2 transition-colors">
-                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
-              </div>
-              <div :class="on ? 'bg-accent border-accent' : 'border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800'"
-                class="w-5 h-5 border-2 flex items-center justify-center shrink-0 transition-colors mt-0.5">
-                <svg x-show="on" class="w-3 h-3 fill-gray-900" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-              </div>
-            </div>
-            <div>
-              <p :class="on ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
-                class="font-bold text-sm transition-colors">Watch Party</p>
-              <p class="text-xs text-gray-400 mt-0.5 leading-snug">Subscribers can create and join synchronised watch parties.</p>
-            </div>
-          </label>
-
-          {{-- Giftable --}}
-          @php $giftableChecked = (bool) old('is_giftable', $p?->is_giftable ?? true); @endphp
-          <label x-data="{ on: {{ $giftableChecked ? 'true' : 'false' }} }"
-            :class="on ? 'border-accent bg-accent/5 dark:bg-accent/10' : 'border-gray-200 dark:border-gray-600'"
-            class="relative flex flex-col gap-y-4 p-5 border-2 cursor-pointer select-none transition-colors">
-            <input type="checkbox" name="is_giftable" value="1" x-model="on" class="sr-only">
-            <div class="flex items-start justify-between gap-x-3">
-              <div :class="on ? 'bg-accent/10 dark:bg-accent/20 text-accent' : 'bg-gray-100 dark:bg-gray-600 text-gray-400'"
-                class="p-2 transition-colors">
-                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M20 6h-2.18c.07-.26.18-.52.18-.83C18 3.42 16.58 2 14.83 2c-1.19 0-2.04.69-2.83 1.72C11.21 2.69 10.36 2 9.17 2 7.42 2 6 3.42 6 5.17c0 .31.1.57.18.83H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5.17-2.83c.55 0 .83.28.83.83S15.38 4.83 14.83 4.83 14 4.55 14 4s.28-.83.83-.83zM9.17 4.83c-.55 0-.83-.28-.83-.83s.28-.83.83-.83S10 3.45 10 4s-.28.83-.83.83zM11 19H4V8h6.17L11 9.22V19zm-2-9H8v2H6v-2H4V8h5v2zm6 9h-7V9.22L14.83 8H20v11h-3v-2h-2v2zm3-9h-2v2h-2v-2h-2V8h5v2z"/></svg>
-              </div>
-              <div :class="on ? 'bg-accent border-accent' : 'border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800'"
-                class="w-5 h-5 border-2 flex items-center justify-center shrink-0 transition-colors mt-0.5">
-                <svg x-show="on" class="w-3 h-3 fill-gray-900" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-              </div>
-            </div>
-            <div>
-              <p :class="on ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
-                class="font-bold text-sm transition-colors">Giftable</p>
-              <p class="text-xs text-gray-400 mt-0.5 leading-snug">Allow subscribers to gift this plan to others.</p>
-            </div>
-          </label>
-
-          {{-- Ads --}}
-          @php $adsChecked = (bool) old('has_ads', $p?->has_ads ?? false); @endphp
-          <label x-data="{ on: {{ $adsChecked ? 'true' : 'false' }} }"
-            :class="on ? 'border-accent bg-accent/5 dark:bg-accent/10' : 'border-gray-200 dark:border-gray-600'"
-            class="relative flex flex-col gap-y-4 p-5 border-2 cursor-pointer select-none transition-colors">
-            <input type="checkbox" name="has_ads" value="1" x-model="on" class="sr-only">
-            <div class="flex items-start justify-between gap-x-3">
-              <div :class="on ? 'bg-accent/10 dark:bg-accent/20 text-accent' : 'bg-gray-100 dark:bg-gray-600 text-gray-400'"
-                class="p-2 transition-colors">
-                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/></svg>
-              </div>
-              <div :class="on ? 'bg-accent border-accent' : 'border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800'"
-                class="w-5 h-5 border-2 flex items-center justify-center shrink-0 transition-colors mt-0.5">
-                <svg x-show="on" class="w-3 h-3 fill-gray-900" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-              </div>
-            </div>
-            <div>
-              <p :class="on ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
-                class="font-bold text-sm transition-colors">Show Ads</p>
-              <p class="text-xs text-gray-400 mt-0.5 leading-snug">Display advertisements during playback on this plan.</p>
-            </div>
-          </label>
-
-          {{-- Published --}}
-          @php $activeChecked = (bool) old('is_active', $p?->is_active ?? true); @endphp
-          <label x-data="{ on: {{ $activeChecked ? 'true' : 'false' }} }"
-            :class="on ? 'border-accent bg-accent/5 dark:bg-accent/10' : 'border-gray-200 dark:border-gray-600'"
-            class="relative flex flex-col gap-y-4 p-5 border-2 cursor-pointer select-none transition-colors">
-            <input type="checkbox" name="is_active" value="1" x-model="on" class="sr-only">
-            <div class="flex items-start justify-between gap-x-3">
-              <div :class="on ? 'bg-accent/10 dark:bg-accent/20 text-accent' : 'bg-gray-100 dark:bg-gray-600 text-gray-400'"
-                class="p-2 transition-colors">
-                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
-              </div>
-              <div :class="on ? 'bg-accent border-accent' : 'border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800'"
-                class="w-5 h-5 border-2 flex items-center justify-center shrink-0 transition-colors mt-0.5">
-                <svg x-show="on" class="w-3 h-3 fill-gray-900" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-              </div>
-            </div>
-            <div>
-              <p :class="on ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'"
-                class="font-bold text-sm transition-colors">Published</p>
-              <p class="text-xs text-gray-400 mt-0.5 leading-snug">Visible on the pricing page and available for sign-up.</p>
-            </div>
-          </label>
-
-        </div>
-      </div>
-
-    </div>
-
-    <div class="mt-8 flex items-center gap-x-4">
-      <button type="submit"
-        class="font-bold uppercase tracking-tight py-4 px-10 text-sm text-gray-900 bg-accent hover:bg-accent/90 transition-colors">
-        {{ $isEdit ? 'Save Changes' : 'Create Package' }}
+  {{-- Pricing --}}
+  <div class="card card-pad space-y-5" x-data="{ free: {{ $isFree ? 'true' : 'false' }} }">
+    <div class="flex items-center justify-between">
+      <h2 class="card-title">Pricing</h2>
+      <button type="button" role="switch" :aria-checked="free" @click="free = !free" class="flex items-center gap-3 text-sm font-medium text-fg">
+        <span class="relative inline-flex h-6 w-11 items-center rounded-full transition" :class="free ? 'bg-brand' : 'bg-surface-3'"><span class="inline-block size-5 rounded-full bg-white shadow transition" :class="free ? 'translate-x-[1.375rem]' : 'translate-x-0.5'"></span></span>
+        Free package
       </button>
-      <a href="{{ route('admin.packages.index') }}"
-        class="text-xs font-bold uppercase text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
-        Cancel
-      </a>
     </div>
 
-  </form>
-</div>
+    <template x-if="!free">
+      <div class="grid gap-5 sm:grid-cols-3">
+        <div><label class="label">Currency</label><input type="text" name="currency" value="{{ old('currency', $p?->currency ?? 'KES') }}" maxlength="3" placeholder="KES" class="input uppercase"></div>
+        <div><label class="label">Price</label><input type="number" name="price" value="{{ old('price', $p?->price) }}" min="1" placeholder="0" class="input"></div>
+        <div>
+          <label class="label">Billing interval</label>
+          <select name="interval" class="select">@foreach ($intervals as $val => $label)<option value="{{ $val }}" @selected(old('interval', $p?->interval) === $val)>{{ $label }}</option>@endforeach</select>
+        </div>
+      </div>
+    </template>
+
+    <template x-if="free">
+      <div class="max-w-xs">
+        <input type="hidden" name="price" value="0">
+        <label class="label">Access duration</label>
+        <select name="interval" class="select">@foreach ($intervals as $val => $label)<option value="{{ $val }}" @selected(old('interval', $p?->interval) === $val)>{{ $label }}</option>@endforeach</select>
+        <p class="hint">How long access lasts before expiring.</p>
+      </div>
+    </template>
+  </div>
+
+  {{-- Limits --}}
+  <div class="card card-pad space-y-5">
+    <h2 class="card-title">Limits</h2>
+    <div class="grid gap-5 sm:grid-cols-3">
+      <div>
+        <label class="label">Max resolution</label>
+        <select name="max_resolution" class="select">@foreach (['720p' => '720p — HD', '1080p' => '1080p — Full HD', '4K' => '4K — Ultra HD'] as $val => $label)<option value="{{ $val }}" @selected(old('max_resolution', $p?->max_resolution) === $val)>{{ $label }}</option>@endforeach</select>
+      </div>
+      <div><label class="label">Simultaneous screens</label><input type="number" name="max_screens" value="{{ old('max_screens', $p?->max_screens ?? 1) }}" required min="1" class="input"><p class="hint">Profiles that can stream at the same time.</p></div>
+      <div><label class="label">Max shared links</label><input type="number" name="max_shared_links" value="{{ old('max_shared_links', $p?->max_shared_links ?? 5) }}" required min="0" class="input"><p class="hint">Shared links a subscriber can create. 0 for unlimited.</p></div>
+    </div>
+  </div>
+
+  {{-- Features --}}
+  <div class="card card-pad space-y-4">
+    <div><h2 class="card-title">Features</h2><p class="mt-0.5 text-sm text-muted">Click a card to toggle the feature on or off.</p></div>
+    <div class="grid gap-3 sm:grid-cols-2">
+      @foreach ($features as [$name, $title, $desc, $icon, $checked])
+        <label x-data="{ on: {{ $checked ? 'true' : 'false' }} }" :class="on ? 'border-brand bg-brand-soft' : 'border-line hover:border-line-strong'" class="relative flex cursor-pointer items-start gap-3.5 rounded-2xl border p-4 transition">
+          <input type="checkbox" name="{{ $name }}" value="1" x-model="on" class="sr-only">
+          <span class="grid size-10 shrink-0 place-items-center rounded-xl transition" :class="on ? 'bg-brand text-white' : 'bg-surface-3 text-muted'"><x-ui.icon :name="$icon" class="size-5" /></span>
+          <span class="min-w-0 flex-1">
+            <span class="block text-sm font-semibold" :class="on ? 'text-fg' : 'text-fg-soft'">{{ $title }}</span>
+            <span class="text-xs text-muted">{{ $desc }}</span>
+          </span>
+          <span class="grid size-5 shrink-0 place-items-center rounded-full border-2 transition" :class="on ? 'border-brand bg-brand text-white' : 'border-line-strong'"><x-ui.icon name="check" class="size-3" x-show="on" /></span>
+        </label>
+      @endforeach
+    </div>
+  </div>
+
+  <div class="flex gap-3">
+    <button type="submit" class="btn btn-primary btn-lg">{{ $isEdit ? 'Save changes' : 'Create package' }}</button>
+    <a href="{{ route('admin.packages.index') }}" class="btn btn-secondary btn-lg">Cancel</a>
+  </div>
+</form>
 @endsection

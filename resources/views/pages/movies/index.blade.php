@@ -3,91 +3,39 @@
 @section('title', 'Movies')
 
 @section('content')
-  <main id="main-content" class="grow lg:pt-0">
+<div class="container-app py-10 lg:py-14">
+  <x-ui.page-header eyebrow="Catalogue" title="Movies" subtitle="Blockbusters, classics and hidden gems — ready to stream." />
 
-    <div class="pt-10 pb-16 lg:pt-20 lg:pb-44">
-      <div class="container">
+  <x-ui.catalog-filters route="movies" :genres="$genres" />
 
-        <div class="flex gap-x-8 justify-between items-center mb-12 md:mb-16 lg:mb-20">
-
-          <div>
-            <h1 class="text-2xl font-bold tracking-tighter text-gray-900 before:text-accent before:content-['.'] dark:text-white sm:text-3xl md:text-4xl">Movies</h1>
+  @if ($movies->isEmpty())
+    <x-ui.empty icon="film" title="No movies found" text="Try a different genre or filter.">
+      <a href="{{ route('movies') }}" class="btn btn-primary">Show all movies</a>
+    </x-ui.empty>
+  @else
+    <div class="poster-grid">
+      @foreach ($movies as $movie)
+        <a href="{{ route('movies.show', $movie) }}" class="group block">
+          <div class="poster-frame transition duration-300 group-hover:-translate-y-1 group-hover:shadow-pop">
+            @if ($movie->thumbnail)
+              <img src="{{ $movie->thumbnailUrl() }}" alt="{{ $movie->title }}" loading="lazy" class="size-full object-cover transition duration-500 group-hover:scale-105">
+            @else
+              <div class="grid size-full place-items-center text-muted"><x-ui.icon name="film" class="size-10" /></div>
+            @endif
+            @if ($movie->is_free)<span class="badge absolute left-2 top-2 bg-emerald-500 text-white">Free</span>@endif
+            <span class="absolute inset-0 grid place-items-center opacity-0 transition duration-300 group-hover:opacity-100">
+              <span class="grid size-12 place-items-center rounded-full bg-brand text-white shadow-lg"><x-ui.icon name="play" class="ml-0.5 size-5" /></span>
+            </span>
           </div>
-
-          <nav>
-            <ul class="flex flex-wrap gap-x-4 lg:gap-x-7 text-sm lg:text-base font-bold">
-              <li>
-                <a class="transition-colors {{ !request('genre') && !request('free') ? 'text-accent' : 'text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent' }}"
-                  href="{{ route('movies') }}">All</a>
-              </li>
-              <li>
-                <a class="transition-colors {{ request('free') ? 'text-green-500' : 'text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent' }}"
-                  href="{{ route('movies', ['free' => 1]) }}">Free</a>
-              </li>
-              @foreach ($genres as $genre)
-              <li>
-                <a class="transition-colors {{ request('genre') === $genre ? 'text-accent' : 'text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent' }}"
-                  href="{{ route('movies', ['genre' => $genre]) }}">{{ $genre }}</a>
-              </li>
-              @endforeach
-            </ul>
-          </nav>
-
-        </div>
-
-        @if ($movies->isEmpty())
-          <div class="py-24 text-center text-gray-500 font-bold uppercase text-sm tracking-widest">
-            No movies available yet.
+          <div class="mt-3 px-0.5">
+            <h3 class="truncate text-sm font-semibold text-fg transition-colors group-hover:text-brand">{{ $movie->title }}</h3>
+            @php $meta = array_filter([$movie->genre, $movie->year, $movie->duration ? $movie->duration . ' min' : null]); @endphp
+            <p class="mt-0.5 truncate text-xs text-muted">{{ implode(' · ', $meta) }}</p>
           </div>
-        @else
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-x-5 gap-y-9 md:gap-x-6 lg:gap-x-7.5">
-          @foreach ($movies as $movie)
-          <div>
-            <figure class="group relative mb-4 overflow-hidden bg-gray-100 dark:bg-gray-700">
-              <a href="{{ route('movies.show', $movie) }}">
-                @if ($movie->thumbnail)
-                  <img class="aspect-[2/3] w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                    src="{{ $movie->thumbnailUrl() }}" alt="{{ $movie->title }}">
-                @else
-                  <div class="aspect-[2/3] w-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                    <svg class="h-12 w-12 fill-gray-400" viewBox="0 0 24 24"><path d="M4 2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10A5 5 0 0 0 12 5zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6zM5 19h14v-1a7 7 0 0 0-14 0v1z"/></svg>
-                  </div>
-                @endif
-                <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all bg-accent/80 duration-300">
-                  <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 aspect-square bg-gray-900 grid place-items-center text-white scale-90 group-hover:scale-100 transition-all duration-300">
-                    <svg class="h-4 w-4 fill-white" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                  </div>
-                </div>
-                @if ($movie->is_free)
-                <div class="absolute top-2 right-2">
-                  <span class="bg-green-500 text-white text-[10px] font-bold uppercase px-2 py-0.5 tracking-wider">Free</span>
-                </div>
-                @endif
-              </a>
-            </figure>
-            <div>
-              <h3 class="font-bold text-gray-900 dark:text-white text-sm leading-tight mb-1">
-                <a class="text-gray-900 dark:text-white transition-colors hover:text-accent dark:hover:text-accent"
-                  href="{{ route('movies.show', $movie) }}">{{ $movie->title }}</a>
-              </h3>
-              <div class="text-xs text-gray-500 leading-snug">
-                @php
-                  $meta = array_filter([$movie->genre, $movie->year, $movie->duration ? $movie->duration . ' min' : null]);
-                @endphp
-                {{ implode(' · ', $meta) }}
-              </div>
-            </div>
-          </div>
-          @endforeach
-        </div>
-
-        <div class="pt-10 md:pt-14 lg:pt-24">
-          {{ $movies->links() }}
-        </div>
-        @endif
-
-      </div>
+        </a>
+      @endforeach
     </div>
-
-  </main>
+    <div class="mt-12">{{ $movies->links() }}</div>
+  @endif
+</div>
 @endsection

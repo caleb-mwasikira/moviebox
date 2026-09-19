@@ -3,224 +3,79 @@
 @section('admin-title', 'Series')
 
 @section('admin-content')
-<div class="flex items-center justify-between mb-8">
-  <div class="flex items-center gap-x-4">
-    <h2 class="text-2xl font-bold tracking-tighter text-gray-900 dark:text-white lg:text-4xl">Series</h2>
-    <div class="flex text-xs font-bold uppercase">
-      <a href="{{ route('admin.series.index') }}"
-        class="px-3 py-1.5 border border-gray-300 dark:border-gray-600 transition-colors {{ !$trashed ? 'bg-accent text-gray-900 border-accent' : 'text-gray-500 hover:text-accent' }}">
-        Active
-      </a>
-      <a href="{{ route('admin.series.index', ['trashed' => 1]) }}"
-        class="px-3 py-1.5 border border-l-0 border-gray-300 dark:border-gray-600 transition-colors {{ $trashed ? 'bg-accent text-gray-900 border-accent' : 'text-gray-500 hover:text-accent' }}">
-        Trashed
-      </a>
+<x-ui.page-header title="Series" subtitle="Manage series, seasons and episodes.">
+  <x-slot:actions>
+    <div class="inline-flex rounded-xl border border-line bg-surface p-1">
+      <a href="{{ route('admin.series.index') }}" class="rounded-lg px-3.5 py-1.5 text-sm font-semibold transition {{ !$trashed ? 'bg-brand text-white' : 'text-fg-soft hover:text-fg' }}">Active</a>
+      <a href="{{ route('admin.series.index', ['trashed' => 1]) }}" class="rounded-lg px-3.5 py-1.5 text-sm font-semibold transition {{ $trashed ? 'bg-brand text-white' : 'text-fg-soft hover:text-fg' }}">Trashed</a>
     </div>
-  </div>
-  @if (!$trashed)
-  <a href="{{ route('admin.series.create') }}"
-    class="inline-flex items-center gap-x-2 font-bold uppercase py-2.5 px-5 text-xs text-gray-900 bg-accent hover:bg-accent/90 transition-colors">
-    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-    Add Series
-  </a>
-  @endif
-</div>
+    @if (!$trashed)<a href="{{ route('admin.series.create') }}" class="btn btn-primary"><x-ui.icon name="plus" class="size-4" /> Add series</a>@endif
+  </x-slot:actions>
+</x-ui.page-header>
 
 @if ($series->isEmpty())
-  <div class="py-16 text-center border border-dashed border-gray-300 dark:border-gray-600">
-    <svg class="mx-auto mb-3 w-10 h-10 text-gray-300 dark:text-gray-600" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/></svg>
-    @if ($trashed)
-      <p class="text-sm font-bold uppercase text-gray-400 tracking-widest">No trashed series</p>
-    @else
-      <p class="text-sm font-bold uppercase text-gray-400 tracking-widest">No series yet</p>
-      <a href="{{ route('admin.series.create') }}" class="mt-4 inline-block text-accent text-xs font-bold hover:underline">Add your first series</a>
-    @endif
-  </div>
+  <x-ui.empty icon="tv" :title="$trashed ? 'No trashed series' : 'No series yet'">
+    @unless ($trashed)<a href="{{ route('admin.series.create') }}" class="btn btn-primary">Add your first series</a>@endunless
+  </x-ui.empty>
 @else
-
-  {{-- ── Mobile cards (< lg) ── --}}
-  <div class="lg:hidden border border-gray-200 dark:border-gray-600 divide-y divide-gray-200 dark:divide-gray-600">
-    @foreach ($series as $show)
-      <div class="p-4">
-        <div class="flex gap-x-3">
-          {{-- Thumbnail --}}
-          @if ($show->thumbnail)
-            <img src="{{ $show->thumbnailUrl() }}" class="w-12 h-16 object-cover shrink-0" alt="">
-          @else
-            <div class="w-12 h-16 bg-gray-100 dark:bg-gray-700 shrink-0"></div>
-          @endif
-          {{-- Info --}}
-          <div class="flex-1 min-w-0">
-            <p class="font-bold text-gray-900 dark:text-white text-sm truncate">{{ $show->title }}</p>
-            <p class="text-xs text-gray-500 mt-0.5">
-              {{ $show->genre ?? '—' }} · {{ $show->year ?? '—' }}
-              @if (!$trashed) · {{ $show->seasons_count }} season{{ $show->seasons_count !== 1 ? 's' : '' }} @endif
-            </p>
-            @if ($trashed)
-              <p class="text-xs text-gray-400 mt-1">Deleted {{ $show->deleted_at->diffForHumans() }}</p>
-            @else
-            <div class="flex flex-wrap items-center gap-2 mt-2">
-              @if ($show->free_episodes_count > 0)
-                <span class="text-[10px] font-bold uppercase px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">{{ $show->free_episodes_count }} free ep{{ $show->free_episodes_count !== 1 ? 's' : '' }}</span>
-              @endif
-              <form method="POST" action="{{ route('admin.series.toggle-status', $show) }}">
-                @csrf @method('PATCH')
-                <button type="submit"
-                  class="text-[10px] font-bold uppercase px-2 py-0.5 {{ $show->isPublished() ? 'bg-accent/20 text-accent' : 'bg-gray-100 dark:bg-gray-700 text-gray-500' }}">
-                  {{ $show->isPublished() ? 'Published' : 'Hidden' }}
-                </button>
-              </form>
-              <form method="POST" action="{{ route('admin.series.toggle-featured', $show) }}">
-                @csrf @method('PATCH')
-                <button type="submit"
-                  class="text-[10px] font-bold uppercase px-2 py-0.5 {{ $show->isFeatured() ? 'bg-accent/20 text-accent' : 'bg-gray-100 dark:bg-gray-700 text-gray-500' }}">
-                  {{ $show->isFeatured() ? '★ Featured' : '☆ Feature' }}
-                </button>
-              </form>
-            </div>
-            @endif
-          </div>
-        </div>
-        @if (!$trashed && $show->unprocessed_count > 0)
-          <p class="mt-2 text-xs text-gray-500">
-            <span class="inline-block w-1.5 h-1.5 rounded-full bg-accent animate-pulse mr-1"></span>
-            {{ $show->unprocessed_count }} episode{{ $show->unprocessed_count !== 1 ? 's' : '' }} pending encoding
-          </p>
-        @endif
-        {{-- Actions --}}
-        <div class="flex items-center gap-x-4 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-          @if ($trashed)
-            <form method="POST" action="{{ route('admin.series.restore', $show->id) }}">
-              @csrf @method('PATCH')
-              <button type="submit" class="text-xs font-bold uppercase text-green-600 dark:text-green-400 hover:text-green-500 transition-colors">Restore</button>
-            </form>
-            @can('force delete series')
-            <form method="POST" action="{{ route('admin.series.force-delete', $show->id) }}"
-              onsubmit="return confirm('Permanently delete {{ addslashes($show->title) }}? All seasons and episodes will be removed.')">
-              @csrf @method('DELETE')
-              <button type="submit" class="text-xs font-bold uppercase text-red-500 hover:text-red-400 transition-colors">Delete Forever</button>
-            </form>
-            @endcan
-          @else
-            <a href="{{ route('admin.series.edit', $show) }}"
-              class="text-xs font-bold uppercase text-gray-900 dark:text-white hover:text-accent dark:hover:text-accent transition-colors">Manage</a>
-            <form method="POST" action="{{ route('admin.series.destroy', $show) }}"
-              onsubmit="return confirm('Delete {{ addslashes($show->title) }}? All seasons and episodes will be removed.')">
-              @csrf @method('DELETE')
-              <button type="submit" class="text-xs font-bold uppercase text-gray-500 hover:text-red-500 transition-colors">Delete</button>
-            </form>
-          @endif
-        </div>
-      </div>
-    @endforeach
-  </div>
-
-  {{-- ── Desktop table (≥ lg) ── --}}
-  <div class="hidden lg:block overflow-x-auto">
-    <table class="w-full text-sm">
+  <div class="table-wrap">
+    <table class="table">
       <thead>
-        <tr class="border-b border-gray-200 dark:border-gray-600 text-left">
-          <th class="pb-3 font-bold uppercase text-xs text-gray-500 tracking-widest pr-4">Title</th>
-          <th class="pb-3 font-bold uppercase text-xs text-gray-500 tracking-widest pr-4">Genre</th>
-          <th class="pb-3 font-bold uppercase text-xs text-gray-500 tracking-widest pr-4">Year</th>
-          @if (!$trashed)
-          <th class="pb-3 font-bold uppercase text-xs text-gray-500 tracking-widest pr-4">Seasons</th>
-          <th class="pb-3 font-bold uppercase text-xs text-gray-500 tracking-widest pr-4">Status</th>
-          <th class="pb-3 font-bold uppercase text-xs text-gray-500 tracking-widest pr-4">Featured</th>
-          @else
-          <th class="pb-3 font-bold uppercase text-xs text-gray-500 tracking-widest pr-4">Deleted</th>
-          @endif
-          <th class="pb-3 font-bold uppercase text-xs text-gray-500 tracking-widest"></th>
+        <tr>
+          <th>Title</th><th class="hidden md:table-cell">Genre</th><th class="hidden md:table-cell">Year</th>
+          @if (!$trashed)<th class="hidden sm:table-cell">Seasons</th><th>Status</th><th class="hidden sm:table-cell">Featured</th>@else<th>Deleted</th>@endif
+          <th class="text-right">Actions</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-gray-200 dark:divide-gray-600">
+      <tbody>
         @foreach ($series as $show)
-          <tr data-series-id="{{ $show->id }}" class="{{ $trashed ? 'opacity-60 hover:opacity-100 transition-opacity' : '' }}">
-            <td class="py-4 pr-4">
-              <div class="flex items-center gap-x-3">
-                @if ($show->thumbnail)
-                  <img src="{{ $show->thumbnailUrl() }}" class="w-10 h-14 object-cover shrink-0" alt="">
-                @else
-                  <div class="w-10 h-14 bg-gray-100 dark:bg-gray-700 shrink-0"></div>
-                @endif
-                <div>
-                  <span class="font-bold text-gray-900 dark:text-white">{{ $show->title }}</span>
+          <tr data-series-id="{{ $show->id }}" class="{{ $trashed ? 'opacity-70 hover:opacity-100' : '' }}">
+            <td>
+              <div class="flex items-center gap-3">
+                <x-admin.thumb :src="$show->thumbnail ? $show->thumbnailUrl() : null" />
+                <div class="min-w-0">
+                  <p class="truncate font-semibold text-fg">{{ $show->title }}</p>
                   @if (!$trashed && $show->free_episodes_count > 0)
-                    <span class="ml-2 text-[10px] font-bold uppercase px-1.5 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">{{ $show->free_episodes_count }} free ep{{ $show->free_episodes_count !== 1 ? 's' : '' }}</span>
+                    <span class="badge badge-success mt-1">{{ $show->free_episodes_count }} free ep{{ $show->free_episodes_count !== 1 ? 's' : '' }}</span>
                   @endif
                 </div>
               </div>
             </td>
-            <td class="py-4 pr-4 text-gray-500 dark:text-gray">{{ $show->genre ?? '—' }}</td>
-            <td class="py-4 pr-4 text-gray-500 dark:text-gray">{{ $show->year ?? '—' }}</td>
+            <td class="hidden md:table-cell">{{ $show->genre ?? '—' }}</td>
+            <td class="hidden md:table-cell">{{ $show->year ?? '—' }}</td>
             @if (!$trashed)
-            <td class="py-4 pr-4 text-gray-500 dark:text-gray">{{ $show->seasons_count }}</td>
-            <td class="py-4 pr-4">
-              <form method="POST" action="{{ route('admin.series.toggle-status', $show) }}">
-                @csrf @method('PATCH')
-                <button type="submit"
-                  class="text-xs font-bold uppercase px-2 py-1 {{ $show->isPublished() ? 'bg-accent/20 text-accent' : 'bg-gray-100 dark:bg-gray-700 text-gray-500' }}">
-                  {{ $show->isPublished() ? 'Published' : 'Hidden' }}
-                </button>
-              </form>
-            </td>
-            <td class="py-4 pr-4">
-              <form method="POST" action="{{ route('admin.series.toggle-featured', $show) }}">
-                @csrf @method('PATCH')
-                <button type="submit"
-                  class="text-xs font-bold uppercase px-2 py-1 cursor-pointer {{ $show->isFeatured() ? 'bg-accent/20 text-accent' : 'bg-gray-100 dark:bg-gray-700 text-gray-500' }}">
-                  {{ $show->isFeatured() ? '★ Featured' : '☆ Feature' }}
-                </button>
-              </form>
-            </td>
+              <td class="hidden sm:table-cell">{{ $show->seasons_count }}</td>
+              <td><x-admin.toggle :action="route('admin.series.toggle-status', $show)" :on="$show->isPublished()" on-label="Published" off-label="Hidden" /></td>
+              <td class="hidden sm:table-cell"><x-admin.toggle :action="route('admin.series.toggle-featured', $show)" :on="$show->isFeatured()" on-label="★ Featured" off-label="☆ Feature" /></td>
             @else
-            <td class="py-4 pr-4 text-xs text-gray-400">{{ $show->deleted_at->diffForHumans() }}</td>
+              <td class="text-xs text-muted">{{ $show->deleted_at->diffForHumans() }}</td>
             @endif
-            <td class="py-4 text-right">
-              <div class="flex items-center justify-end gap-x-4">
+            <td>
+              <div class="flex items-center justify-end gap-1.5">
                 @if ($trashed)
-                  <form method="POST" action="{{ route('admin.series.restore', $show->id) }}">
-                    @csrf @method('PATCH')
-                    <button type="submit" class="font-bold text-green-600 dark:text-green-400 hover:text-green-500 transition-colors text-xs uppercase">Restore</button>
-                  </form>
+                  <form method="POST" action="{{ route('admin.series.restore', $show->id) }}">@csrf @method('PATCH')<button type="submit" class="btn btn-secondary btn-sm">Restore</button></form>
                   @can('force delete series')
-                  <form method="POST" action="{{ route('admin.series.force-delete', $show->id) }}"
-                    onsubmit="return confirm('Permanently delete {{ addslashes($show->title) }}? All seasons and episodes will be removed.')">
-                    @csrf @method('DELETE')
-                    <button type="submit" class="font-bold text-red-500 hover:text-red-400 transition-colors text-xs uppercase">Delete Forever</button>
-                  </form>
+                    <x-admin.delete :action="route('admin.series.force-delete', $show->id)" :confirm="'Permanently delete ' . $show->title . '? All seasons and episodes will be removed.'" label="Delete forever" />
                   @endcan
                 @else
-                  <a href="{{ route('admin.series.edit', $show) }}"
-                    class="font-bold text-gray-900 dark:text-white hover:text-accent dark:hover:text-accent transition-colors text-xs uppercase">Manage</a>
-                  <form method="POST" action="{{ route('admin.series.destroy', $show) }}"
-                    onsubmit="return confirm('Delete {{ addslashes($show->title) }}? All seasons and episodes will be removed.')">
-                    @csrf @method('DELETE')
-                    <button type="submit"
-                      class="font-bold text-gray-500 hover:text-red-500 transition-colors text-xs uppercase">Delete</button>
-                  </form>
+                  <a href="{{ route('admin.series.edit', $show) }}" class="btn btn-secondary btn-sm"><x-ui.icon name="edit" class="size-3.5" /> Manage</a>
+                  <x-admin.delete :action="route('admin.series.destroy', $show)" :confirm="'Delete ' . $show->title . '? All seasons and episodes will be removed.'" />
                 @endif
               </div>
             </td>
           </tr>
           @if (!$trashed && $show->unprocessed_count > 0)
-            <tr id="series-progress-row-{{ $show->id }}"
-                data-unprocessed="{{ $show->unprocessed_count }}">
-              <td colspan="7" class="pb-3 pt-0 px-0">
-                <div class="px-4 space-y-1.5">
-                  <div id="series-progress-bar-wrap-{{ $show->id }}" class="flex-1 bg-gray-200 dark:bg-gray-700 h-1.5 overflow-hidden rounded-full" style="display:none">
-                    <div id="series-progress-bar-{{ $show->id }}"
-                         class="h-full bg-accent rounded-full transition-[width] duration-300 ease-out"
-                         style="width:0%"></div>
+            <tr id="series-progress-row-{{ $show->id }}" data-unprocessed="{{ $show->unprocessed_count }}" class="!bg-surface-2/40">
+              <td colspan="7" class="!py-2.5">
+                <div class="space-y-1.5">
+                  <div id="series-progress-bar-wrap-{{ $show->id }}" class="progress" style="display:none">
+                    <span id="series-progress-bar-{{ $show->id }}" class="transition-all" style="width:0%"></span>
                   </div>
-                  <div class="flex items-center gap-x-2 text-xs text-gray-500 dark:text-gray-400">
-                    <span id="series-encoding-pulse-{{ $show->id }}" style="display:none">
-                      <span class="inline-block w-1.5 h-1.5 rounded-full bg-accent animate-pulse mr-1"></span>
-                      Encoding in progress ·
+                  <div class="flex items-center gap-2 text-xs text-muted">
+                    <span id="series-encoding-pulse-{{ $show->id }}" class="inline-flex items-center gap-1.5 font-semibold text-amber-500" style="display:none">
+                      <span class="size-1.5 animate-pulse rounded-full bg-amber-500"></span> Encoding in progress ·
                     </span>
-                    <span id="series-pending-text-{{ $show->id }}">
-                      {{ $show->unprocessed_count }} episode{{ $show->unprocessed_count !== 1 ? 's' : '' }} pending HLS encoding
-                    </span>
+                    <span id="series-pending-text-{{ $show->id }}">{{ $show->unprocessed_count }} episode{{ $show->unprocessed_count !== 1 ? 's' : '' }} pending HLS encoding</span>
                   </div>
                 </div>
               </td>
@@ -230,8 +85,7 @@
       </tbody>
     </table>
   </div>
-
-  <div class="mt-6">{{ $series->links() }}</div>
+  <div>{{ $series->links() }}</div>
 @endif
 @endsection
 

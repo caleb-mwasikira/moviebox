@@ -5,29 +5,25 @@
   $label = $film->genre ?? ($type === 'series' ? 'Series' : 'Film');
 @endphp
 
-<a class="flex flex-col gap-y-3 group" href="{{ $href }}">
-  <figure class="relative overflow-hidden bg-gray-100 dark:bg-gray-700">
+<a href="{{ $href }}" {{ $attributes->merge(['class' => 'group block']) }}>
+  <div class="poster-frame transition duration-300 group-hover:-translate-y-1 group-hover:shadow-pop group-hover:ring-brand/60">
     @if ($film->thumbnail)
-      <img class="w-full object-cover aspect-[17/22] transition-transform duration-300 group-hover:scale-110"
-        src="{{ $film->thumbnailUrl() }}" alt="{{ $film->title }}">
+      <img src="{{ $film->thumbnailUrl() }}" alt="{{ $film->title }}" loading="lazy"
+        class="size-full object-cover transition duration-500 group-hover:scale-105">
     @else
-      <div class="w-full aspect-[17/22] bg-gray-200 dark:bg-gray-600"></div>
+      <div class="grid size-full place-items-center text-muted"><x-ui.icon name="film" class="size-10" /></div>
     @endif
-    @if (!empty($film->is_free))
-      <div class="absolute top-1.5 left-1.5">
-        <span class="bg-green-500 text-white text-[9px] font-bold uppercase px-1.5 py-0.5 tracking-wider">Free</span>
-      </div>
-    @endif
-    <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all bg-accent/80 duration-300">
-      <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 aspect-square bg-gray-900 grid place-items-center text-white scale-90 group-hover:scale-100 transition-all duration-300">
-        <svg class="h-2 aspect-square" fill="currentColor">
-          <use xlink:href="{{ asset('assets/img/str1/sprite.svg') }}#plus-thinest"></use>
-        </svg>
-      </div>
+    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100"></div>
+    <span class="absolute inset-0 grid place-items-center opacity-0 transition duration-300 group-hover:opacity-100">
+      <span class="grid size-12 place-items-center rounded-full bg-brand text-white shadow-lg"><x-ui.icon name="play" class="ml-0.5 size-5" /></span>
+    </span>
+    <div class="absolute left-2 top-2 flex gap-1">
+      @if ($type === 'series')<span class="badge bg-black/60 text-white backdrop-blur">Series</span>@endif
+      @if (!empty($film->is_free))<span class="badge bg-emerald-500 text-white">Free</span>@endif
     </div>
-  </figure>
-  <div class="leading-tight">
-    <h5 class="text-sm font-bold text-gray-900 dark:text-white mb-1 group-hover:text-accent transition-colors">{{ $film->title }}</h5>
-    <div class="text-gray-500 text-xs">{{ $label }}</div>
+  </div>
+  <div class="mt-3 px-0.5">
+    <h3 class="truncate text-sm font-semibold text-fg transition-colors group-hover:text-brand">{{ $film->title }}</h3>
+    <p class="mt-0.5 truncate text-xs text-muted">{{ $label }}@if (!empty($film->year)) · {{ $film->year }}@endif</p>
   </div>
 </a>

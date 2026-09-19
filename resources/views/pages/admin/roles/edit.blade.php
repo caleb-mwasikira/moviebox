@@ -3,22 +3,11 @@
 @section('admin-title', 'Edit Role — ' . str_replace('-', ' ', $role->name))
 
 @section('admin-content')
+<x-ui.page-header :title="'Edit role — ' . str_replace('-', ' ', $role->name)">
+  <x-slot:actions><a href="{{ route('admin.roles.index') }}" class="btn btn-secondary btn-sm"><x-ui.icon name="arrow-left" class="size-3.5" /> Back to roles</a></x-slot:actions>
+</x-ui.page-header>
 
-<div class="mb-8">
-  <a href="{{ route('admin.roles.index') }}"
-     class="text-xs font-bold uppercase text-gray-400 hover:text-accent transition-colors mb-2 inline-block">
-    ← Back to Roles
-  </a>
-  <h2 class="text-2xl font-bold tracking-tighter text-gray-900 dark:text-white lg:text-4xl capitalize">
-    Edit Role — {{ str_replace('-', ' ', $role->name) }}
-  </h2>
-</div>
-
-@if (session('success'))
-  <div class="mb-6 px-4 py-3 border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 text-sm font-medium">
-    {{ session('success') }}
-  </div>
-@endif
+@if (session('success'))<div class="alert alert-success"><x-ui.icon name="check-circle" class="mt-0.5 size-5 shrink-0" />{{ session('success') }}</div>@endif
 
 @include('pages.admin.roles._form', [
     'action'          => route('admin.roles.update', $role),
@@ -26,5 +15,4 @@
     'role'            => $role,
     'rolePermissions' => old('permissions', $rolePermissions),
 ])
-
 @endsection

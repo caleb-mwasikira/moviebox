@@ -3,49 +3,31 @@
 @section('title', $collection->name)
 
 @section('content')
-<main id="main-content" class="grow">
-
-  {{-- Header --}}
-  <div class="py-16 md:py-20 lg:py-24"
-    @if ($collection->thumbnail)
-      style="background:linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.85) 100%), url('{{ $collection->thumbnailUrl() }}') center/cover no-repeat;"
-    @else
-      style="background: #111;"
-    @endif
-  >
-    <div class="container">
-      <p class="text-xs font-bold uppercase tracking-widest text-accent mb-3">Collection</p>
-      <h1 class="text-3xl md:text-5xl font-bold tracking-tighter text-white mb-4">{{ $collection->name }}</h1>
-      @if ($collection->description)
-        <p class="text-gray-300 text-base max-w-2xl">{{ $collection->description }}</p>
-      @endif
-      <p class="mt-4 text-xs text-gray-500 font-bold uppercase tracking-widest">
-        {{ $collection->items->count() }} {{ Str::plural('title', $collection->items->count()) }}
-      </p>
-    </div>
+<section class="relative isolate overflow-hidden border-b border-line bg-neutral-950">
+  @if ($collection->thumbnail)
+    <img src="{{ $collection->thumbnailUrl() }}" alt="" class="absolute inset-0 -z-10 size-full object-cover opacity-40">
+  @endif
+  <div class="absolute inset-0 -z-10 bg-gradient-to-t from-bg via-neutral-950/60 to-neutral-950/40"></div>
+  <div class="container-app py-16 lg:py-24">
+    <p class="eyebrow mb-3">Collection</p>
+    <h1 class="text-4xl font-extrabold !text-white sm:text-5xl">{{ $collection->name }}</h1>
+    @if ($collection->description)<p class="mt-4 max-w-2xl text-base text-white/70">{{ $collection->description }}</p>@endif
+    <p class="mt-5"><span class="badge bg-white/10 text-white backdrop-blur">{{ $collection->items->count() }} {{ Str::plural('title', $collection->items->count()) }}</span></p>
   </div>
+</section>
 
-  {{-- Items grid --}}
-  <div class="py-16 md:py-20 lg:py-24">
-    <div class="container">
-      @if ($collection->items->isEmpty())
-        <div class="py-20 text-center">
-          <p class="text-gray-500 text-sm font-bold uppercase tracking-widest">No titles in this collection yet.</p>
-        </div>
-      @else
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-5 md:gap-6 lg:gap-7.5">
-          @foreach ($collection->items as $item)
-            @if ($item->collectible)
-              @php
-                $type = $item->collectible_type === \App\Models\Movie::class ? 'movie' : 'series';
-              @endphp
-              <x-film-card :film="$item->collectible" :type="$type" />
-            @endif
-          @endforeach
-        </div>
-      @endif
+<div class="container-app py-12">
+  @if ($collection->items->isEmpty())
+    <x-ui.empty icon="folder" title="This collection is empty" text="Titles will appear here once they're added." />
+  @else
+    <div class="poster-grid">
+      @foreach ($collection->items as $item)
+        @if ($item->collectible)
+          @php $type = $item->collectible_type === \App\Models\Movie::class ? 'movie' : 'series'; @endphp
+          <x-film-card :film="$item->collectible" :type="$type" />
+        @endif
+      @endforeach
     </div>
-  </div>
-
-</main>
+  @endif
+</div>
 @endsection

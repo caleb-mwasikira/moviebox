@@ -5,264 +5,144 @@
 @section('content')
 @php $isFree = $package->price == 0; @endphp
 
-<main class="grow" x-data="giftPage()" x-init="init()">
-  <div class="py-16 lg:py-24">
-    <div class="container max-w-xl">
+<div class="container-app max-w-xl py-12 lg:py-16" x-data="giftPage()" x-init="init()">
+  <a href="{{ route('pricing') }}" class="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-brand">
+    <x-ui.icon name="arrow-left" class="size-4" /> Back to plans
+  </a>
 
-      {{-- Back link --}}
-      <a href="{{ route('pricing') }}" class="inline-flex items-center gap-x-1.5 text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors mb-10">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
-        </svg>
-        Back to Plans
-      </a>
-
-      {{-- Package summary --}}
-      <div class="border border-gray-200 dark:border-gray-600 px-6 py-5 mb-8 flex items-center justify-between">
-        <div>
-          <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">Gift — Selected Plan</p>
-          <p class="text-base font-bold text-gray-900 dark:text-white">{{ $package->name }}</p>
-          @if ($package->description)
-            <p class="text-xs text-gray-500 mt-0.5">{{ $package->description }}</p>
-          @endif
-        </div>
-        <div class="text-right">
-          @if ($isFree)
-            <p class="text-2xl font-black text-accent">Free</p>
-          @else
-            <p class="text-2xl font-black text-gray-900 dark:text-white">
-              {{ $package->currency }}&nbsp;{{ number_format($package->price, 0) }}
-            </p>
-          @endif
-          <p class="text-xs text-gray-500">per {{ $package->interval }}</p>
-        </div>
+  {{-- Plan summary --}}
+  <div class="card card-pad mb-6 flex items-center justify-between gap-4">
+    <div class="flex min-w-0 items-center gap-4">
+      <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-pink-500/12 text-pink-500"><x-ui.icon name="gift" class="size-6" /></span>
+      <div class="min-w-0">
+        <p class="text-[11px] font-semibold uppercase tracking-widest text-muted">Gift — selected plan</p>
+        <p class="text-lg font-bold text-fg">{{ $package->name }}</p>
+        @if ($package->description)<p class="text-xs text-muted">{{ $package->description }}</p>@endif
       </div>
-
-      {{-- Step indicator --}}
-      <div x-show="!['waiting','success','failed'].includes(step)" class="flex items-center gap-x-0 mb-10">
-        <div class="flex items-center gap-x-2">
-          <div class="w-7 h-7 flex items-center justify-center text-xs font-black shrink-0 transition-colors"
-            :class="step === 'recipient'
-              ? 'bg-accent text-gray-900'
-              : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'">1</div>
-          <span class="text-xs font-bold uppercase tracking-wider"
-            :class="step === 'recipient' ? 'text-gray-900 dark:text-white' : 'text-gray-400'">Recipient</span>
-        </div>
-        <div class="flex-1 h-px bg-gray-200 dark:bg-gray-600 mx-4"></div>
-        <div class="flex items-center gap-x-2">
-          <div class="w-7 h-7 flex items-center justify-center text-xs font-black shrink-0 transition-colors"
-            :class="step === 'payment'
-              ? 'bg-accent text-gray-900'
-              : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'">2</div>
-          <span class="text-xs font-bold uppercase tracking-wider"
-            :class="step === 'payment' ? 'text-gray-900 dark:text-white' : 'text-gray-400'">Payment</span>
-        </div>
-      </div>
-
-      {{-- ── Step 1: Recipient details ── --}}
-      <div x-show="step === 'recipient'" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-x-2" x-transition:enter-end="opacity-100 translate-x-0">
-
-        @if ($errors->any())
-          <div class="mb-6 border border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-700 px-5 py-4">
-            <ul class="space-y-1">
-              @foreach ($errors->all() as $error)
-                <li class="text-sm text-red-600 dark:text-red-400">{{ $error }}</li>
-              @endforeach
-            </ul>
-          </div>
-        @endif
-
-        <div class="mb-6">
-          <label for="recipient_email" class="block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
-            Recipient's Email Address
-          </label>
-          <input type="email" id="recipient_email"
-            x-model="recipientEmail"
-            @input="recipientError = ''"
-            @keydown.enter.prevent="nextStep()"
-            value="{{ old('recipient_email') }}"
-            placeholder="friend@example.com"
-            autocomplete="off"
-            class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors"
-            :class="recipientError ? '!border-red-400' : ''">
-          <p class="mt-1.5 text-[11px] min-h-4"
-            :class="recipientError ? 'text-red-500' : 'text-gray-400'"
-            x-text="recipientError || 'They\'ll receive an email with a link to claim the subscription.'"></p>
-        </div>
-
-        <div class="mb-8">
-          <label for="message" class="block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
-            Personal Message <span class="font-normal normal-case tracking-normal">(optional)</span>
-          </label>
-          <textarea id="message"
-            x-model="message"
-            rows="3" maxlength="500"
-            placeholder="Add a personal note to make it special…"
-            class="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors resize-none">{{ old('message') }}</textarea>
-          <p class="mt-1.5 text-[11px] text-gray-400">Up to 500 characters. Will appear in the gift email.</p>
-        </div>
-
-        <button type="button" @click="nextStep()"
-          class="w-full flex items-center justify-center gap-x-2 font-bold uppercase tracking-wide py-4 text-sm bg-gray-900 hover:bg-accent hover:text-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-accent transition-colors">
-          Continue
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
-          </svg>
-        </button>
-
-      </div>
-
-      {{-- ── Step 2: Payment ── --}}
-      <div x-show="step === 'payment'" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-x-2" x-transition:enter-end="opacity-100 translate-x-0">
-
-        {{-- Recipient summary --}}
-        <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-3 mb-8">
-          <div class="min-w-0">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">Sending to</p>
-            <p class="text-sm font-bold text-gray-900 dark:text-white truncate" x-text="recipientEmail"></p>
-          </div>
-          <button type="button" @click="step = 'recipient'"
-            class="ml-4 shrink-0 text-[10px] font-bold uppercase text-accent hover:text-accent/70 transition-colors">Edit</button>
-        </div>
-
-        @if ($isFree)
-          {{-- Free gift: just confirm & submit --}}
-          <form method="POST" action="{{ route('gift.store', $package->uuid) }}"
-            x-data="{ loading: false }" @submit="loading = true" id="gift-form-free">
-            @csrf
-            <input type="hidden" name="recipient_email" :value="recipientEmail">
-            <input type="hidden" name="message" :value="message">
-
-            <div class="border border-gray-200 dark:border-gray-600 p-8 text-center mb-8">
-              <div class="inline-flex items-center justify-center w-14 h-14 bg-accent/10 mb-4">
-                <svg class="w-7 h-7 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
-              <h2 class="text-base font-bold text-gray-900 dark:text-white mb-1">Ready to send</h2>
-              <p class="text-sm text-gray-500 dark:text-gray-400">No payment required — click below to send the gift instantly.</p>
-            </div>
-
-            <button type="submit" :disabled="loading"
-              class="w-full flex items-center justify-center gap-x-2 font-bold uppercase tracking-wide py-4 text-sm bg-gray-900 hover:bg-accent hover:text-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-accent transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
-              <svg x-show="loading" class="animate-spin h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-              </svg>
-              <span x-text="loading ? 'Sending…' : 'Send Gift'"></span>
-            </button>
-          </form>
-
-        @else
-          {{-- Paid gift: M-Pesa --}}
-          <p class="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-4">Payment Method</p>
-
-          <div class="grid grid-cols-2 gap-4 mb-8">
-            {{-- Credit Card (disabled) --}}
-            <div class="relative border border-gray-200 dark:border-gray-600 p-5 opacity-50 cursor-not-allowed select-none">
-              <div class="flex items-center gap-x-3 mb-3">
-                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                </svg>
-                <span class="text-sm font-bold text-gray-700 dark:text-gray-300">Credit Card</span>
-              </div>
-              <span class="inline-block text-[10px] font-bold uppercase tracking-widest border border-gray-300 dark:border-gray-600 text-gray-400 px-2 py-0.5">Coming Soon</span>
-            </div>
-
-            {{-- M-Pesa --}}
-            <button type="button" @click="method = 'mpesa'"
-              :class="method === 'mpesa'
-                ? 'border-accent bg-accent/5 dark:bg-accent/10'
-                : 'border-gray-200 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-400'"
-              class="relative border p-5 text-left transition-colors focus:outline-none">
-              <div class="flex items-center justify-between mb-3">
-                <div class="flex items-center gap-x-3">
-                  <span class="text-xl leading-none">🇰🇪</span>
-                  <span class="text-sm font-bold text-gray-700 dark:text-gray-300">M-Pesa</span>
-                </div>
-                <div :class="method === 'mpesa' ? 'border-accent bg-accent' : 'border-gray-300 dark:border-gray-600'"
-                  class="w-4 h-4 border-2 rounded-full flex items-center justify-center transition-colors shrink-0">
-                  <div x-show="method === 'mpesa'" class="w-1.5 h-1.5 bg-white rounded-full"></div>
-                </div>
-              </div>
-              <span class="text-xs text-gray-500 dark:text-gray-400">Safaricom M-Pesa STK Push</span>
-            </button>
-          </div>
-
-          {{-- Phone input --}}
-          <div x-show="method === 'mpesa'" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
-            <label class="block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
-              Your M-Pesa Phone Number
-            </label>
-            <div class="flex mb-1.5">
-              <span class="inline-flex items-center px-3.5 border border-r-0 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm font-bold text-gray-700 dark:text-gray-300 select-none whitespace-nowrap">
-                🇰🇪 +254
-              </span>
-              <input type="tel" x-model="phone" @input="phoneError = ''" @keydown.enter.prevent="pay()"
-                x-ref="phoneInput"
-                placeholder="712 345 678" maxlength="10" autocomplete="tel"
-                class="flex-1 min-w-0 border border-gray-200 dark:border-gray-600 dark:bg-gray-900/40 dark:text-white px-4 py-3 text-sm text-gray-900 focus:border-accent outline-none transition-colors"
-                :class="phoneError ? '!border-red-400' : ''">
-            </div>
-            <p class="text-[11px] min-h-4 mb-6"
-              :class="phoneError ? 'text-red-500' : 'text-gray-400'"
-              x-text="phoneError || 'You pay — your friend receives the subscription by email.'"></p>
-          </div>
-
-          <button type="button" @click="pay()" :disabled="!method || loading"
-            class="w-full flex items-center justify-center gap-x-2 font-bold uppercase tracking-wide py-4 text-sm bg-gray-900 hover:bg-accent hover:text-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-accent transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-            <svg x-show="loading" class="h-4 w-4 animate-spin fill-current shrink-0" viewBox="0 0 24 24">
-              <path d="M12 2v4a8 8 0 0 1 8 8h4A12 12 0 0 0 12 2z"/>
-            </svg>
-            <span x-text="loading ? 'Processing…' : 'Pay with M-Pesa — {{ $package->currency }} {{ number_format($package->price, 0) }}'"></span>
-          </button>
-        @endif
-
-      </div>
-
-      @if (!$isFree)
-      {{-- ── Waiting for PIN ── --}}
-      <div x-show="step === 'waiting'" x-transition class="py-8 text-center border border-gray-200 dark:border-gray-600 px-8">
-        <div class="inline-flex items-center justify-center w-14 h-14 bg-green-100 dark:bg-green-900/30 mb-5">
-          <svg class="w-7 h-7 text-green-600 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-          </svg>
-        </div>
-        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-1">Check your phone</h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">
-          Prompt sent to <span class="font-semibold text-gray-700 dark:text-gray-200" x-text="displayPhone"></span>
-        </p>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">Enter your M-Pesa PIN to complete payment.</p>
-        <div class="flex items-center justify-center gap-x-1.5 mb-8">
-          <span class="w-2 h-2 bg-accent rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-          <span class="w-2 h-2 bg-accent rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-          <span class="w-2 h-2 bg-accent rounded-full animate-bounce"></span>
-        </div>
-        <div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-4 text-xs text-gray-400">
-          <span>Expires in <span class="font-bold text-gray-600 dark:text-gray-300" x-text="countdown + 's'"></span></span>
-          <button @click="cancelPayment()" class="font-bold uppercase hover:text-red-500 transition-colors">Cancel</button>
-        </div>
-      </div>
-
-      {{-- ── Failed ── --}}
-      <div x-show="step === 'failed'" x-transition class="py-8 text-center border border-gray-200 dark:border-gray-600 px-8">
-        <div class="inline-flex items-center justify-center w-14 h-14 bg-red-100 dark:bg-red-900/30 mb-5">
-          <svg class="w-7 h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </div>
-        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-1">Payment not completed</h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-8" x-text="errorMsg || 'Cancelled or timed out. Please try again.'"></p>
-        <button @click="step = 'payment'; errorMsg = ''"
-          class="inline-flex font-bold uppercase tracking-wide py-3 px-8 text-xs bg-gray-900 text-white hover:bg-accent hover:text-gray-900 dark:bg-white dark:text-gray-900 dark:hover:bg-accent transition-colors">
-          Try Again
-        </button>
-      </div>
-      @endif
-
+    </div>
+    <div class="shrink-0 text-right">
+      @if ($isFree)<p class="text-3xl font-extrabold text-brand">Free</p>
+      @else<p class="text-3xl font-extrabold text-fg">{{ $package->currency }}&nbsp;{{ number_format($package->price, 0) }}</p>@endif
+      <p class="text-xs text-muted">per {{ $package->interval }}</p>
     </div>
   </div>
-</main>
+
+  {{-- Steps --}}
+  <div x-show="!['waiting','success','failed'].includes(step)" class="mb-8 flex items-center">
+    <div class="flex items-center gap-2">
+      <span class="grid size-7 place-items-center rounded-full text-xs font-bold transition" :class="step === 'recipient' ? 'bg-brand text-white' : 'bg-brand-soft text-brand'">1</span>
+      <span class="text-xs font-semibold uppercase tracking-wider" :class="step === 'recipient' ? 'text-fg' : 'text-muted'">Recipient</span>
+    </div>
+    <div class="mx-4 h-px flex-1 bg-line"></div>
+    <div class="flex items-center gap-2">
+      <span class="grid size-7 place-items-center rounded-full text-xs font-bold transition" :class="step === 'payment' ? 'bg-brand text-white' : 'bg-surface-3 text-muted'">2</span>
+      <span class="text-xs font-semibold uppercase tracking-wider" :class="step === 'payment' ? 'text-fg' : 'text-muted'">Payment</span>
+    </div>
+  </div>
+
+  {{-- Step 1: recipient --}}
+  <div x-show="step === 'recipient'" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-x-2" x-transition:enter-end="opacity-100 translate-x-0" class="card card-pad">
+    @if ($errors->any())
+      <div class="alert alert-error mb-6 !block"><ul class="space-y-1">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
+    @endif
+
+    <div class="mb-6">
+      <label for="recipient_email" class="label">Recipient's email address</label>
+      <input type="email" id="recipient_email" x-model="recipientEmail" @input="recipientError = ''" @keydown.enter.prevent="nextStep()"
+        value="{{ old('recipient_email') }}" placeholder="friend@example.com" autocomplete="off"
+        class="input" :class="recipientError ? 'input-error' : ''">
+      <p class="mt-1.5 min-h-4 text-xs" :class="recipientError ? 'font-medium text-red-500' : 'text-muted'"
+        x-text="recipientError || 'They\'ll receive an email with a link to claim the subscription.'"></p>
+    </div>
+
+    <div class="mb-6">
+      <label for="message" class="label">Personal message <span class="font-normal normal-case tracking-normal">(optional)</span></label>
+      <textarea id="message" x-model="message" rows="3" maxlength="500" placeholder="Add a personal note to make it special…" class="textarea resize-none">{{ old('message') }}</textarea>
+      <p class="hint">Up to 500 characters. Will appear in the gift email.</p>
+    </div>
+
+    <button type="button" @click="nextStep()" class="btn btn-primary btn-lg btn-block">Continue <x-ui.icon name="arrow-right" class="size-4" /></button>
+  </div>
+
+  {{-- Step 2: payment --}}
+  <div x-show="step === 'payment'" x-cloak x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 translate-x-2" x-transition:enter-end="opacity-100 translate-x-0">
+    <div class="panel mb-6 flex items-center justify-between px-4 py-3">
+      <div class="min-w-0">
+        <p class="text-[11px] font-semibold uppercase tracking-widest text-muted">Sending to</p>
+        <p class="truncate text-sm font-semibold text-fg" x-text="recipientEmail"></p>
+      </div>
+      <button type="button" @click="step = 'recipient'" class="ml-4 shrink-0 text-xs font-semibold text-brand hover:underline">Edit</button>
+    </div>
+
+    @if ($isFree)
+      <form method="POST" action="{{ route('gift.store', $package->uuid) }}" x-data="{ loading: false }" @submit="loading = true" id="gift-form-free">
+        @csrf
+        <input type="hidden" name="recipient_email" :value="recipientEmail">
+        <input type="hidden" name="message" :value="message">
+        <div class="card card-pad mb-6 py-10 text-center">
+          <span class="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-brand-soft text-brand"><x-ui.icon name="gift" class="size-7" /></span>
+          <h2 class="text-lg font-bold text-fg">Ready to send</h2>
+          <p class="mt-1 text-sm text-muted">No payment required — click below to send the gift instantly.</p>
+        </div>
+        <x-ui.submit loading="Sending…">Send gift</x-ui.submit>
+      </form>
+    @else
+      <p class="label mb-3">Payment method</p>
+      <div class="mb-6 grid grid-cols-2 gap-3">
+        <div class="cursor-not-allowed select-none rounded-2xl border border-line p-4 opacity-50">
+          <div class="mb-3 flex items-center gap-3"><x-ui.icon name="credit-card" class="size-6 text-muted" /><span class="text-sm font-semibold text-fg">Credit card</span></div>
+          <span class="badge badge-neutral">Coming soon</span>
+        </div>
+        <button type="button" @click="method = 'mpesa'" :class="method === 'mpesa' ? 'border-brand bg-brand-soft' : 'border-line hover:border-line-strong'" class="rounded-2xl border p-4 text-left transition">
+          <div class="mb-3 flex items-center justify-between">
+            <div class="flex items-center gap-3"><span class="text-xl leading-none">🇰🇪</span><span class="text-sm font-semibold text-fg">M-Pesa</span></div>
+            <span :class="method === 'mpesa' ? 'border-brand bg-brand' : 'border-line-strong'" class="grid size-4 place-items-center rounded-full border-2"><span x-show="method === 'mpesa'" class="size-1.5 rounded-full bg-white"></span></span>
+          </div>
+          <span class="text-xs text-muted">Safaricom STK Push</span>
+        </button>
+      </div>
+
+      <div x-show="method === 'mpesa'" x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="card card-pad mb-6">
+        <label class="label">Your M-Pesa phone number</label>
+        <div class="flex">
+          <span class="inline-flex select-none items-center whitespace-nowrap rounded-l-xl border border-r-0 border-line-strong bg-surface-2 px-3.5 text-sm font-semibold text-fg">🇰🇪 +254</span>
+          <input type="tel" x-model="phone" @input="phoneError = ''" @keydown.enter.prevent="pay()" x-ref="phoneInput" placeholder="712 345 678" maxlength="10" autocomplete="tel" class="input !rounded-l-none" :class="phoneError ? 'input-error' : ''">
+        </div>
+        <p class="mt-1.5 min-h-4 text-xs" :class="phoneError ? 'font-medium text-red-500' : 'text-muted'" x-text="phoneError || 'You pay — your friend receives the subscription by email.'"></p>
+      </div>
+
+      <button type="button" @click="pay()" :disabled="!method || loading" class="btn btn-primary btn-lg btn-block">
+        <svg x-show="loading" x-cloak class="size-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+        <span x-text="loading ? 'Processing…' : 'Pay with M-Pesa — {{ $package->currency }} {{ number_format($package->price, 0) }}'"></span>
+      </button>
+    @endif
+  </div>
+
+  @if (!$isFree)
+    <div x-show="step === 'waiting'" x-cloak x-transition class="card card-pad py-10 text-center">
+      <span class="mx-auto mb-5 grid size-14 animate-pulse place-items-center rounded-2xl bg-emerald-500/12 text-emerald-500"><x-ui.icon name="phone" class="size-7" /></span>
+      <h2 class="text-xl font-bold text-fg">Check your phone</h2>
+      <p class="mt-2 text-sm text-muted">Prompt sent to <span class="font-semibold text-fg" x-text="displayPhone"></span></p>
+      <p class="mb-6 text-sm text-muted">Enter your M-Pesa PIN to complete payment.</p>
+      <div class="mb-8 flex items-center justify-center gap-1.5">
+        <span class="size-2 animate-bounce rounded-full bg-brand [animation-delay:-0.3s]"></span>
+        <span class="size-2 animate-bounce rounded-full bg-brand [animation-delay:-0.15s]"></span>
+        <span class="size-2 animate-bounce rounded-full bg-brand"></span>
+      </div>
+      <div class="flex items-center justify-between border-t border-line pt-4 text-xs text-muted">
+        <span>Expires in <span class="font-bold text-fg" x-text="countdown + 's'"></span></span>
+        <button type="button" @click="cancelPayment()" class="font-semibold hover:text-red-500">Cancel</button>
+      </div>
+    </div>
+
+    <div x-show="step === 'failed'" x-cloak x-transition class="card card-pad py-10 text-center">
+      <span class="mx-auto mb-5 grid size-14 place-items-center rounded-2xl bg-red-500/12 text-red-500"><x-ui.icon name="alert" class="size-7" /></span>
+      <h2 class="text-xl font-bold text-fg">Payment not completed</h2>
+      <p class="mt-2 text-sm text-muted" x-text="errorMsg || 'Cancelled or timed out. Please try again.'"></p>
+      <button type="button" @click="step = 'payment'; errorMsg = ''" class="btn btn-primary mt-8">Try again</button>
+    </div>
+  @endif
+</div>
 @endsection
 
 @push('scripts')

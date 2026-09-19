@@ -109,7 +109,6 @@ Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 Route::get('/coming-soon', [ComingSoonController::class, 'index'])->name('coming-soon');
 Route::get('/coming-soon/{comingSoon}', [ComingSoonController::class, 'show'])->name('coming-soon.show');
-Route::view('/shop', 'pages.shop')->name('shop');
 Route::get('/browse', [BrowseController::class, 'index'])->name('browse');
 Route::get('/collections/{collection}', [CollectionController::class, 'show'])->name('collections.show');
 Route::get('/search/suggestions', [BrowseController::class, 'suggestions'])->name('search.suggestions');
@@ -140,9 +139,6 @@ Route::middleware(['auth', 'verified', 'subscription'])->group(function () {
     Route::get('/movies/{movie}/download', [DownloadController::class, 'movie'])->name('movies.download');
     Route::get('/episodes/{episode}/download', [DownloadController::class, 'episode'])->name('episodes.download');
 });
-Route::view('/single-product', 'pages.single-product')->name('single-product');
-Route::view('/trailers', 'pages.view-trailers')->name('trailers');
-Route::view('/watch', 'pages.watch')->name('watch');
 
 Route::middleware('auth')->post('/watch/progress', [WatchProgressController::class, 'upsert'])->name('watch.progress');
 

@@ -3,14 +3,9 @@
 @section('admin-title', 'Create Role')
 
 @section('admin-content')
-
-<div class="mb-8">
-  <a href="{{ route('admin.roles.index') }}"
-     class="text-xs font-bold uppercase text-gray-400 hover:text-accent transition-colors mb-2 inline-block">
-    ← Back to Roles
-  </a>
-  <h2 class="text-2xl font-bold tracking-tighter text-gray-900 dark:text-white lg:text-4xl">Create Role</h2>
-</div>
+<x-ui.page-header title="Create role">
+  <x-slot:actions><a href="{{ route('admin.roles.index') }}" class="btn btn-secondary btn-sm"><x-ui.icon name="arrow-left" class="size-3.5" /> Back to roles</a></x-slot:actions>
+</x-ui.page-header>
 
 @include('pages.admin.roles._form', [
     'action'          => route('admin.roles.store'),
@@ -18,5 +13,4 @@
     'role'            => null,
     'rolePermissions' => old('permissions', []),
 ])
-
 @endsection

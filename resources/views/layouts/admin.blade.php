@@ -1,260 +1,204 @@
-@extends('layouts.app')
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+@include('layouts.partials.head')
 
-@section('title')Admin — @yield('admin-title', 'Dashboard')@endsection
+@php
+  $u = auth()->user();
+  $unreadContacts = \Gate::allows('view contacts') ? \App\Models\Contact::unread()->count() : 0;
 
-@push('head')
-  @vite('resources/js/app.js')
-@endpush
+  // [label, route, icon, active pattern, gate]
+  $groups = [
+    'Overview' => [
+      ['Dashboard', 'admin.dashboard', 'dashboard', 'admin.dashboard', null],
+      ['Analytics', 'admin.analytics', 'chart', 'admin.analytics', 'view analytics'],
+    ],
+    'Content' => [
+      ['Movies', 'admin.movies.index', 'film', 'admin.movies.*', 'view movies'],
+      ['Series', 'admin.series.index', 'tv', 'admin.series.*', 'view series'],
+      ['Coming soon', 'admin.coming-soon.index', 'calendar', 'admin.coming-soon.*', 'view coming soon'],
+      ['Collections', 'admin.collections.index', 'folder', 'admin.collections.*', 'view collections'],
+    ],
+    'People' => [
+      ['Users', 'admin.users.index', 'users', 'admin.users.*', 'view users'],
+      ['Roles', 'admin.roles.index', 'shield', 'admin.roles.*', 'assign permissions'],
+    ],
+    'Finance' => [
+      ['Packages', 'admin.packages.index', 'package', 'admin.packages.*', 'view packages'],
+      ['Payments', 'admin.payments.index', 'wallet', 'admin.payments.*', 'view payments'],
+      ['Gifts', 'admin.gifts.index', 'gift', 'admin.gifts.*', '__admin'],
+    ],
+    'System' => [
+      ['Messages', 'admin.contacts.index', 'inbox', 'admin.contacts.*', 'view contacts'],
+      ['Test emails', 'admin.test-email.show', 'mail', 'admin.test-email.*', 'send test emails'],
+      ['Activity log', 'admin.activity.index', 'activity', 'admin.activity.*', '__admin'],
+      ['Trash', 'admin.trash.index', 'trash', 'admin.trash.*', '__admin'],
+    ],
+  ];
 
-@push('scripts')
-<script type="module">
-  function showToast(text, href, bg, color) {
-    const container = document.getElementById('vt-container');
-    if (!container) return;
+  $statusMessages = [
+    'movie-created'     => 'Movie uploaded successfully.',
+    'movie-processing'  => 'Movie saved — video is being processed in the background.',
+    'movie-updated'     => 'Movie updated successfully.',
+    'movie-deleted'     => 'Movie deleted.',
+    'series-created'    => 'Series created. Add seasons below.',
+    'series-updated'    => 'Series updated successfully.',
+    'series-deleted'    => 'Series deleted.',
+    'season-added'      => 'Season added successfully.',
+    'season-deleted'    => 'Season deleted.',
+    'episode-processing'    => 'Episode saved — video is being processed in the background.',
+    'movie-reprocessing'    => 'HLS encoding triggered for this movie.',
+    'series-reprocessing'   => 'HLS encoding triggered for unprocessed episodes.',
+    'episode-added'     => 'Episode uploaded successfully.',
+    'episode-deleted'   => 'Episode deleted.',
+    'poster-deleted'    => 'Poster removed.',
+    'streaming-url-saved'   => 'Streaming URL saved successfully.',
+    'coming-soon-created'   => 'Film added to Coming Soon.',
+    'coming-soon-updated'   => 'Film details updated.',
+    'coming-soon-deleted'   => 'Film removed from Coming Soon.',
+    'trailer-processing'    => 'Trailer uploaded and is being processed for streaming.',
+    'collection-created'    => 'Collection created.',
+    'collection-updated'    => 'Collection updated.',
+    'collection-deleted'    => 'Collection deleted.',
+    'item-added'            => 'Item added to collection.',
+    'item-removed'          => 'Item removed from collection.',
+  ];
+  $flashStatus = $statusMessages[session('status')] ?? null;
+@endphp
 
-    const toast = document.createElement('div');
-    toast.style.cssText = `display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 16px;background:${bg};color:${color};font-size:0.8125rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.25);min-width:280px;max-width:340px;`;
+<body class="min-h-screen" x-data="{ nav: false }" @keydown.escape.window="nav = false">
+  <div class="flex min-h-screen">
 
-    const link = document.createElement('a');
-    link.href = href;
-    link.style.cssText = 'color:inherit;text-decoration:none;flex:1;';
-    link.textContent = text;
-
-    const btn = document.createElement('button');
-    btn.textContent = '✕';
-    btn.style.cssText = 'background:none;border:none;cursor:pointer;color:inherit;font-size:1rem;line-height:1;flex-shrink:0;';
-    btn.onclick = () => toast.remove();
-
-    toast.appendChild(link);
-    toast.appendChild(btn);
-    container.appendChild(toast);
-
-    setTimeout(() => toast.remove(), 8000);
-  }
-
-  window.Echo.private('admin-notifications.{{ auth()->id() }}')
-    .listen('VideoReady', (e) => {
-      showToast(`✓ "${e.label}" video ready`, e.editUrl, '#eab308', '#111827');
-    })
-    .listen('VideoStreamingReady', (e) => {
-      showToast(`▶ "${e.label}" HLS stream ready`, e.editUrl, 'rgb(101,76,255)', '#fff');
-      document.dispatchEvent(new CustomEvent('video-ready', { detail: e }));
-    })
-    .listen('VideoEncodingProgress', (e) => {
-      document.dispatchEvent(new CustomEvent('encoding-progress', { detail: e }));
-    });
-</script>
-@endpush
-
-@section('content')
-<div class="pt-10 pb-16 lg:pt-20 lg:pb-44">
-  <div class="container">
-    <div class="flex flex-col lg:flex-row gap-y-8 lg:gap-x-12 xl:gap-x-16">
-
-      <aside class="hidden lg:block lg:w-52 xl:w-60 shrink-0">
-        <nav class="lg:sticky lg:top-8">
-          <div class="mb-4 pb-4 border-b border-gray-200 dark:border-gray-600">
-            <span class="text-xs font-bold uppercase text-accent tracking-widest">Admin Panel</span>
-          </div>
-          <ul class="flex flex-row flex-wrap gap-x-6 gap-y-2 lg:flex-col lg:gap-x-0 lg:gap-y-1 font-bold">
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.dashboard') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('admin.dashboard') }}">Dashboard</a>
-            </li>
-            @can('view analytics')
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.analytics') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('admin.analytics') }}">Analytics</a>
-            </li>
-            @endcan
-            @can('view movies')
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.movies.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('admin.movies.index') }}">Movies</a>
-            </li>
-            @endcan
-            @can('view series')
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.series.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('admin.series.index') }}">Series</a>
-            </li>
-            @endcan
-            @can('view coming soon')
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.coming-soon.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('admin.coming-soon.index') }}">Coming Soon</a>
-            </li>
-            @endcan
-            @can('view collections')
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.collections.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('admin.collections.index') }}">Collections</a>
-            </li>
-            @endcan
-            @can('view users')
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.users.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('admin.users.index') }}">Users</a>
-            </li>
-            @endcan
-            @can('assign permissions')
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.roles.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('admin.roles.index') }}">Roles</a>
-            </li>
-            @endcan
-            @can('view packages')
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.packages.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('admin.packages.index') }}">Subscription Packages</a>
-            </li>
-            @endcan
-            @can('view payments')
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.payments.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('admin.payments.index') }}">Payments</a>
-            </li>
-            @endcan
-            @if (auth()->user()->isAdmin())
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.gifts.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('admin.gifts.index') }}">Gifts</a>
-            </li>
-            @endif
-            @can('send test emails')
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.test-email.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('admin.test-email.show') }}">Test Emails</a>
-            </li>
-            @endcan
-            @can('view contacts')
-            <li>
-              @php $unreadContacts = \App\Models\Contact::unread()->count(); @endphp
-              <a class="flex items-center gap-x-2 py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.contacts.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('admin.contacts.index') }}">
-                Messages
-                @if ($unreadContacts > 0)
-                  <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold bg-accent text-gray-900 rounded-full">{{ $unreadContacts }}</span>
-                @endif
-              </a>
-            </li>
-            @endcan
-            @if (auth()->user()->isAdmin())
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.activity.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('admin.activity.index') }}">Activity Log</a>
-            </li>
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('admin.trash.*') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('admin.trash.index') }}">Trash</a>
-            </li>
-            @endif
-            <li class="lg:mt-4 lg:pt-4 lg:border-t lg:border-gray-200 lg:dark:border-gray-600">
-              <a class="block py-1.5 transition-all text-gray-900 hover:text-accent dark:text-white dark:hover:text-accent"
-                href="{{ route('account.dashboard') }}">My Account</a>
-            </li>
-          </ul>
-
-          <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
-            <span class="text-xs font-bold uppercase text-gray-400 tracking-widest">Site</span>
-          </div>
-          <ul class="mt-3 flex flex-row flex-wrap gap-x-6 gap-y-2 lg:flex-col lg:gap-x-0 lg:gap-y-1 font-bold">
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('home') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('home') }}">Home</a>
-            </li>
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('browse') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('browse') }}">Browse</a>
-            </li>
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('movies') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('movies') }}">Movies</a>
-            </li>
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('series') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('series') }}">Series</a>
-            </li>
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('coming-soon') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('coming-soon') }}">Coming Soon</a>
-            </li>
-            <li>
-              <a class="block py-1.5 transition-all hover:text-accent dark:hover:text-accent {{ request()->routeIs('contact') ? 'text-accent' : 'text-gray-900 dark:text-white' }}"
-                href="{{ route('contact') }}">Contact</a>
-            </li>
-          </ul>
-
-          <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
-            <label for="theme-toggle"
-              class="flex items-center gap-x-2.5 cursor-pointer text-gray-900 dark:text-white hover:text-accent dark:hover:text-accent transition-colors font-bold text-sm">
-              <svg class="w-4 h-4 shrink-0 dark:hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-              </svg>
-              <svg class="w-4 h-4 shrink-0 hidden dark:block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-              </svg>
-              <span class="dark:hidden">Light Mode</span>
-              <span class="hidden dark:block">Dark Mode</span>
-            </label>
-          </div>
-        </nav>
-      </aside>
-
-      <div class="flex-1 min-w-0">
-        @if (session('error'))
-          <div class="mb-6 border border-red-400 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-400 font-medium">
-            {{ session('error') }}
-          </div>
-        @endif
-
-        @if (session('status'))
-          @php
-            $messages = [
-              'movie-created'     => 'Movie uploaded successfully.',
-              'movie-processing'  => 'Movie saved — video is being processed in the background.',
-              'movie-updated'     => 'Movie updated successfully.',
-              'movie-deleted'     => 'Movie deleted.',
-              'series-created'    => 'Series created. Add seasons below.',
-              'series-updated'    => 'Series updated successfully.',
-              'series-deleted'    => 'Series deleted.',
-              'season-added'      => 'Season added successfully.',
-              'season-deleted'    => 'Season deleted.',
-              'episode-processing'    => 'Episode saved — video is being processed in the background.',
-              'movie-reprocessing'    => 'HLS encoding triggered for this movie.',
-              'series-reprocessing'   => 'HLS encoding triggered for unprocessed episodes.',
-              'episode-added'     => 'Episode uploaded successfully.',
-              'episode-deleted'   => 'Episode deleted.',
-              'poster-deleted'    => 'Poster removed.',
-              'streaming-url-saved'   => 'Streaming URL saved successfully.',
-              'coming-soon-created'   => 'Film added to Coming Soon.',
-              'coming-soon-updated'   => 'Film details updated.',
-              'coming-soon-deleted'   => 'Film removed from Coming Soon.',
-              'trailer-processing'    => 'Trailer uploaded and is being processed for streaming.',
-              'collection-created'    => 'Collection created.',
-              'collection-updated'    => 'Collection updated.',
-              'collection-deleted'    => 'Collection deleted.',
-              'item-added'            => 'Item added to collection.',
-              'item-removed'          => 'Item removed from collection.',
-            ];
-            $msg = $messages[session('status')] ?? null;
-          @endphp
-          @if ($msg)
-            <div class="mb-6 border border-accent bg-accent/10 px-4 py-3 text-sm text-accent font-medium">
-              {{ $msg }}
-            </div>
-          @endif
-        @endif
-
-        @yield('admin-content')
+    {{-- Sidebar --}}
+    <div x-show="nav" x-cloak x-transition.opacity class="fixed inset-0 z-40 bg-black/60 lg:hidden" @click="nav = false"></div>
+    <aside class="fixed inset-y-0 left-0 z-50 flex w-64 -translate-x-full flex-col border-r border-line bg-surface transition-transform duration-200 lg:translate-x-0" :class="nav && '!translate-x-0'">
+      <div class="flex h-16 shrink-0 items-center justify-between border-b border-line px-5">
+        <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2.5">
+          <x-ui.logo />
+        </a>
+        <button type="button" class="btn btn-ghost btn-icon lg:hidden" @click="nav = false" aria-label="Close"><x-ui.icon name="x" /></button>
       </div>
 
+      <nav class="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+        @foreach ($groups as $group => $items)
+          @php
+            $visible = collect($items)->filter(fn ($i) => $i[4] === null || ($i[4] === '__admin' ? $u->isAdmin() : \Gate::allows($i[4])));
+          @endphp
+          @if ($visible->isNotEmpty())
+            <div>
+              <p class="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">{{ $group }}</p>
+              <div class="space-y-0.5">
+                @foreach ($visible as [$label, $route, $icon, $pattern])
+                  <a href="{{ route($route) }}" class="side-link {{ request()->routeIs($pattern) ? 'is-active' : '' }}">
+                    <x-ui.icon :name="$icon" /> <span class="flex-1">{{ $label }}</span>
+                    @if ($route === 'admin.contacts.index' && $unreadContacts > 0)
+                      <span class="grid min-w-5 place-items-center rounded-full bg-brand px-1.5 text-[10px] font-bold leading-5 text-white">{{ $unreadContacts }}</span>
+                    @endif
+                  </a>
+                @endforeach
+              </div>
+            </div>
+          @endif
+        @endforeach
+      </nav>
+
+      <div class="shrink-0 border-t border-line p-3">
+        <a href="{{ route('home') }}" class="side-link"><x-ui.icon name="external" /> View site</a>
+        <a href="{{ route('account.dashboard') }}" class="side-link"><x-ui.icon name="user" /> My account</a>
+      </div>
+    </aside>
+
+    {{-- Main --}}
+    <div class="flex min-w-0 flex-1 flex-col lg:pl-64">
+      <header class="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-line bg-bg/80 px-4 backdrop-blur-xl sm:px-6">
+        <button type="button" class="btn btn-ghost btn-icon lg:hidden" @click="nav = true" aria-label="Open menu"><x-ui.icon name="menu" /></button>
+        <div class="min-w-0">
+          <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand">Admin</p>
+          <h1 class="truncate text-base font-bold leading-tight text-fg">@yield('admin-title', 'Dashboard')</h1>
+        </div>
+
+        <div class="ml-auto flex items-center gap-1.5">
+          <button type="button" onclick="toggleTheme()" class="btn btn-ghost btn-icon" aria-label="Toggle theme">
+            <x-ui.icon name="sun" class="hidden dark:block" /><x-ui.icon name="moon" class="dark:hidden" />
+          </button>
+          <div class="flex items-center gap-2.5 pl-2">
+            @if ($u->avatarUrl())
+              <img src="{{ $u->avatarUrl() }}" alt="" class="size-8 rounded-full object-cover">
+            @else
+              <span class="grid size-8 place-items-center rounded-full bg-brand-soft text-xs font-bold text-brand">{{ $u->initials() }}</span>
+            @endif
+            <span class="hidden text-sm font-semibold text-fg sm:block">{{ $u->name }}</span>
+          </div>
+          <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" class="btn btn-ghost btn-icon" title="Sign out"><x-ui.icon name="log-out" /></button>
+          </form>
+        </div>
+      </header>
+
+      <main class="flex-1 p-4 sm:p-6 lg:p-8">
+        <div class="mx-auto max-w-7xl space-y-6">
+          @if (session('error'))
+            <div class="alert alert-error"><x-ui.icon name="alert" class="mt-0.5 size-5 shrink-0" />{{ session('error') }}</div>
+          @endif
+          @if ($flashStatus)
+            <div class="alert alert-success"><x-ui.icon name="check-circle" class="mt-0.5 size-5 shrink-0" />{{ $flashStatus }}</div>
+          @endif
+
+          @yield('admin-content')
+        </div>
+      </main>
     </div>
   </div>
-</div>
 
-<div id="vt-container"
-  style="position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none;">
-</div>
-<style>#vt-container > div { pointer-events: auto; }</style>
-@endsection
+  {{-- Realtime toasts --}}
+  <div id="vt-container" class="pointer-events-none fixed bottom-6 right-6 z-[9999] flex w-80 max-w-[calc(100vw-3rem)] flex-col gap-2.5"></div>
+
+  <script>
+    function toggleTheme() {
+      var dark = !document.documentElement.classList.contains('dark');
+      document.documentElement.classList.toggle('dark', dark);
+      try { localStorage.setItem('str1-color-theme', dark ? 'dark' : 'light'); } catch (e) {}
+    }
+  </script>
+
+  <script type="module">
+    function showToast(text, href, tone) {
+      const container = document.getElementById('vt-container');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      toast.className = 'pointer-events-auto flex items-start justify-between gap-3 rounded-xl border px-4 py-3 text-sm font-semibold shadow-lg ' +
+        (tone === 'brand' ? 'border-brand/30 bg-brand text-white' : 'border-amber-400/40 bg-amber-400 text-neutral-900');
+
+      const link = document.createElement('a');
+      link.href = href;
+      link.className = 'flex-1';
+      link.textContent = text;
+
+      const btn = document.createElement('button');
+      btn.textContent = '✕';
+      btn.className = 'shrink-0 leading-none opacity-70 hover:opacity-100';
+      btn.onclick = () => toast.remove();
+
+      toast.appendChild(link);
+      toast.appendChild(btn);
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 8000);
+    }
+
+    window.Echo.private('admin-notifications.{{ auth()->id() }}')
+      .listen('VideoReady', (e) => {
+        showToast(`✓ "${e.label}" video ready`, e.editUrl, 'amber');
+      })
+      .listen('VideoStreamingReady', (e) => {
+        showToast(`▶ "${e.label}" HLS stream ready`, e.editUrl, 'brand');
+        document.dispatchEvent(new CustomEvent('video-ready', { detail: e }));
+      })
+      .listen('VideoEncodingProgress', (e) => {
+        document.dispatchEvent(new CustomEvent('encoding-progress', { detail: e }));
+      });
+  </script>
+
+  @stack('scripts')
+</body>
+</html>

@@ -3,140 +3,83 @@
 @section('admin-title', $collection->name)
 
 @section('admin-content')
-<div class="flex items-center justify-between mb-8">
-  <h2 class="text-2xl font-bold tracking-tighter text-gray-900 dark:text-white lg:text-4xl">{{ $collection->name }}</h2>
-  <a href="{{ route('collections.show', $collection) }}" target="_blank"
-    class="text-xs font-bold uppercase text-gray-500 hover:text-accent transition-colors">View on site →</a>
-</div>
+<x-ui.page-header :title="$collection->name">
+  <x-slot:actions>
+    <a href="{{ route('collections.show', $collection) }}" target="_blank" class="btn btn-secondary btn-sm"><x-ui.icon name="external" class="size-3.5" /> View on site</a>
+    <a href="{{ route('admin.collections.index') }}" class="btn btn-secondary btn-sm"><x-ui.icon name="arrow-left" class="size-3.5" /> Back</a>
+  </x-slot:actions>
+</x-ui.page-header>
 
-{{-- ── Details form ── --}}
-<form method="POST" action="{{ route('admin.collections.update', $collection) }}" enctype="multipart/form-data"
-  class="flex flex-col gap-y-6 max-w-2xl mb-16">
+<form method="POST" action="{{ route('admin.collections.update', $collection) }}" enctype="multipart/form-data" class="card">
   @csrf @method('PUT')
-
-  <div>
-    <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="name">Name</label>
-    <input class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full @error('name') border-danger @enderror"
-      type="text" name="name" id="name" value="{{ old('name', $collection->name) }}">
-    @error('name')<p class="mt-1.5 text-xs text-danger">{{ $message }}</p>@enderror
-  </div>
-
-  <div>
-    <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="description">Description</label>
-    <textarea class="block px-4 py-2 border-base bg-white/40 font-medium tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full h-28"
-      name="description" id="description">{{ old('description', $collection->description) }}</textarea>
-  </div>
-
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-    <div>
-      <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Thumbnail</label>
-      @if ($collection->thumbnail)
-        <img src="{{ $collection->thumbnailUrl() }}" class="h-24 w-auto object-cover border border-gray-200 dark:border-gray-600 mb-3" alt="">
-      @endif
-      <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer"
-        type="file" name="thumbnail" id="col-thumbnail" accept="image/*">
-      <div id="col-thumbnail-preview" class="mt-3"></div>
+  <div class="card-header"><h2 class="card-title">Details</h2></div>
+  <div class="max-w-2xl space-y-5 p-5 sm:p-6">
+    <x-ui.field name="name" label="Name" :value="old('name', $collection->name)" />
+    <x-ui.textarea name="description" label="Description" :value="old('description', $collection->description)" />
+    <div class="grid gap-5 sm:grid-cols-2">
+      <div>
+        <label class="label">Thumbnail</label>
+        @if ($collection->thumbnail)<img src="{{ $collection->thumbnailUrl() }}" alt="" class="mb-3 h-24 w-auto rounded-lg border border-line object-cover">@endif
+        <x-ui.file name="thumbnail" id="col-thumbnail" accept="image/*" />
+        <div id="col-thumbnail-preview" class="mt-3"></div>
+      </div>
+      <x-ui.field name="sort_order" type="number" label="Display order" :value="old('sort_order', $collection->sort_order)" min="0" hint="Lower numbers appear first" />
     </div>
-
     <div>
-      <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="sort_order">Display Order</label>
-      <input class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full"
-        type="number" name="sort_order" id="sort_order" value="{{ old('sort_order', $collection->sort_order) }}" min="0">
-      <p class="mt-1 text-xs text-gray-500">Lower numbers appear first</p>
+      <input type="hidden" name="is_active" value="0">
+      <x-ui.check name="is_active" label="Active (visible on site)" :checked="old('is_active', $collection->is_active)" />
     </div>
-  </div>
-
-  <div class="flex items-center gap-x-3">
-    <input type="hidden" name="is_active" value="0">
-    <input type="checkbox" name="is_active" id="is_active" value="1" {{ old('is_active', $collection->is_active) ? 'checked' : '' }}
-      class="w-4 h-4 accent-accent cursor-pointer">
-    <label for="is_active" class="text-sm font-bold text-gray-700 dark:text-gray-300 cursor-pointer">Active (visible on site)</label>
-  </div>
-
-  <div>
-    <button type="submit"
-      class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-4 px-8 text-sm text-gray-900 bg-accent hover:bg-accent/90">
-      Save Changes
-    </button>
-    <a href="{{ route('admin.collections.index') }}"
-      class="ml-6 text-sm font-bold text-gray-500 hover:text-accent transition-colors uppercase">Back</a>
+    <div class="flex gap-3">
+      <button type="submit" class="btn btn-primary">Save changes</button>
+      <a href="{{ route('admin.collections.index') }}" class="btn btn-secondary">Back</a>
+    </div>
   </div>
 </form>
 
-{{-- ── Items management ── --}}
-<div class="max-w-2xl">
-  <h3 class="text-lg font-bold tracking-tight text-gray-900 dark:text-white mb-6">Items in this collection</h3>
-
-  {{-- Current items --}}
-  @if ($collection->items->isEmpty())
-    <p class="text-sm text-gray-500 mb-8">No items yet. Add movies or series below.</p>
-  @else
-    <div class="border border-gray-200 dark:border-gray-600 divide-y divide-gray-200 dark:divide-gray-600 mb-8">
-      @foreach ($collection->items as $item)
-        @php $content = $item->collectible; @endphp
-        <div class="flex items-center gap-x-3 p-3">
-          @if ($content && $content->thumbnail)
-            <img src="{{ $content->thumbnailUrl() }}" class="w-10 h-12 object-cover shrink-0" alt="">
-          @else
-            <div class="w-10 h-12 bg-gray-100 dark:bg-gray-700 shrink-0 flex items-center justify-center">
-              <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 24 24"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg>
+{{-- Items --}}
+<div class="card">
+  <div class="card-header"><h2 class="card-title">Items in this collection</h2><span class="badge badge-neutral">{{ $collection->items->count() }}</span></div>
+  <div class="space-y-6 p-5 sm:p-6">
+    @if ($collection->items->isEmpty())
+      <p class="text-sm text-muted">No items yet. Add movies or series below.</p>
+    @else
+      <ul class="divide-y divide-line rounded-xl border border-line">
+        @foreach ($collection->items as $item)
+          @php $content = $item->collectible; @endphp
+          <li class="flex items-center gap-4 px-4 py-3">
+            <x-admin.thumb :src="$content && $content->thumbnail ? $content->thumbnailUrl() : null" />
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold text-fg">{{ $content?->title ?? '(deleted)' }}</p>
+              <p class="text-xs text-muted">{{ $item->collectible_type === \App\Models\Movie::class ? 'Movie' : 'Series' }}@if ($content?->year) · {{ $content->year }}@endif</p>
             </div>
-          @endif
-          <div class="flex-1 min-w-0">
-            <p class="font-bold text-sm text-gray-900 dark:text-white truncate">{{ $content?->title ?? '(deleted)' }}</p>
-            <p class="text-xs text-gray-500 uppercase tracking-wide">
-              {{ $item->collectible_type === \App\Models\Movie::class ? 'Movie' : 'Series' }}
-              @if ($content?->year) · {{ $content->year }}@endif
-            </p>
-          </div>
-          <form method="POST" action="{{ route('admin.collections.remove-item', [$collection, $item]) }}"
-            onsubmit="return confirm('Remove this item from the collection?')">
-            @csrf @method('DELETE')
-            <button type="submit" class="text-xs font-bold uppercase text-gray-400 hover:text-red-500 transition-colors">Remove</button>
-          </form>
-        </div>
-      @endforeach
+            <x-admin.delete :action="route('admin.collections.remove-item', [$collection, $item])" confirm="Remove this item from the collection?" label="Remove" />
+          </li>
+        @endforeach
+      </ul>
+    @endif
+
+    <div>
+      <h3 class="mb-3 text-sm font-semibold text-fg">Add content</h3>
+      <form method="POST" action="{{ route('admin.collections.add-item', $collection) }}" class="flex flex-col gap-3 sm:flex-row">
+        @csrf
+        <select name="type" id="col-type" class="select sm:!w-40"><option value="movie">Movie</option><option value="series">Series</option></select>
+        <select name="id" id="col-content-id" class="select flex-1">
+          <option value="">— Select movie —</option>
+          @foreach ($movies as $movie)
+            <option value="{{ $movie->id }}" data-type="movie">{{ $movie->title }}{{ $movie->year ? ' (' . $movie->year . ')' : '' }}</option>
+          @endforeach
+        </select>
+        <button type="submit" class="btn btn-primary">Add</button>
+      </form>
     </div>
-  @endif
-
-  {{-- Add item form --}}
-  <h4 class="text-sm font-bold uppercase text-gray-500 tracking-widest mb-4">Add content</h4>
-  <form method="POST" action="{{ route('admin.collections.add-item', $collection) }}"
-    class="flex flex-col sm:flex-row gap-3">
-    @csrf
-
-    <select name="type" id="col-type"
-      class="border-base bg-white/40 px-4 h-12 font-medium text-gray-900 transition-all duration-150 bg-caret bg-[length:10px_6px] bg-[position:right_18px_center] focus:border-accent focus:outline-0 focus:ring-0 hover:cursor-pointer dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:bg-caret-white">
-      <option value="movie">Movie</option>
-      <option value="series">Series</option>
-    </select>
-
-    <select name="id" id="col-content-id"
-      class="flex-1 border-base bg-white/40 px-4 h-12 font-medium text-gray-900 transition-all duration-150 bg-caret bg-[length:10px_6px] bg-[position:right_18px_center] focus:border-accent focus:outline-0 focus:ring-0 hover:cursor-pointer dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:bg-caret-white">
-      <option value="">— Select movie —</option>
-      @foreach ($movies as $movie)
-        <option value="{{ $movie->id }}" data-type="movie">{{ $movie->title }}{{ $movie->year ? ' (' . $movie->year . ')' : '' }}</option>
-      @endforeach
-    </select>
-
-    <button type="submit"
-      class="px-6 h-12 font-bold uppercase text-xs text-gray-900 bg-accent hover:bg-accent/90 transition-colors shrink-0">
-      Add
-    </button>
-  </form>
+  </div>
 </div>
 
 {{-- Danger zone --}}
-<div class="max-w-2xl mt-16 pt-8 border-t border-gray-200 dark:border-gray-600">
-  <h3 class="text-sm font-bold uppercase text-gray-500 tracking-widest mb-4">Danger Zone</h3>
-  <form method="POST" action="{{ route('admin.collections.destroy', $collection) }}"
-    onsubmit="return confirm('Delete &quot;{{ addslashes($collection->name) }}&quot; and all its items? This cannot be undone.')">
-    @csrf @method('DELETE')
-    <button type="submit"
-      class="px-6 py-3 font-bold uppercase text-xs text-white bg-red-600 hover:bg-red-700 transition-colors">
-      Delete Collection
-    </button>
-  </form>
+<div class="card card-pad border-red-500/25">
+  <h3 class="text-sm font-semibold text-red-500">Danger zone</h3>
+  <p class="mb-4 mt-1 text-sm text-muted">Deleting this collection also removes all of its items. This cannot be undone.</p>
+  <x-admin.delete :action="route('admin.collections.destroy', $collection)" :confirm="'Delete “' . $collection->name . '” and all its items? This cannot be undone.'" label="Delete collection" class="btn btn-danger" />
 </div>
 @endsection
 
@@ -155,7 +98,7 @@
       reader.onload = function (e) {
         var img = document.createElement('img');
         img.src = e.target.result;
-        img.className = 'h-24 w-auto object-cover border border-gray-200 dark:border-gray-600';
+        img.className = 'h-24 w-auto rounded-lg border border-line object-cover';
         thumbPreview.appendChild(img);
       };
       reader.readAsDataURL(file);

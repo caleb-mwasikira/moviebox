@@ -1,23 +1,13 @@
-<div style="display:flex;flex-direction:column;align-items:center;gap:0.75rem;width:120px;">
-
-  <form method="POST" action="{{ route('profiles.select.post') }}"
-    style="display:flex;flex-direction:column;align-items:center;gap:0.75rem;">
+<div class="flex w-28 flex-col items-center gap-2 sm:w-32">
+  <form method="POST" action="{{ route('profiles.select.post') }}">
     @csrf
     <input type="hidden" name="profile_id" value="{{ $profile->id }}">
-    <button type="submit" style="background:none;border:none;cursor:pointer;padding:0;display:flex;flex-direction:column;align-items:center;gap:0.75rem;">
-      <div style="width:96px;height:96px;border-radius:4px;background:{{ $profile->avatar_color }};display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:#fff;letter-spacing:0.05em;transition:opacity 0.15s;"
-        onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">
-        {{ $profile->initials() }}
-      </div>
-      <span style="color:#ccc;font-size:0.875rem;font-weight:600;text-align:center;">{{ $profile->name }}</span>
-      @if ($label) <span style="color:#888;font-size:0.75rem;">{{ $label }}</span> @endif
+    <button type="submit" class="group flex flex-col items-center gap-3">
+      <span class="grid size-24 place-items-center rounded-2xl text-3xl font-bold text-white shadow-card ring-2 ring-transparent transition duration-200 group-hover:-translate-y-1 group-hover:ring-brand sm:size-28"
+        style="background: {{ $profile->avatar_color }}">{{ $profile->initials() }}</span>
+      <span class="text-sm font-semibold text-fg transition-colors group-hover:text-brand">{{ $profile->name }}</span>
+      @if ($label)<span class="-mt-2 text-xs text-muted">{{ $label }}</span>@endif
     </button>
   </form>
-
-  @if ($profile->is_kids)
-    <span style="background:#f59e0b;color:#000;font-size:0.625rem;font-weight:700;text-transform:uppercase;padding:1px 6px;border-radius:2px;letter-spacing:0.05em;margin-top:-0.25rem;">
-      Kids
-    </span>
-  @endif
-
+  @if ($profile->is_kids)<span class="badge badge-warning">Kids</span>@endif
 </div>

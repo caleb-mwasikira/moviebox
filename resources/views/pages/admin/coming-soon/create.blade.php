@@ -3,90 +3,45 @@
 @section('admin-title', 'New Coming Soon Film')
 
 @section('admin-content')
-<div class="mb-10">
-  <h2 class="text-2xl font-bold tracking-tighter text-gray-900 dark:text-white lg:text-4xl">New Coming Soon</h2>
-  <p class="mt-1 text-gray-500 dark:text-gray text-sm">Add an upcoming film announcement with optional trailer.</p>
-</div>
+<x-ui.page-header title="New coming soon" subtitle="Add an upcoming film announcement with optional trailer." />
 
-<form method="POST" action="{{ route('admin.coming-soon.store') }}" enctype="multipart/form-data"
-  class="flex flex-col gap-y-6 max-w-2xl">
+<form method="POST" action="{{ route('admin.coming-soon.store') }}" enctype="multipart/form-data" id="cs-form" class="space-y-6">
   @csrf
 
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-    <div class="sm:col-span-2">
-      <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="title">Title</label>
-      <input class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full @error('title') border-danger @enderror"
-        type="text" name="title" id="title" value="{{ old('title') }}" placeholder="Film title">
-      @error('title')<p class="mt-1.5 text-xs text-danger">{{ $message }}</p>@enderror
+  <div class="card card-pad space-y-5">
+    <h2 class="card-title">Details</h2>
+    <div class="grid gap-5 sm:grid-cols-2">
+      <div class="sm:col-span-2"><x-ui.field name="title" label="Title" :value="old('title')" placeholder="Film title" /></div>
+      <x-ui.select name="genre" label="Genre" placeholder="— Select genre —" :selected="old('genre')"
+        :options="['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Fantasy', 'Horror', 'Musical', 'Mystery', 'Romance', 'Science Fiction', 'Thriller', 'Western']" />
+      <x-ui.field name="year" type="number" label="Release year" :value="old('year')" :placeholder="date('Y')" />
     </div>
+    <x-ui.textarea name="description" label="Description" :value="old('description')" rows="5" placeholder="Brief description of the film…" />
+  </div>
 
+  <div class="card card-pad space-y-5">
+    <h2 class="card-title">Artwork &amp; trailer</h2>
     <div>
-      <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="genre">Genre</label>
-      <select class="w-full border-base bg-white/40 px-4 h-12.5 font-medium text-gray-900 transition-all duration-150 bg-caret bg-[length:10px_6px] bg-[position:right_18px_center] focus:border-accent focus:outline-0 focus:ring-0 focus:text-gray-900 hover:cursor-pointer dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:text-white dark:bg-caret-white dark:focus:bg-gray-900"
-        name="genre" id="genre">
-        <option value="">— Select genre —</option>
-        @foreach (['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Fantasy', 'Horror', 'Musical', 'Mystery', 'Romance', 'Science Fiction', 'Thriller', 'Western'] as $genre)
-          <option value="{{ $genre }}" {{ old('genre') === $genre ? 'selected' : '' }}>{{ $genre }}</option>
-        @endforeach
-      </select>
+      <x-ui.file name="thumbnail" id="cs-thumbnail" label="Thumbnail" accept="image/*" />
+      <div id="cs-thumbnail-preview" class="mt-3 flex flex-wrap gap-3"></div>
     </div>
-
     <div>
-      <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="year">Release Year</label>
-      <input class="px-4 py-2 border-base bg-white/40 font-medium leading-8 tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full"
-        type="number" name="year" id="year" value="{{ old('year') }}" placeholder="{{ date('Y') }}">
+      <x-ui.file name="posters[]" id="cs-posters" label="Posters" hint="Select multiple to add posters" accept="image/*" multiple />
+      <div id="cs-posters-preview" class="mt-3 flex flex-wrap gap-3"></div>
+    </div>
+    <div>
+      <x-ui.file name="trailer" id="cs-trailer" label="Trailer" optional hint="MP4, WebM, OGG or MKV — will be transcoded for streaming" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv" />
+      <div id="cs-trailer-progress" class="panel mt-3 hidden space-y-2 p-4">
+        <div class="flex justify-between text-xs font-semibold uppercase tracking-wider text-muted"><span>Uploading trailer…</span><span id="cs-trailer-label">0%</span></div>
+        <div class="progress"><span id="cs-trailer-bar" class="transition-all" style="width:0%"></span></div>
+        <p class="text-xs text-muted">Large files may take a few minutes. Do not close this tab.</p>
+      </div>
     </div>
   </div>
 
-  <div>
-    <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="description">Description</label>
-    <textarea class="block px-4 py-2 border-base bg-white/40 font-medium tracking-tight text-gray-900 transition-all duration-150 focus:border-accent focus:bg-white focus:outline-0 focus:ring-0 dark:border-gray-650 dark:bg-gray-900/40 dark:text-white dark:focus:border-accent dark:focus:bg-gray-800 w-full h-32"
-      name="description" id="description" placeholder="Brief description of the film…">{{ old('description') }}</textarea>
-    @error('description')<p class="mt-1.5 text-xs text-danger">{{ $message }}</p>@enderror
-  </div>
-
-  <div>
-    <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Thumbnail</label>
-    <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer"
-      type="file" name="thumbnail" id="cs-thumbnail" accept="image/*">
-    <div id="cs-thumbnail-preview" class="flex flex-wrap gap-2 mt-3"></div>
-  </div>
-
-  <div>
-    <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Posters</label>
-    <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer"
-      type="file" name="posters[]" id="cs-posters" accept="image/*" multiple>
-    <p class="mt-1 text-xs text-gray-500">Select multiple to add posters</p>
-    <div id="cs-posters-preview" class="flex flex-wrap gap-2 mt-3"></div>
-  </div>
-
-  {{-- Trailer upload --}}
-  <div>
-    <label class="block text-xs font-bold uppercase text-gray-500 mb-2" for="cs-trailer">Trailer (optional)</label>
-    <input class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:font-bold file:uppercase file:text-xs file:bg-accent file:text-gray-900 file:border-0 hover:file:bg-accent/90 file:cursor-pointer"
-      type="file" name="trailer" id="cs-trailer" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv">
-    <p class="mt-1 text-xs text-gray-500">MP4, WebM, OGG or MKV — will be transcoded for streaming</p>
-    @error('trailer')<p class="mt-1.5 text-xs text-danger">{{ $message }}</p>@enderror
-
-    <div id="cs-trailer-progress" class="hidden mt-4 flex flex-col gap-y-2">
-      <div class="flex justify-between text-xs font-bold uppercase text-gray-500">
-        <span>Uploading trailer…</span>
-        <span id="cs-trailer-label">0%</span>
-      </div>
-      <div class="w-full h-2 bg-gray-200 dark:bg-gray-700">
-        <div id="cs-trailer-bar" class="h-2 bg-accent transition-all duration-150" style="width:0%"></div>
-      </div>
-      <p class="text-xs text-gray-500">Large files may take a few minutes. Do not close this tab.</p>
-    </div>
-  </div>
-
-  <div>
-    <button type="submit" id="cs-submit"
-      class="inline-flex text-center font-bold leading-none transition-colors uppercase justify-center gap-x-3 py-4 px-8 text-sm text-gray-900 bg-accent hover:bg-accent/90 disabled:opacity-50 disabled:cursor-not-allowed">
-      Add Film
-    </button>
-    <a href="{{ route('admin.coming-soon.index') }}"
-      class="ml-6 text-sm font-bold text-gray-500 hover:text-accent transition-colors uppercase">Cancel</a>
+  <div class="flex gap-3">
+    <button type="submit" id="cs-submit" class="btn btn-primary btn-lg">Add film</button>
+    <a href="{{ route('admin.coming-soon.index') }}" class="btn btn-secondary btn-lg">Cancel</a>
   </div>
 </form>
 @endsection
@@ -107,7 +62,7 @@
           var wrap = document.createElement('div');
           var img = document.createElement('img');
           img.src = e.target.result;
-          img.className = 'h-24 w-auto object-cover border border-gray-200 dark:border-gray-600';
+          img.className = 'h-24 w-auto rounded-lg border border-line object-cover';
           wrap.appendChild(img);
           container.appendChild(wrap);
         };
@@ -119,7 +74,7 @@
   attachPreview('cs-thumbnail', 'cs-thumbnail-preview');
   attachPreview('cs-posters', 'cs-posters-preview');
 
-  var form      = document.querySelector('form');
+  var form      = document.getElementById('cs-form');
   var trailerIn = document.getElementById('cs-trailer');
   var progressW = document.getElementById('cs-trailer-progress');
   var bar       = document.getElementById('cs-trailer-bar');
