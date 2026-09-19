@@ -59,12 +59,12 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 
 <div class="grid gap-6 lg:grid-cols-2">
-  <div class="card card-pad">
+  <div class="card card-pad min-w-0">
     <div class="mb-5 flex items-center justify-between">
       <h3 class="card-title">Signups — last 30 days</h3>
       <span class="badge badge-brand tabular-nums">{{ number_format(array_sum($signupData)) }} total</span>
     </div>
-    <div class="h-56"><canvas id="signupsChart"></canvas></div>
+    <div class="relative h-56"><canvas id="signupsChart"></canvas></div>
   </div>
 
   <div class="card card-pad">

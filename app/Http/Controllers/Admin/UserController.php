@@ -16,16 +16,40 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
+        $activeSub = fn ($q) => $q->where('status', 'active')
+            ->where(fn ($w) => $w->whereNull('expires_at')->orWhere('expires_at', '>', now()));
+
+        $role         = (string) $request->input('role', '');
+        $subscription = (string) $request->input('subscription', '');
+        $status       = (string) $request->input('status', '');
+
         $users = User::query()
             ->with([
                 'userSubscriptions' => fn ($q) => $q->with('package')->latest('starts_at')->limit(1),
                 'roles',
             ])
-            ->when($request->search, fn ($q, $s) => $q->where('name', 'like', "%{$s}%")
-                ->orWhere('email', 'like', "%{$s}%"))
+            // Grouped so the OR between name/email can't leak past the other filters.
+            ->when(trim((string) $request->search) !== '', function ($q) use ($request) {
+                $like = '%' . mb_strtolower(trim($request->search)) . '%';
+                $q->where(fn ($w) => $w->whereRaw('LOWER(name) LIKE ?', [$like])->orWhereRaw('LOWER(email) LIKE ?', [$like]));
+            })
+            // Role: "admin" (super admin), "user" (no role at all) or "r:{role-name}".
+            ->when($role === 'admin', fn ($q) => $q->where('role', 'admin'))
+            ->when($role === 'user', fn ($q) => $q->where(fn ($w) => $w->where('role', '!=', 'admin')->orWhereNull('role'))->doesntHave('roles'))
+            ->when(str_starts_with($role, 'r:'), fn ($q) => $q->whereHas('roles', fn ($r) => $r->where('name', substr($role, 2))))
+            // Subscription status.
+            ->when($subscription === 'active', fn ($q) => $q->whereHas('userSubscriptions', $activeSub))
+            ->when($subscription === 'expired', fn ($q) => $q->has('userSubscriptions')->whereDoesntHave('userSubscriptions', $activeSub))
+            ->when($subscription === 'none', fn ($q) => $q->doesntHave('userSubscriptions'))
+            // Account status.
+            ->when($status === 'active', fn ($q) => $q->whereNull('banned_at'))
+            ->when($status === 'banned', fn ($q) => $q->whereNotNull('banned_at'))
+            ->when($status === 'unverified', fn ($q) => $q->whereNull('email_verified_at'))
             ->latest()
             ->paginate(20)
             ->withQueryString();
+
+        $roleOptions = Role::orderBy('name')->pluck('name');
 
         // Pending (unclaimed) gifts keyed by recipient email for users on this page
         $pendingGifts = GiftSubscription::whereIn('recipient_email', $users->pluck('email'))
@@ -35,7 +59,7 @@ class UserController extends Controller
             ->get()
             ->keyBy('recipient_email');
 
-        return view('pages.admin.users.index', compact('users', 'pendingGifts'));
+        return view('pages.admin.users.index', compact('users', 'pendingGifts', 'roleOptions'));
     }
 
     public function show(User $user)

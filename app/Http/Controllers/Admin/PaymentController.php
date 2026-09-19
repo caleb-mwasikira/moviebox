@@ -16,12 +16,26 @@ class PaymentController extends Controller
             $query->where('status', $status);
         }
 
-        if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->whereHas('user', fn($u) => $u->where('name', 'like', "%{$search}%")
-                                                   ->orWhere('email', 'like', "%{$search}%"))
-                  ->orWhere('mpesa_receipt_number', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%");
+        // Every word must match somewhere (name, email, phone or receipt); partial words are fine,
+        // and word order doesn't matter ("doe jane" finds "Jane Doe").
+        $terms = preg_split('/\s+/', trim((string) $request->input('search')), -1, PREG_SPLIT_NO_EMPTY);
+
+        foreach ($terms as $term) {
+            $like = '%' . mb_strtolower($term) . '%';
+
+            // Phones are stored in international form (2547…); let admins type 07…, +254 7… or a fragment.
+            $digits = preg_replace('/\D+/', '', $term);
+            $phoneCore = preg_match('/^(?:254|0)?(\d{2,})$/', $digits, $m) ? $m[1] : null;
+
+            $query->where(function ($q) use ($like, $phoneCore, $term) {
+                $q->whereHas('user', fn ($u) => $u->whereRaw('LOWER(name) LIKE ?', [$like])
+                                                   ->orWhereRaw('LOWER(email) LIKE ?', [$like]))
+                  ->orWhereRaw('LOWER(mpesa_receipt_number) LIKE ?', [$like])
+                  ->orWhere('phone', 'like', '%' . $term . '%');
+
+                if ($phoneCore) {
+                    $q->orWhere('phone', 'like', '%' . $phoneCore . '%');
+                }
             });
         }
 

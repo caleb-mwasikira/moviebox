@@ -10,19 +10,25 @@
   $canDownload = auth()->check() && auth()->user()->canDownload();
 @endphp
 
-<section class="relative isolate overflow-hidden border-b border-line">
-  @if ($poster)
-    <img src="{{ $poster }}" alt="" class="absolute inset-0 -z-10 size-full scale-110 object-cover opacity-30 blur-2xl dark:opacity-25">
-  @endif
-  <div class="absolute inset-0 -z-10 bg-gradient-to-b from-bg/40 via-bg/70 to-bg"></div>
+<section class="relative isolate z-10 border-b border-line">
+  {{-- Clipped in its own box so popovers (e.g. share) can overflow the section --}}
+  <div class="absolute inset-0 -z-10 overflow-hidden">
+    @if ($poster)
+      <img src="{{ $poster }}" alt="" class="absolute inset-0 hidden size-full scale-110 object-cover opacity-30 blur-2xl dark:opacity-25 sm:block">
+      {{-- Mobile: faded poster, like the hero carousel --}}
+      <img src="{{ $poster }}" alt="" class="absolute inset-x-0 top-0 h-[26rem] w-full object-cover object-top sm:hidden">
+    @endif
+    <div class="absolute inset-0 hidden bg-gradient-to-b from-bg/40 via-bg/70 to-bg sm:block"></div>
+    <div class="absolute inset-x-0 top-0 h-[26rem] bg-gradient-to-b from-black/40 via-bg/45 to-bg sm:hidden"></div>
+  </div>
 
   <div class="container-app py-8 lg:py-12">
     <a href="{{ route('series') }}" class="mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-brand">
       <x-ui.icon name="arrow-left" class="size-4" /> All series
     </a>
 
-    <div class="grid gap-8 sm:grid-cols-12 lg:gap-12">
-      <div class="sm:col-span-4 lg:col-span-3">
+    <div class="grid gap-8 max-sm:pt-64 sm:grid-cols-12 lg:gap-12">
+      <div class="hidden sm:col-span-4 sm:block lg:col-span-3">
         <div class="poster-frame mx-auto max-w-xs !rounded-2xl shadow-pop">
           @if ($poster)
             <img src="{{ $poster }}" alt="{{ $series->title }}" class="size-full object-cover">

@@ -1,16 +1,19 @@
 @php
-  $links = [
-    ['Movies', route('movies'), request()->routeIs('movies*')],
-    ['Series', route('series'), request()->routeIs('series*')],
-    ['Pricing', route('pricing'), request()->routeIs('pricing')],
-  ];
   $user = auth()->user();
+  $links = array_merge(
+    [
+      ['Movies', route('movies'), request()->routeIs('movies*')],
+      ['Series', route('series'), request()->routeIs('series*')],
+    ],
+    [['Reels', route('reels'), request()->routeIs('reels')]],
+    [['Pricing', route('pricing'), request()->routeIs('pricing')]],
+  );
   $hasAdmin = $user && ($user->isAdmin() || $user->roles->isNotEmpty());
 @endphp
 
 <header x-data="{ drawer: false }" x-effect="document.body.classList.toggle('overflow-hidden', drawer)"
   class="sticky top-0 z-40 border-b border-line bg-bg/80 backdrop-blur-xl">
-  <div class="container-app flex h-16 items-center gap-6">
+  <div class="container-app flex h-16 items-center gap-3 sm:gap-6">
     <a href="{{ route('home') }}" class="shrink-0" aria-label="{{ config('app.name') }} home"><x-ui.logo /></a>
 
     {{-- Desktop nav --}}
@@ -73,9 +76,11 @@
           </div>
         </div>
       </div>
+      <a href="{{ route('about') }}" class="nav-link" @if(request()->routeIs('about')) aria-current="page" @endif>About</a>
+      <a href="{{ route('contact') }}" class="nav-link" @if(request()->routeIs('contact')) aria-current="page" @endif>Contact</a>
     </nav>
 
-    <div class="ml-auto flex items-center gap-1.5">
+    <div class="ml-auto flex items-center gap-0.5 sm:gap-1.5">
       <button type="button" x-data @click="$dispatch('open-search')"
         class="hidden h-9 items-center gap-2 rounded-lg border border-line bg-surface px-3 text-sm text-muted transition hover:border-line-strong hover:text-fg md:flex">
         <x-ui.icon name="search" class="size-4" /> <span>Search</span>
@@ -125,14 +130,15 @@
         </div>
       @else
         <a href="{{ route('login') }}" class="btn btn-ghost btn-sm hidden sm:inline-flex">Sign in</a>
-        <a href="{{ route('register') }}" class="btn btn-primary btn-sm">Get started</a>
+        <a href="{{ route('register') }}" class="btn btn-primary btn-sm hidden sm:inline-flex">Get started</a>
       @endauth
 
       <button type="button" class="btn btn-ghost btn-icon lg:hidden" @click="drawer = true" aria-label="Open menu"><x-ui.icon name="menu" /></button>
     </div>
   </div>
 
-  {{-- Mobile drawer --}}
+  {{-- Mobile drawer (teleported: the header's backdrop-filter would otherwise trap fixed positioning) --}}
+  <template x-teleport="body">
   <div x-show="drawer" x-cloak class="fixed inset-0 z-50 lg:hidden" @keydown.escape.window="drawer = false">
     <div x-show="drawer" x-transition.opacity class="absolute inset-0 bg-black/60" @click="drawer = false"></div>
     <aside x-show="drawer" x-transition:enter="transition duration-200" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0"
@@ -155,7 +161,7 @@
         <a href="{{ route('about') }}" class="side-link">About</a>
         <a href="{{ route('contact') }}" class="side-link">Contact</a>
       </nav>
-      <div class="mt-6 border-t border-line pt-6">
+      <div class="mt-auto border-t border-line pt-6">
         @auth
           <p class="mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest text-muted">My account</p>
           <nav class="flex flex-col gap-1">
@@ -175,10 +181,11 @@
         @else
           <div class="grid gap-2">
             <a href="{{ route('login') }}" class="btn btn-secondary">Sign in</a>
-            <a href="{{ route('register') }}" class="btn btn-primary">Create account</a>
+            <a href="{{ route('register') }}" class="btn btn-primary">Get started</a>
           </div>
         @endauth
       </div>
     </aside>
   </div>
+  </template>
 </header>

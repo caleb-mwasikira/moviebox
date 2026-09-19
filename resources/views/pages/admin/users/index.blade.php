@@ -8,10 +8,36 @@
 @if (session('success'))<div class="alert alert-success"><x-ui.icon name="check-circle" class="mt-0.5 size-5 shrink-0" />{{ session('success') }}</div>@endif
 @if (session('error'))<div class="alert alert-error"><x-ui.icon name="alert" class="mt-0.5 size-5 shrink-0" />{{ session('error') }}</div>@endif
 
-<form method="GET" action="{{ route('admin.users.index') }}" class="flex flex-col gap-3 sm:flex-row">
-  <div class="relative flex-1"><x-ui.icon name="search" class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" /><input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name or email…" class="input !pl-10"></div>
-  <button type="submit" class="btn btn-primary">Search</button>
-  @if (request('search'))<a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Clear</a>@endif
+@php $filtersActive = request()->hasAny(['search', 'role', 'subscription', 'status']) && collect(request()->only(['search', 'role', 'subscription', 'status']))->filter()->isNotEmpty(); @endphp
+<form method="GET" action="{{ route('admin.users.index') }}" class="space-y-3">
+  <div class="flex flex-col gap-3 sm:flex-row">
+    <div class="relative flex-1"><x-ui.icon name="search" class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" /><input type="text" name="search" value="{{ request('search') }}" placeholder="Search by name or email…" class="input !pl-10"></div>
+    <button type="submit" class="btn btn-primary">Search</button>
+  </div>
+
+  <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-[repeat(3,minmax(0,14rem))_auto]">
+    <select name="role" class="select" aria-label="Role" onchange="this.form.submit()">
+      <option value="">All roles</option>
+      <option value="admin" @selected(request('role') === 'admin')>Admin</option>
+      <option value="user" @selected(request('role') === 'user')>Regular user (no role)</option>
+      @foreach ($roleOptions as $r)
+        <option value="r:{{ $r }}" @selected(request('role') === 'r:' . $r)>{{ ucwords(str_replace('-', ' ', $r)) }}</option>
+      @endforeach
+    </select>
+    <select name="subscription" class="select" aria-label="Subscription status" onchange="this.form.submit()">
+      <option value="">Any subscription</option>
+      <option value="active" @selected(request('subscription') === 'active')>Active</option>
+      <option value="expired" @selected(request('subscription') === 'expired')>Expired</option>
+      <option value="none" @selected(request('subscription') === 'none')>No subscription</option>
+    </select>
+    <select name="status" class="select" aria-label="Account status" onchange="this.form.submit()">
+      <option value="">Any account status</option>
+      <option value="active" @selected(request('status') === 'active')>Active</option>
+      <option value="banned" @selected(request('status') === 'banned')>Banned</option>
+      <option value="unverified" @selected(request('status') === 'unverified')>Email not verified</option>
+    </select>
+    @if ($filtersActive)<a href="{{ route('admin.users.index') }}" class="btn btn-secondary">Clear filters</a>@endif
+  </div>
 </form>
 
 @if ($users->isEmpty())

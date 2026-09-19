@@ -111,6 +111,7 @@ class EpisodeController extends Controller
 
         if ($request->filled('streaming_url')) {
             $episode->update(['streaming_path' => $request->input('streaming_url')]);
+            $episode->forceFill(['is_corrupted' => false, 'corrupted_at' => null])->save();
             return redirect()->route('admin.series.edit', $series)->with('status', 'streaming-url-saved');
         }
 
@@ -128,6 +129,7 @@ class EpisodeController extends Controller
             'video_path'     => $finalPath,
             'streaming_path' => null,
         ]);
+        $episode->forceFill(['is_corrupted' => false, 'corrupted_at' => null])->save();
 
         $this->cancelJob($episode->uuid);
 

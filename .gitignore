@@ -24,3 +24,6 @@ yarn-error.log
 /.zed
 public/
 docs/
+
+# Per-host Vite hot files generated for LAN dev access
+/storage/framework/vite-hot-*

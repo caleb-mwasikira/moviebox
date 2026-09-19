@@ -13,6 +13,8 @@ export default defineConfig({
         tailwindcss(),
     ],
     server: {
+        // Listen on all interfaces so phones/other PCs on the LAN can load the dev assets.
+        host: '0.0.0.0',
         cors: true,
         watch: {
             ignored: ['**/storage/framework/views/**'],

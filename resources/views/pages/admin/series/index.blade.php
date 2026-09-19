@@ -22,7 +22,7 @@
     <table class="table">
       <thead>
         <tr>
-          <th>Title</th><th class="hidden md:table-cell">Genre</th><th class="hidden md:table-cell">Year</th>
+          <th>Title</th>
           @if (!$trashed)<th class="hidden sm:table-cell">Seasons</th><th>Status</th><th class="hidden sm:table-cell">Featured</th>@else<th>Deleted</th>@endif
           <th class="text-right">Actions</th>
         </tr>
@@ -35,14 +35,13 @@
                 <x-admin.thumb :src="$show->thumbnail ? $show->thumbnailUrl() : null" />
                 <div class="min-w-0">
                   <p class="truncate font-semibold text-fg">{{ $show->title }}</p>
+                  @if ($show->genre || $show->year)<p class="truncate text-xs text-muted">{{ collect([$show->genre, $show->year])->filter()->implode(' · ') }}</p>@endif
                   @if (!$trashed && $show->free_episodes_count > 0)
                     <span class="badge badge-success mt-1">{{ $show->free_episodes_count }} free ep{{ $show->free_episodes_count !== 1 ? 's' : '' }}</span>
                   @endif
                 </div>
               </div>
             </td>
-            <td class="hidden md:table-cell">{{ $show->genre ?? '—' }}</td>
-            <td class="hidden md:table-cell">{{ $show->year ?? '—' }}</td>
             @if (!$trashed)
               <td class="hidden sm:table-cell">{{ $show->seasons_count }}</td>
               <td><x-admin.toggle :action="route('admin.series.toggle-status', $show)" :on="$show->isPublished()" on-label="Published" off-label="Hidden" /></td>
@@ -66,7 +65,7 @@
           </tr>
           @if (!$trashed && $show->unprocessed_count > 0)
             <tr id="series-progress-row-{{ $show->id }}" data-unprocessed="{{ $show->unprocessed_count }}" class="!bg-surface-2/40">
-              <td colspan="7" class="!py-2.5">
+              <td colspan="5" class="!py-2.5">
                 <div class="space-y-1.5">
                   <div id="series-progress-bar-wrap-{{ $show->id }}" class="progress" style="display:none">
                     <span id="series-progress-bar-{{ $show->id }}" class="transition-all" style="width:0%"></span>

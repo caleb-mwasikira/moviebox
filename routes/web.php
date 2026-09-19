@@ -4,6 +4,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\BrowseController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\ReelsController;
 use App\Http\Controllers\MovieController;
 use App\Http\Controllers\SeriesController;
 use App\Http\Controllers\Admin\MovieController as AdminMovieController;
@@ -20,7 +21,7 @@ use App\Http\Controllers\Admin\ComingSoonController as AdminComingSoonController
 use App\Http\Controllers\Admin\ContactController as AdminContactController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\TestEmailController as AdminTestEmailController;
-use App\Http\Controllers\Admin\ConvertController as AdminConvertController;
+use App\Http\Controllers\Admin\VideoHealthController as AdminVideoHealthController;
 use App\Http\Controllers\Admin\CollectionController as AdminCollectionController;
 use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\ActivityController as AdminActivityController;
@@ -125,6 +126,7 @@ Route::middleware(['auth', 'verified', 'not.shared.guest'])->group(function () {
     Route::patch('/gift/{gift}/email', [GiftSubscriptionController::class, 'updateEmail'])->name('gift.update-email');
 });
 
+Route::get('/reels/{vid?}', [ReelsController::class, 'index'])->where('vid', '[A-Za-z0-9\-]+')->name('reels');
 Route::get('/movies', [MovieController::class, 'index'])->name('movies');
 Route::get('/movies/{movie}', [MovieController::class, 'show'])->name('movies.show');
 Route::get('/series', [SeriesController::class, 'index'])->name('series');
@@ -211,14 +213,14 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
             ->middleware('admin.can:upload movie videos')->name('movies.video');
         Route::post('movies/{movie}/reprocess', [AdminMovieController::class, 'reprocess'])
             ->middleware('admin.can:reprocess movies')->name('movies.reprocess');
+        Route::post('movies/{movie}/corrupted', [AdminVideoHealthController::class, 'reportMovie'])->name('movies.corrupted');
+        Route::delete('movies/{movie}/corrupted', [AdminVideoHealthController::class, 'clearMovie'])->name('movies.corrupted.clear');
         Route::get('movies/{movie}/encoding-status', [AdminMovieController::class, 'encodingStatus'])
             ->name('movies.encoding-status');
         Route::post('movies/{movie}/encode-quality', [AdminMovieController::class, 'reprocessQuality'])
             ->middleware('admin.can:reprocess movies')->name('movies.encode-quality');
         Route::post('movies/{movie}/subtitles', [AdminSubtitleController::class, 'storeForMovie'])
             ->middleware('admin.can:manage subtitles')->name('movies.subtitles.store');
-        Route::post('movies/{movie}/convert-to-episode', [AdminConvertController::class, 'movieToEpisode'])
-            ->middleware('admin.can:convert content')->name('movies.convert-to-episode');
     });
 
     // ── Series ────────────────────────────────────────────────────────────────
@@ -239,11 +241,11 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
             ->middleware('admin.can:reprocess movies')->name('episodes.encode-quality');
         Route::post('episodes/{episode}/encode-all', [AdminEpisodeController::class, 'reprocessAll'])
             ->middleware('admin.can:reprocess movies')->name('episodes.encode-all');
+        Route::post('episodes/{episode}/corrupted', [AdminVideoHealthController::class, 'reportEpisode'])->name('episodes.corrupted');
+        Route::delete('episodes/{episode}/corrupted', [AdminVideoHealthController::class, 'clearEpisode'])->name('episodes.corrupted.clear');
         Route::delete('episodes/{episode}', [AdminEpisodeController::class, 'destroy'])->name('episodes.destroy');
         Route::post('episodes/{episode}/subtitles', [AdminSubtitleController::class, 'storeForEpisode'])
             ->middleware('admin.can:manage subtitles')->name('episodes.subtitles.store');
-        Route::post('episodes/{episode}/convert-to-movie', [AdminConvertController::class, 'episodeToMovie'])
-            ->middleware('admin.can:convert content')->name('episodes.convert-to-movie');
     });
 
     // Shared subtitle/poster delete (content managers have both movie+series)

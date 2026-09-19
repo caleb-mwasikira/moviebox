@@ -10,7 +10,7 @@
       <svg class="size-4" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-1.700-.8-2.800-1.500-3.900-3.400-.3-.5.3-.5.900-1.600.1-.2.1-.4 0-.5-.1-.1-.7-1.600-.9-2.200-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.500s1.100 2.900 1.200 3.100c.1.200 2.100 3.200 5.100 4.500 1.900.8 2.600.9 3.500.7.600-.1 1.700-.7 1.900-1.400.2-.7.2-1.300.2-1.400-.1-.2-.3-.3-.6-.4ZM12 2a10 10 0 0 0-8.500 15.200L2 22l4.900-1.500A10 10 0 1 0 12 2Z"/></svg>
       WhatsApp
     </button>
-    <div x-show="link" x-cloak @click.outside="link = null; copied = false" class="menu-panel absolute left-0 top-full z-20 mt-2 w-80 p-3">
+    <div x-show="link" x-cloak @click.outside="link = null; copied = false" class="menu-panel absolute left-0 top-full z-30 mt-2 w-[min(20rem,calc(100vw-2.5rem))] p-3">
       <p class="label">Shareable link</p>
       <div class="flex items-stretch gap-1.5">
         <input type="text" :value="link" readonly @click="$el.select()" class="input !py-2 text-xs">

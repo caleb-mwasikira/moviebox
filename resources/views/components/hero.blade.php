@@ -1,11 +1,17 @@
 @props(['featured'])
 
 @if ($featured->isNotEmpty())
-  <section x-data="{ i: 0, n: {{ $featured->count() }}, t: null,
+  <section x-data="{ i: 0, n: {{ $featured->count() }}, t: null, tx: 0, ty: 0,
+      swipeStart(e) { this.tx = e.touches[0].clientX; this.ty = e.touches[0].clientY; },
+      swipeEnd(e) {
+        const dx = e.changedTouches[0].clientX - this.tx, dy = e.changedTouches[0].clientY - this.ty;
+        // Horizontal, deliberate swipes only — vertical scrolling is left alone.
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) this.go(dx < 0 ? this.i + 1 : this.i - 1);
+      },
       go(k) { this.i = (k + this.n) % this.n; this.restart(); },
       restart() { clearInterval(this.t); this.t = setInterval(() => this.i = (this.i + 1) % this.n, 7000); } }"
-    x-init="restart()" @mouseenter="clearInterval(t)" @mouseleave="restart()"
-    class="relative isolate overflow-hidden bg-neutral-950">
+    x-init="restart()" @mouseenter="clearInterval(t)" @mouseleave="restart()" @touchstart.passive="swipeStart($event)" @touchend.passive="swipeEnd($event)"
+    class="relative isolate touch-pan-y overflow-hidden bg-neutral-950">
     <div class="relative h-[34rem] sm:h-[38rem] lg:h-[44rem]">
       @foreach ($featured as $idx => $f)
         @php

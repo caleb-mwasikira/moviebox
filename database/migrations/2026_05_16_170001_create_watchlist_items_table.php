@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Databases built before the migrations were consolidated already have this table.
+        if (Schema::hasTable('watchlist_items')) {
+            return;
+        }
+
         Schema::create('watchlist_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();

@@ -8,6 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Databases built before the migrations were consolidated already have this table.
+        if (Schema::hasTable('watch_progress')) {
+            return;
+        }
+
         Schema::create('watch_progress', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();

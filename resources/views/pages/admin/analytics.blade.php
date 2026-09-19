@@ -85,9 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
   <x-ui.stat label="This month" :value="$currency . ' ' . number_format($revenueThisMonth)" icon="chart" tone="success" :hint="now()->format('F Y')" />
 </div>
 
-<div class="card card-pad">
+<div class="card card-pad min-w-0">
   <h3 class="card-title mb-5">Revenue — last 12 months <span class="font-normal text-muted">({{ $currency }})</span></h3>
-  <div class="h-64"><canvas id="revenueChart"></canvas></div>
+  <div class="relative h-64"><canvas id="revenueChart"></canvas></div>
 </div>
 
 <div class="grid gap-6 lg:grid-cols-2">
@@ -111,9 +111,9 @@ document.addEventListener('DOMContentLoaded', () => {
     @endif
   </div>
 
-  <div class="card card-pad">
+  <div class="card card-pad min-w-0">
     <h3 class="card-title mb-5">Signups — last 30 days</h3>
-    <div class="h-56"><canvas id="signupsChart"></canvas></div>
+    <div class="relative h-56"><canvas id="signupsChart"></canvas></div>
   </div>
 </div>
 

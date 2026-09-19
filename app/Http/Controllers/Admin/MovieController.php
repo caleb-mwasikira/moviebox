@@ -120,8 +120,7 @@ class MovieController extends Controller
     public function edit(Movie $movie)
     {
         $movie->load('posters');
-        $allSeries = Series::with('seasons')->orderBy('title')->get();
-        return view('pages.admin.movies.edit', compact('movie', 'allSeries'));
+        return view('pages.admin.movies.edit', compact('movie'));
     }
 
     public function update(Request $request, Movie $movie)
@@ -324,6 +323,7 @@ class MovieController extends Controller
 
         if ($request->filled('streaming_url')) {
             $movie->update(['streaming_path' => $request->input('streaming_url')]);
+            $movie->forceFill(['is_corrupted' => false, 'corrupted_at' => null])->save();
             return redirect()->route('admin.movies.edit', $movie)->with('status', 'streaming-url-saved');
         }
 
@@ -341,6 +341,7 @@ class MovieController extends Controller
             'video_path'     => $finalPath,
             'streaming_path' => null,
         ]);
+        $movie->forceFill(['is_corrupted' => false, 'corrupted_at' => null])->save();
 
         $this->cancelJob($movie->uuid);
 

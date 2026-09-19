@@ -3,6 +3,9 @@
 @section('admin-title', 'Movies')
 
 @section('admin-content')
+@php
+  $hlsToken = base64_encode((auth()->id() ?? 0) . ':' . ($exp = time() + 7200) . ':' . hash_hmac('sha256', (auth()->id() ?? 0) . ':' . $exp, config('services.streaming.secret')));
+@endphp
 <x-ui.page-header title="Movies" subtitle="Manage your movie catalogue.">
   <x-slot:actions>
     <div class="inline-flex rounded-xl border border-line bg-surface p-1">
@@ -22,7 +25,7 @@
     <table class="table">
       <thead>
         <tr>
-          <th>Title</th><th class="hidden md:table-cell">Genre</th><th class="hidden md:table-cell">Year</th>
+          <th>Title</th>
           @if (!$trashed)<th>Status</th><th class="hidden sm:table-cell">Featured</th>@else<th>Deleted</th>@endif
           <th class="text-right">Actions</th>
         </tr>
@@ -35,12 +38,14 @@
                 <x-admin.thumb :src="$movie->thumbnail ? $movie->thumbnailUrl() : null" />
                 <div class="min-w-0">
                   <p class="truncate font-semibold text-fg">{{ $movie->title }}</p>
-                  @if ($movie->is_free)<span class="badge badge-success mt-1">Free</span>@endif
+                  @if ($movie->genre || $movie->year)<p class="truncate text-xs text-muted">{{ collect([$movie->genre, $movie->year])->filter()->implode(' · ') }}</p>@endif
+                  <div class="mt-1 flex flex-wrap gap-1">
+                    @if ($movie->is_free)<span class="badge badge-success">Free</span>@endif
+                    @if ($movie->is_corrupted)<span class="badge badge-danger"><x-ui.icon name="alert" class="size-3" /> Corrupted</span>@endif
+                  </div>
                 </div>
               </div>
             </td>
-            <td class="hidden md:table-cell">{{ $movie->genre ?? '—' }}</td>
-            <td class="hidden md:table-cell">{{ $movie->year ?? '—' }}</td>
             @if (!$trashed)
               <td><x-admin.toggle :action="route('admin.movies.toggle-status', $movie)" :on="$movie->isPublished()" on-label="Published" off-label="Hidden" /></td>
               <td class="hidden sm:table-cell"><x-admin.toggle :action="route('admin.movies.toggle-featured', $movie)" :on="$movie->isFeatured()" on-label="★ Featured" off-label="☆ Feature" /></td>
@@ -55,7 +60,9 @@
                     <x-admin.delete :action="route('admin.movies.force-delete', $movie->id)" :confirm="'Permanently delete ' . $movie->title . '? This cannot be undone.'" label="Delete forever" />
                   @endcan
                 @else
-                  <a href="{{ route('admin.movies.edit', $movie) }}" class="btn btn-secondary btn-sm"><x-ui.icon name="edit" class="size-3.5" /> Edit</a>
+                  <x-admin.video-preview :title="$movie->title" label="Watch" :src="$movie->streaming_path ? $movie->streamingUrl() : ($movie->video_path ? $movie->videoUrl() : null)" :hls="(bool) $movie->streaming_path"
+                    :report-url="route('admin.movies.corrupted', $movie)" :clear-url="route('admin.movies.corrupted.clear', $movie)" :corrupted="$movie->is_corrupted" :token="$hlsToken" compact />
+                  <a href="{{ route('admin.movies.edit', $movie) }}" class="btn btn-secondary btn-sm" title="Edit"><x-ui.icon name="edit" class="size-3.5" /> <span class="hidden 2xl:inline">Edit</span></a>
                   <x-admin.delete :action="route('admin.movies.destroy', $movie)" :confirm="'Delete ' . $movie->title . '?'" />
                 @endif
               </div>

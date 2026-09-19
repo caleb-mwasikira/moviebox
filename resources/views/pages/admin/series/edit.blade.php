@@ -20,6 +20,12 @@
   </x-slot:actions>
 </x-ui.page-header>
 
+<div x-data="stepper(3, {{ $errors->has('trailer') ? 1 : ($errors->hasAny(['title','genre','year','status','description','thumbnail','posters','posters.*']) ? 0 : 'null') }})" class="space-y-6 lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:items-start lg:gap-8 lg:space-y-0">
+<x-admin.stepper :steps="['Details', 'Trailer', 'Episodes']" :done="[true, $series->trailerIsReady(), $series->seasons->flatMap->episodes->isNotEmpty()]" />
+
+<div class="min-w-0 space-y-6">
+
+<div x-show="step === 0" class="space-y-6">
 {{-- Metadata --}}
 <form method="POST" action="{{ route('admin.series.update', $series) }}" enctype="multipart/form-data" id="series-meta-form" class="card">
   @csrf @method('PUT')
@@ -63,6 +69,9 @@
   </div>
 </form>
 
+</div>
+
+<div x-show="step === 1" x-cloak class="space-y-6">
 {{-- Trailer --}}
 <section class="card">
   <div class="card-header"><h2 class="card-title">Trailer</h2></div>
@@ -94,6 +103,9 @@
   </div>
 </section>
 
+</div>
+
+<div x-show="step === 2" x-cloak class="space-y-6">
 {{-- Seasons & episodes --}}
 <section class="space-y-4">
   <h2 class="section-title">Seasons &amp; episodes</h2>
@@ -123,6 +135,8 @@
                   </td>
                   <td>
                     <div class="flex items-center justify-end gap-1.5">
+                      <x-admin.video-preview :title="$episode->label() . ' — ' . $series->title" :src="$episode->streaming_path ? $episode->streamingUrl() : ($episode->video_path ? $episode->videoUrl() : null)" :hls="(bool) $episode->streaming_path" label="Watch"
+                        :report-url="route('admin.episodes.corrupted', $episode)" :clear-url="route('admin.episodes.corrupted.clear', $episode)" :corrupted="$episode->is_corrupted" :token="$hlsToken" />
                       <button type="button" @click="toggleFree" class="badge px-3 py-1.5 transition hover:opacity-80" :class="isFree ? 'bg-emerald-500 text-white' : 'badge-neutral'" :title="isFree ? 'Click to remove free access' : 'Click to make free'">
                         <span x-text="isFree ? 'Free' : 'Set free'">{{ $episode->is_free ? 'Free' : 'Set free' }}</span>
                       </button>
@@ -135,18 +149,32 @@
                 {{-- Collapsible edit-episode row --}}
                 <tr x-show="open" x-cloak>
                   <td colspan="5" class="!bg-surface-2/50 !p-0">
-                    <div class="space-y-6 p-5">
-                      <p class="text-sm font-semibold text-fg">Edit episode — {{ $episode->label() }}</p>
+                    <div class="space-y-5 p-5" x-data="{ etab: 'details' }">
+                      <div class="flex items-center justify-between gap-3">
+                        <p class="text-sm font-semibold text-fg">Edit episode — {{ $episode->label() }}</p>
+                        <button type="button" @click="open = false" class="btn btn-ghost btn-icon" title="Hide" aria-label="Hide episode editor"><x-ui.icon name="chevron-up" class="size-4" /></button>
+                      </div>
 
+                      {{-- Tabs --}}
+                      <div class="flex gap-5 border-b border-line" role="tablist">
+                        <button type="button" role="tab" @click="etab = 'details'" :class="etab === 'details' ? 'border-brand text-brand' : 'border-transparent text-muted hover:text-fg'" class="{{ $tabBtn }}">Details</button>
+                        <button type="button" role="tab" @click="etab = 'video'" :class="etab === 'video' ? 'border-brand text-brand' : 'border-transparent text-muted hover:text-fg'" class="{{ $tabBtn }}">Video</button>
+                        @if ($episode->video_path)
+                          <button type="button" role="tab" @click="etab = 'encoding'" :class="etab === 'encoding' ? 'border-brand text-brand' : 'border-transparent text-muted hover:text-fg'" class="{{ $tabBtn }}">Encoding</button>
+                        @endif
+                      </div>
+
+                      <div x-show="etab === 'details'">
                       <form method="POST" action="{{ route('admin.episodes.update', $episode) }}" class="grid items-end gap-4 sm:grid-cols-[1fr_auto_auto]">
                         @csrf @method('PUT')
                         <div><label class="label">Title</label><input type="text" name="title" value="{{ $episode->title }}" class="input"></div>
                         <div class="pb-2.5"><x-ui.check name="is_free" :id="'is_free_' . $episode->id" label="Free to watch" hint="(no login required)" x-model="isFree" /></div>
                         <button type="submit" class="btn btn-primary">Save</button>
                       </form>
+                      </div>
 
                       {{-- Video --}}
-                      <div class="space-y-3 border-t border-line pt-5">
+                      <div class="space-y-3" x-show="etab === 'video'" x-cloak>
                         <div class="flex flex-wrap items-center gap-3">
                           <p class="text-xs font-semibold uppercase tracking-wider text-muted">Video</p>
                           @if ($episode->streaming_path)
@@ -199,7 +227,7 @@
 
                       {{-- Encoding quality --}}
                       @if ($episode->video_path)
-                        <div class="space-y-3 border-t border-line pt-5" x-data='encodingQuality(@json($episode->streamingUrl()), @json($hlsToken))'>
+                        <div class="space-y-3" x-show="etab === 'encoding'" x-cloak x-data='encodingQuality(@json($episode->streamingUrl()), @json($hlsToken))'>
                           <div class="flex items-center justify-between">
                             <p class="text-xs font-semibold uppercase tracking-wider text-muted">Encoding quality</p>
                             <form method="POST" action="{{ route('admin.episodes.encode-all', $episode) }}">
@@ -230,16 +258,6 @@
                           </div>
                         </div>
                       @endif
-
-                      {{-- Convert to movie --}}
-                      <div class="rounded-xl border border-red-500/25 bg-red-500/5 p-4">
-                        <p class="text-xs font-semibold uppercase tracking-wider text-red-500">Danger zone</p>
-                        <p class="mb-3 mt-1 text-sm text-muted">Convert this episode to a standalone movie. The episode will be deleted and the movie saved as hidden.</p>
-                        <form method="POST" action="{{ route('admin.episodes.convert-to-movie', $episode) }}" onsubmit="return confirm('Convert {{ addslashes($episode->label()) }} to a standalone movie? The episode will be permanently deleted.')">
-                          @csrf
-                          <button type="submit" class="btn btn-danger-soft btn-sm">Convert to movie</button>
-                        </form>
-                      </div>
                     </div>
                   </td>
                 </tr>
@@ -338,6 +356,16 @@
     <button type="submit" class="btn btn-primary"><x-ui.icon name="plus" class="size-4" /> Add season</button>
   </form>
 </section>
+</div>
+
+<div class="flex items-center justify-between">
+  <button type="button" @click="prev()" x-show="step > 0" class="btn btn-secondary"><x-ui.icon name="arrow-left" class="size-4" /> Back</button>
+  <span x-show="step === 0"></span>
+  <button type="button" @click="next()" x-show="!last" class="btn btn-primary">Next <x-ui.icon name="arrow-right" class="size-4" /></button>
+  <a href="{{ route('admin.series.index') }}" x-show="last" x-cloak class="btn btn-primary">Done</a>
+</div>
+</div>
+</div>
 @endsection
 
 @push('scripts')

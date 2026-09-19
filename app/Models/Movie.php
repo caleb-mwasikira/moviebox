@@ -27,6 +27,7 @@ class Movie extends Model
     ];
 
     protected $casts = [
+        'is_corrupted' => 'boolean',
         'is_free' => 'boolean',
     ];
 

@@ -13,7 +13,7 @@
 </div>
 
 <form method="GET" action="{{ route('admin.payments.index') }}" class="flex flex-col gap-3 sm:flex-row">
-  <div class="relative flex-1"><x-ui.icon name="search" class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" /><input type="text" name="search" value="{{ request('search') }}" placeholder="Search user, phone, receipt…" class="input !pl-10"></div>
+  <div class="relative flex-1"><x-ui.icon name="search" class="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" /><input type="text" name="search" value="{{ request('search') }}" placeholder="Search name, email, phone or receipt no…" class="input !pl-10"></div>
   <select name="status" class="select sm:!w-48">
     <option value="">All statuses</option>
     @foreach (['paid' => 'Paid', 'pending' => 'Pending', 'failed' => 'Failed', 'cancelled' => 'Cancelled'] as $v => $l)<option value="{{ $v }}" @selected(request('status') === $v)>{{ $l }}</option>@endforeach

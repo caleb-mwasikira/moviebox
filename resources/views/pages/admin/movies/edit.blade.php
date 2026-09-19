@@ -20,6 +20,12 @@
   </x-slot:actions>
 </x-ui.page-header>
 
+<div x-data="stepper(4, {{ $errors->hasAny(['title','genre','year','duration','status','description','thumbnail','posters','posters.*']) ? 0 : ($errors->has('video') ? 1 : ($errors->has('trailer') ? 2 : ($errors->hasAny(['language','language_code','subtitle_file','subtitle_url']) ? 3 : 'null'))) }})" class="space-y-6 lg:grid lg:grid-cols-[14rem_minmax(0,1fr)] lg:items-start lg:gap-8 lg:space-y-0">
+<x-admin.stepper :steps="['Details', 'Video', 'Trailer', 'Subtitles']" :done="[true, (bool) $movie->streaming_path, $movie->trailerIsReady(), $movie->subtitles->isNotEmpty()]" />
+
+<div class="min-w-0 space-y-6">
+
+<div x-show="step === 0" class="space-y-6">
 {{-- Metadata --}}
 <form method="POST" action="{{ route('admin.movies.update', $movie) }}" enctype="multipart/form-data" id="upload-form" class="card">
   @csrf @method('PUT')
@@ -66,6 +72,9 @@
   </div>
 </form>
 
+</div>
+
+<div x-show="step === 1" x-cloak class="space-y-6">
 {{-- Video --}}
 <section class="card" x-data="movieVideoReplace">
   <div class="card-header"><h2 class="card-title">Video</h2></div>
@@ -79,7 +88,11 @@
       @else
         <span class="badge badge-neutral">No video uploaded</span>
       @endif
-      <button type="button" @click="open = !open" class="btn btn-secondary btn-sm ml-auto">Replace / set URL</button>
+      <div class="ml-auto flex flex-wrap items-center gap-2">
+        <x-admin.video-preview :title="$movie->title" :src="$movie->streaming_path ? $movie->streamingUrl() : ($movie->video_path ? $movie->videoUrl() : null)" :hls="(bool) $movie->streaming_path"
+          :report-url="route('admin.movies.corrupted', $movie)" :clear-url="route('admin.movies.corrupted.clear', $movie)" :corrupted="$movie->is_corrupted" :token="$hlsToken" />
+        <button type="button" @click="open = !open" class="btn btn-secondary btn-sm">Replace / set URL</button>
+      </div>
     </div>
 
     <div x-show="open" x-cloak x-transition class="panel space-y-4 p-5">
@@ -179,6 +192,9 @@
   </div>
 </section>
 
+</div>
+
+<div x-show="step === 2" x-cloak class="space-y-6">
 {{-- Trailer --}}
 <section class="card">
   <div class="card-header"><h2 class="card-title">Trailer</h2></div>
@@ -210,6 +226,9 @@
   </div>
 </section>
 
+</div>
+
+<div x-show="step === 3" x-cloak class="space-y-6">
 {{-- Subtitles --}}
 <section class="card">
   <div class="card-header"><h2 class="card-title">Subtitle tracks</h2></div>
@@ -256,61 +275,16 @@
     </form>
   </div>
 </section>
+</div>
 
-{{-- Convert to episode --}}
-<section class="card" x-data="{ mode: 'existing', seriesId: '', seasonId: '', epNum: 1, newSeriesName: @js($movie->title) }">
-  <div class="card-header"><div><h2 class="card-title">Convert to episode</h2><p class="mt-0.5 text-sm text-muted">Move this movie into a series as an episode. The movie record will be permanently deleted after conversion.</p></div></div>
-  <form method="POST" action="{{ route('admin.movies.convert-to-episode', $movie) }}" onsubmit="return confirm('Convert this movie to an episode? The movie will be permanently deleted.')" class="max-w-xl space-y-5 p-5 sm:p-6">
-    @csrf
-    <div class="flex gap-5 border-b border-line">
-      <button type="button" @click="mode = 'existing'; seriesId = ''; seasonId = ''" :class="mode === 'existing' ? 'border-brand text-brand' : 'border-transparent text-muted hover:text-fg'" class="{{ $tabBtn }}">Existing series</button>
-      <button type="button" @click="mode = 'new'; seriesId = ''; seasonId = ''" :class="mode === 'new' ? 'border-brand text-brand' : 'border-transparent text-muted hover:text-fg'" class="{{ $tabBtn }}">New series</button>
-    </div>
-
-    <div x-show="mode === 'existing'" class="space-y-4">
-      @if ($allSeries->isEmpty())
-        <p class="text-sm text-muted">No series exist yet — use <strong class="text-fg">New series</strong> above.</p>
-      @else
-        <div>
-          <label class="label">Target series</label>
-          <select class="select" x-model="seriesId" @change="seasonId = ''; epNum = 1">
-            <option value="">— Select series —</option>
-            @foreach ($allSeries as $s)<option value="{{ $s->id }}">{{ $s->title }}</option>@endforeach
-          </select>
-        </div>
-        <template x-if="seriesId">
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label class="label">Season</label>
-              <select name="season_id" x-model="seasonId" class="select">
-                <option value="">— Select season —</option>
-                @foreach ($allSeries as $s)
-                  @foreach ($s->seasons as $season)
-                    <option value="{{ $season->id }}" x-show="seriesId == '{{ $s->id }}'">{{ $season->label() }}</option>
-                  @endforeach
-                @endforeach
-              </select>
-            </div>
-            <div><label class="label">Episode number</label><input type="number" name="episode_number" x-model.number="epNum" min="1" class="input"></div>
-          </div>
-        </template>
-      @endif
-    </div>
-
-    <div x-show="mode === 'new'" x-cloak class="space-y-4">
-      <div>
-        <label class="label">Series name</label>
-        <input type="text" name="new_series_name" x-model="newSeriesName" placeholder="Series title" class="input">
-        <p class="hint">A new series will be created (Season 1) and the movie added as Episode 1. Saved as hidden — publish when ready.</p>
-      </div>
-      <div><label class="label">Episode number</label><input type="number" name="episode_number" x-show="mode === 'new'" x-model.number="epNum" min="1" class="input"></div>
-    </div>
-
-    <div x-show="(mode === 'existing' && seasonId) || (mode === 'new' && newSeriesName.trim())" x-cloak>
-      <button type="submit" class="btn btn-danger">Convert to episode</button>
-    </div>
-  </form>
-</section>
+<div class="flex items-center justify-between">
+  <button type="button" @click="prev()" x-show="step > 0" class="btn btn-secondary"><x-ui.icon name="arrow-left" class="size-4" /> Back</button>
+  <span x-show="step === 0"></span>
+  <button type="button" @click="next()" x-show="!last" class="btn btn-primary">Next <x-ui.icon name="arrow-right" class="size-4" /></button>
+  <a href="{{ route('admin.movies.index') }}" x-show="last" x-cloak class="btn btn-primary">Done</a>
+</div>
+</div>
+</div>
 @endsection
 
 @push('scripts')
