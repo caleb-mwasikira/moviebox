@@ -1,9 +1,7 @@
 @php
   $links = [
-    ['Browse', route('browse'), request()->routeIs('browse')],
     ['Movies', route('movies'), request()->routeIs('movies*')],
     ['Series', route('series'), request()->routeIs('series*')],
-    ['Coming soon', route('coming-soon'), request()->routeIs('coming-soon*')],
     ['Pricing', route('pricing'), request()->routeIs('pricing')],
   ];
   $user = auth()->user();
@@ -30,8 +28,7 @@
             <div class="grid grid-cols-2 gap-6">
               <div>
                 <div class="mb-2 flex items-center justify-between">
-                  <p class="text-[11px] font-semibold uppercase tracking-widest text-muted">Coming soon</p>
-                  <a href="{{ route('coming-soon') }}" class="text-[11px] font-semibold text-brand hover:underline">View all</a>
+                  <a href="{{ route('coming-soon') }}" class="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-widest text-fg hover:text-brand">Coming soon <x-ui.icon name="arrow-right" class="size-3" /></a>
                 </div>
                 @if (isset($megaComingSoon) && $megaComingSoon->isNotEmpty())
                   <ul class="space-y-1">
@@ -149,6 +146,11 @@
         <a href="{{ route('home') }}" class="side-link {{ request()->routeIs('home') ? 'is-active' : '' }}"><x-ui.icon name="home" /> Home</a>
         @foreach ($links as [$label, $url, $active])
           <a href="{{ $url }}" class="side-link {{ $active ? 'is-active' : '' }}">{{ $label }}</a>
+        @endforeach
+        <p class="mt-2 px-3 text-[11px] font-semibold uppercase tracking-widest text-muted">Discover</p>
+        <a href="{{ route('coming-soon') }}" class="side-link {{ request()->routeIs('coming-soon*') ? 'is-active' : '' }}"><x-ui.icon name="calendar" /> Coming soon</a>
+        @foreach (($megaCollections ?? collect()) as $col)
+          <a href="{{ route('collections.show', $col) }}" class="side-link"><x-ui.icon name="folder" /> {{ $col->name }}</a>
         @endforeach
         <a href="{{ route('about') }}" class="side-link">About</a>
         <a href="{{ route('contact') }}" class="side-link">Contact</a>

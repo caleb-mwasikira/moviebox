@@ -3,6 +3,8 @@
 @section('title', 'Coming Soon')
 
 @section('content')
+<x-hero :featured="$featured" />
+
 <div class="container-app py-10 lg:py-14">
   <x-ui.page-header eyebrow="On the horizon" title="Coming soon" subtitle="Get a first look at what's arriving next." />
 

@@ -38,8 +38,16 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 
 <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-  <x-ui.stat label="Movies" :value="$movieCount" icon="film" />
-  <x-ui.stat label="Series" :value="$seriesCount" icon="tv" tone="info" />
+  @can('view movies')
+    <a href="{{ route('admin.movies.index') }}" class="block transition hover:-translate-y-0.5"><x-ui.stat label="Movies" :value="$movieCount" icon="film" /></a>
+  @else
+    <x-ui.stat label="Movies" :value="$movieCount" icon="film" />
+  @endcan
+  @can('view series')
+    <a href="{{ route('admin.series.index') }}" class="block transition hover:-translate-y-0.5"><x-ui.stat label="Series" :value="$seriesCount" icon="tv" tone="info" /></a>
+  @else
+    <x-ui.stat label="Series" :value="$seriesCount" icon="tv" tone="info" />
+  @endcan
   <x-ui.stat label="Published" :value="$published" icon="check-circle" tone="success" />
   <x-ui.stat label="Hidden" :value="$hidden" icon="eye-off" tone="warning" />
 </div>

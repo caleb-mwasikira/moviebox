@@ -13,7 +13,10 @@ class ComingSoonController extends Controller
             ->latest()
             ->get();
 
-        return view('pages.coming-soon', compact('films'));
+        $featured = $films->sortByDesc('featured')->values()->take(5);
+        $featured->each(fn ($f) => $f->content_type = 'coming_soon');
+
+        return view('pages.coming-soon', compact('films', 'featured'));
     }
 
     public function show(Movie $comingSoon)

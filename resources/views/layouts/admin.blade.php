@@ -72,7 +72,7 @@
     <div x-show="nav" x-cloak x-transition.opacity class="fixed inset-0 z-40 bg-black/60 lg:hidden" @click="nav = false"></div>
     <aside class="fixed inset-y-0 left-0 z-50 flex w-64 -translate-x-full flex-col border-r border-line bg-surface transition-transform duration-200 lg:translate-x-0" :class="nav && '!translate-x-0'">
       <div class="flex h-16 shrink-0 items-center justify-between border-b border-line px-5">
-        <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2.5">
+        <a href="{{ route('home') }}" class="flex items-center gap-2.5" title="Go to website">
           <x-ui.logo />
         </a>
         <button type="button" class="btn btn-ghost btn-icon lg:hidden" @click="nav = false" aria-label="Close"><x-ui.icon name="x" /></button>

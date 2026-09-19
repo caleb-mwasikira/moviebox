@@ -33,7 +33,12 @@ class SeriesController extends Controller
             ->filter()
             ->values();
 
-        return view('pages.series.index', compact('series', 'genres'));
+        $featured = Series::where('status', 'published')
+            ->whereNotNull('thumbnail')->with(['posters', 'seasons'])
+            ->orderByDesc('featured')->latest()->take(5)->get();
+        $featured->each(fn ($s) => $s->content_type = 'series');
+
+        return view('pages.series.index', compact('series', 'genres', 'featured'));
     }
 
     public function show(Series $series)

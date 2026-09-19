@@ -29,7 +29,12 @@ class MovieController extends Controller
             ->filter()
             ->values();
 
-        return view('pages.movies.index', compact('movies', 'genres'));
+        $featured = Movie::where('status', 'published')->where('coming_soon', false)
+            ->whereNotNull('thumbnail')->with('posters')
+            ->orderByDesc('featured')->latest()->take(5)->get();
+        $featured->each(fn ($m) => $m->content_type = 'movie');
+
+        return view('pages.movies.index', compact('movies', 'genres', 'featured'));
     }
 
     public function show(Movie $movie)

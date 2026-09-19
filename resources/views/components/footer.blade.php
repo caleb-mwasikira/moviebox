@@ -12,7 +12,6 @@
         <h6 class="mb-4 text-xs font-semibold uppercase tracking-widest text-muted">Explore</h6>
         <ul class="space-y-2.5 text-sm">
           <li><a class="text-fg-soft hover:text-brand" href="{{ route('home') }}">Home</a></li>
-          <li><a class="text-fg-soft hover:text-brand" href="{{ route('browse') }}">Browse</a></li>
           <li><a class="text-fg-soft hover:text-brand" href="{{ route('movies') }}">Movies</a></li>
           <li><a class="text-fg-soft hover:text-brand" href="{{ route('series') }}">Series</a></li>
           <li><a class="text-fg-soft hover:text-brand" href="{{ route('coming-soon') }}">Coming soon</a></li>

@@ -49,6 +49,6 @@
     </div>
   </div>
 
-  <a href="{{ route('browse') }}" class="btn btn-primary btn-lg">Continue watching</a>
+  <a href="{{ route('movies') }}" class="btn btn-primary btn-lg">Continue watching</a>
 </div>
 @endsection

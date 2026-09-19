@@ -3,6 +3,8 @@
 @section('title', 'Movies')
 
 @section('content')
+<x-hero :featured="$featured" />
+
 <div class="container-app py-10 lg:py-14">
   <x-ui.page-header eyebrow="Catalogue" title="Movies" subtitle="Blockbusters, classics and hidden gems — ready to stream." />
 

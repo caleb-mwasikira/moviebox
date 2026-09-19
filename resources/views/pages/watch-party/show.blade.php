@@ -49,7 +49,7 @@
       <p class="eyebrow mb-2">Party ended</p>
       <h1 class="text-2xl font-bold text-fg">This party has ended</h1>
       <p class="mb-8 mt-3 text-sm text-muted">The host ended the session. Thanks for watching!</p>
-      <a href="{{ route('browse') }}" class="btn btn-primary">Browse content</a>
+      <a href="{{ route('movies') }}" class="btn btn-primary">Browse content</a>
     </div>
   </div>
 
@@ -120,7 +120,7 @@
         <h1 class="text-2xl font-bold text-fg">You were removed from this party</h1>
         <p class="mb-8 mt-3 text-sm text-muted">The host removed you. Contact them to get back in.</p>
         @if ($isGuest)
-          <a href="{{ route('browse') }}" class="btn btn-primary">Browse content</a>
+          <a href="{{ route('movies') }}" class="btn btn-primary">Browse content</a>
         @else
           <a href="{{ route('account.watch-party.index') }}" class="btn btn-primary">Back to parties</a>
         @endif
