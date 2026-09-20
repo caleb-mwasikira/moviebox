@@ -33,7 +33,7 @@
       <x-ui.file name="posters[]" id="posters-input" label="Posters" optional hint="Select multiple images" accept="image/*" multiple />
       <div id="posters-preview" class="mt-3 flex flex-wrap gap-3"></div>
     </div>
-    <x-ui.file name="trailer" label="Trailer" optional hint="Short preview clip shown on the series page" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv" />
+    <x-ui.file name="trailer" label="Trailer" optional hint="Short preview clip — or add it later from the edit page" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv" />
     <p class="alert alert-info"><x-ui.icon name="info" class="mt-0.5 size-4 shrink-0" />Episode videos are uploaded per episode after creating the series.</p>
     <x-admin.create-upload :fields="['trailer']" label="Create series" />
   </div>

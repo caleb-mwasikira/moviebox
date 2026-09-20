@@ -176,7 +176,7 @@
                       </div>
 
                       {{-- Video --}}
-                      <div class="space-y-3" x-show="etab === 'video'" x-cloak>
+                      <div class="space-y-3" x-show="etab === 'video'" x-cloak @dragover.prevent @drop.prevent="drop($event)">
                         <div class="flex flex-wrap items-center gap-3">
                           <p class="text-xs font-semibold uppercase tracking-wider text-muted">Video</p>
                           @if ($episode->streaming_path)
@@ -276,11 +276,26 @@
             <div class="grid gap-4 sm:grid-cols-2">
               <div><label class="label">Episode #</label><input type="number" name="episode_number" min="1" value="{{ $season->episodes->max('episode_number') + 1 }}" class="input"></div>
               <div><label class="label">Episode title</label><input type="text" name="title" class="input"></div>
-              <div class="sm:col-span-2"><label class="label">Video file <span class="text-red-500">*</span></label><input type="file" name="video" accept="{{ $videoAccept }}" class="input"></div>
+              <div class="sm:col-span-2"><x-ui.file name="video" :id="'ep-video-' . $season->id" label="Video file" required :accept="$videoAccept" /></div>
               <div class="sm:col-span-2"><x-ui.check name="is_free" :id="'ep_is_free_' . $season->id" label="Free to watch" hint="(no login required)" /></div>
             </div>
             <p x-show="error" x-cloak x-text="error" class="field-error"></p>
-            <p x-show="saved" x-cloak class="alert alert-success">Episode saved. Its video is uploading in the background — the list refreshes when it finishes. Keep this tab open.</p>
+            <div x-show="saved" x-cloak class="space-y-2">
+              <p class="alert alert-success">Episode saved. Its video is uploading in the background — the list refreshes when it finishes. Keep this tab open.</p>
+              <template x-for="item in $store.uploads.items.filter(function (i) { return ids.indexOf(i.id) !== -1; })" :key="item.id">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wider text-muted">
+                    <span class="truncate normal-case tracking-normal" x-text="item.label"></span>
+                    <span x-text="item.status === 'error' ? 'Failed' : (item.status === 'finalizing' ? 'Saving…' : item.percent + '%')"></span>
+                  </div>
+                  <div class="progress"><span class="transition-all" :style="'width:' + item.percent + '%'"></span></div>
+                  <div x-show="item.status === 'error'" x-cloak class="flex flex-wrap items-center gap-3">
+                    <span class="text-xs text-red-500" x-text="item.error"></span>
+                    <button type="button" @click="$store.uploads.retry(item)" class="btn btn-secondary btn-sm">Retry upload</button>
+                  </div>
+                </div>
+              </template>
+            </div>
             <button type="submit" :disabled="saving" class="btn btn-primary" x-text="saving ? 'Saving…' : 'Add episode'">Add episode</button>
           </form>
         </details>
@@ -288,14 +303,15 @@
         {{-- Bulk upload --}}
         <div x-data="bulkUpload({{ $season->id }}, '{{ route('admin.episodes.store', $season) }}', {{ ($season->episodes->max('episode_number') ?? 0) + 1 }})">
           <button type="button" @click="show = !show" class="btn btn-secondary btn-sm"><span x-text="show ? '− Bulk upload' : '↑ Bulk upload'">↑ Bulk upload</span></button>
-          <div x-show="show" x-cloak x-transition class="panel mt-4 space-y-4 p-5">
+          <div x-show="show" x-cloak x-transition @dragover.prevent="dragging = true" @dragleave.self="dragging = false" @drop.prevent="dragging = false; addFiles($event.dataTransfer.files)"
+            :class="dragging ? 'border-brand bg-brand-soft' : ''" class="panel mt-4 space-y-4 border-2 border-dashed p-5 transition">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <p class="text-sm font-semibold text-fg">Bulk upload episodes</p>
               <label class="btn btn-primary btn-sm cursor-pointer">Choose files
                 <input type="file" accept="{{ $videoAccept }}" multiple @change="pick($event)" class="sr-only">
               </label>
             </div>
-            <template x-if="!queue.length"><p class="text-sm text-muted">Select multiple video files to queue them. Titles are extracted from filenames and can be edited before uploading.</p></template>
+            <template x-if="!queue.length"><p class="text-sm text-muted">Drag &amp; drop video files here, or choose files, to queue them. Titles are extracted from filenames and can be edited before uploading.</p></template>
 
             <template x-if="queue.length > 0">
               <div class="space-y-3">
@@ -316,7 +332,7 @@
                           </div>
                         </template>
                         <template x-if="item.status === 'uploading'"><span class="text-xs font-semibold text-brand">Saving…</span></template>
-                        <template x-if="item.status === 'done'"><span class="badge badge-success">✓ Saved — uploading in background</span></template>
+                        <template x-if="item.status === 'done'"><span class="badge badge-success" x-text="$store.uploads.find(item.uploadId) && $store.uploads.find(item.uploadId).status === 'done' ? '✓ Uploaded' : '✓ Saved'"></span></template>
                         <template x-if="item.status === 'error'">
                           <div class="flex items-center gap-2">
                             <span class="text-xs text-red-500" x-text="item.error"></span>
@@ -325,6 +341,13 @@
                         </template>
                       </div>
                     </div>
+                    <template x-if="item.status === 'done' && $store.uploads.find(item.uploadId)">
+                      <div class="mt-2 space-y-1">
+                        <div class="progress"><span class="transition-all" :style="'width:' + $store.uploads.find(item.uploadId).percent + '%'"></span></div>
+                        <p class="text-[11px] text-muted" x-text="$store.uploads.find(item.uploadId).status === 'error' ? $store.uploads.find(item.uploadId).error : 'Uploading in the background · ' + $store.uploads.find(item.uploadId).percent + '%'"></p>
+                        <button type="button" x-show="$store.uploads.find(item.uploadId).status === 'error'" @click="$store.uploads.retry($store.uploads.find(item.uploadId))" class="btn btn-secondary btn-sm">Retry upload</button>
+                      </div>
+                    </template>
                     <p class="mt-1.5 truncate text-[11px] text-muted" x-text="item.file.name"></p>
                   </div>
                 </template>
@@ -473,6 +496,9 @@ document.addEventListener('alpine:init', function () {
         if (!files.length) return;
         if (this.$refs.videoInput) { this.$refs.videoInput.files = files; }
         this.fileName = files[0].name;
+        // Dropping anywhere on the Video tab opens the upload panel with the file ready to send.
+        this.videoOpen = true;
+        this.tab = 'upload';
       }
     });
   });
@@ -481,6 +507,7 @@ document.addEventListener('alpine:init', function () {
     return {
       saving: false,
       saved: false,
+      ids: [],
       error: '',
       upload: function (form) {
         var self = this;
@@ -488,7 +515,8 @@ document.addEventListener('alpine:init', function () {
         if (!input || !input.files.length) { form.submit(); return; }
         self.saving = true; self.error = ''; self.saved = false;
         window.__mbReloadOnDone = true;
-        window.createWithBackgroundUploads(form, ['video']).then(function () {
+        window.createWithBackgroundUploads(form, ['video']).then(function (data) {
+          self.ids = data.uploads.map(function (u) { return u.id; });
           self.saved = true;
           form.reset();
         }).catch(function (e) { self.error = e.message; }).finally(function () { self.saving = false; });
@@ -508,9 +536,15 @@ document.addEventListener('alpine:init', function () {
           .replace(/\b\w/g, function (c) { return c.toUpperCase(); })
           .trim();
       },
+      dragging: false,
       pick: function (event) {
+        this.addFiles(event.target.files);
+        event.target.value = '';
+      },
+      addFiles: function (files) {
         var self = this;
-        Array.from(event.target.files).forEach(function (file) {
+        Array.from(files).forEach(function (file) {
+          if (!/^video\//.test(file.type) && !/\.mkv$/i.test(file.name)) return;
           self.queue.push({
             id: Math.random().toString(36).slice(2),
             file: file,
@@ -521,7 +555,6 @@ document.addEventListener('alpine:init', function () {
             error: '',
           });
         });
-        event.target.value = '';
       },
       remove: function (id) {
         this.queue = this.queue.filter(function (item) { return item.id !== id; });
@@ -536,7 +569,8 @@ document.addEventListener('alpine:init', function () {
         fd.append('title', item.title);
         fd.append('video', item.file);
         window.__mbReloadOnDone = true;
-        window.createWithBackgroundUploads(fd, ['video'], storeUrl).then(function () {
+        window.createWithBackgroundUploads(fd, ['video'], storeUrl).then(function (data) {
+          item.uploadId = data.uploads.length ? data.uploads[0].id : null;
           item.status = 'done';
         }).catch(function (e) {
           item.status = 'error';

@@ -80,7 +80,7 @@
 
 <div x-show="step === 1" x-cloak class="space-y-6">
 {{-- Video --}}
-<section class="card" x-data='movieVideoReplace(@json($uploadCfg('video', 'admin.movies.video')))' x-init="initUploads()">
+<section class="card" x-data='movieVideoReplace(@json($uploadCfg('video', 'admin.movies.video')))' x-init="initUploads()" @dragover.prevent @drop.prevent="drop($event)">
   <div class="card-header"><h2 class="card-title">Video</h2></div>
   <div class="space-y-5 p-5 sm:p-6">
     <div class="flex flex-wrap items-center gap-3">
@@ -349,6 +349,9 @@ document.addEventListener('alpine:init', function () {
         if (!files.length) return;
         if (this.$refs.videoInput) { this.$refs.videoInput.files = files; }
         this.fileName = files[0].name;
+        // Dropping anywhere on the Video card opens the upload panel with the file ready to send.
+        this.open = true;
+        this.tab = 'upload';
       }
     });
   });

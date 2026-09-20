@@ -113,3 +113,16 @@ it('saves a series and an episode first, then tracks their uploads', function ()
         ->and($ep->activeUpload('video')->file_size)->toBe(900)
         ->and($episode['uploads'][0]['url'])->toBe(route('admin.episodes.video', $ep));
 });
+
+it('lets an admin create a movie and a series without any video or trailer', function () {
+    $admin = chunkAdmin();
+
+    $this->actingAs($admin)->post('/admin/movies', ['title' => 'Bare', 'description' => 'd', 'status' => 'hidden'])
+        ->assertRedirect(route('admin.movies.edit', App\Models\Movie::where('title', 'Bare')->firstOrFail()));
+
+    $this->actingAs($admin)->post('/admin/series', ['title' => 'Bare show', 'description' => 'd', 'status' => 'hidden'])
+        ->assertRedirect();
+
+    expect(App\Models\Movie::where('title', 'Bare')->first()->video_path)->toBeNull()
+        ->and(App\Models\Series::where('title', 'Bare show')->exists())->toBeTrue();
+});

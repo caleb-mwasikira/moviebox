@@ -44,7 +44,7 @@ class MovieController extends Controller
             'year'        => ['nullable', 'integer', 'min:1888', 'max:2100'],
             'duration'    => ['nullable', 'integer', 'min:1'],
             'thumbnail'   => ['nullable', 'image', 'max:2048'],
-            'video'       => ['required_without:video_size', 'nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
+            'video'       => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
             'trailer'     => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
             'status'      => ['required', 'in:published,hidden'],
             'is_free'     => ['nullable', 'boolean'],
@@ -52,7 +52,8 @@ class MovieController extends Controller
             'posters.*'   => ['image', 'max:4096'],
         ] + $this->deferredFileRules());
 
-        // Without a file the video is sent from the browser after the movie exists (see planUploads).
+        // The video is optional: it can be sent from the browser after the movie exists (see planUploads)
+        // or added later from the edit page.
         $ext       = $request->hasFile('video') ? $request->file('video')->getClientOriginalExtension() : null;
         $uuid      = Str::uuid();
         $finalPath = $ext ? "videos/movies/{$uuid}.{$ext}" : null;
@@ -131,6 +132,11 @@ class MovieController extends Controller
                 'edit_url'  => route('admin.movies.edit', $movie),
                 'index_url' => route('admin.movies.index'),
             ]);
+        }
+
+        // Saved without any video: go straight to the edit page, where it can be added.
+        if (! $movie->video_path) {
+            return redirect()->route('admin.movies.edit', $movie)->with('status', 'movie-saved');
         }
 
         return redirect()->route('admin.movies.index')->with('status', 'movie-processing');

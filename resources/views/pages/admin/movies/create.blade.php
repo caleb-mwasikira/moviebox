@@ -38,7 +38,7 @@
 
   <div class="card card-pad space-y-5" x-show="step === 2" x-cloak>
     <h2 class="card-title">Media</h2>
-    <x-ui.file name="video" label="Video file" required hint="MP4, WebM, OGG or MKV" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv" />
+    <x-ui.file name="video" label="Video file" optional hint="MP4, WebM, OGG or MKV — or add it later from the edit page" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv" />
     <x-ui.file name="trailer" label="Trailer" optional hint="Short preview clip shown on the movie page" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv" />
     <x-admin.create-upload :fields="['video', 'trailer']" label="Upload movie" />
   </div>

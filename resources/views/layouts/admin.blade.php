@@ -37,6 +37,7 @@
 
   $statusMessages = [
     'movie-created'     => 'Movie uploaded successfully.',
+    'movie-saved'       => 'Movie saved. Add its video and trailer below whenever you are ready.',
     'movie-processing'  => 'Movie saved — video is being processed in the background.',
     'movie-updated'     => 'Movie updated successfully.',
     'movie-deleted'     => 'Movie deleted.',

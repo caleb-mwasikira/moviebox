@@ -8,6 +8,19 @@
     <span x-show="$store.uploads.busy" x-cloak>Its files are uploading in the background — you can keep working, but keep this tab open until they finish.</span>
     <span x-show="!$store.uploads.busy" x-cloak>All uploads finished. The video is now being processed for streaming.</span>
   </p>
+  <template x-for="item in $store.uploads.items" :key="item.id">
+    <div class="space-y-1.5">
+      <div class="flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wider text-muted">
+        <span class="truncate normal-case tracking-normal" x-text="item.label"></span>
+        <span x-text="item.status === 'error' ? 'Failed' : (item.status === 'done' ? 'Uploaded' : (item.status === 'finalizing' ? 'Saving…' : item.percent + '%'))"></span>
+      </div>
+      <div class="progress"><span class="transition-all" :style="'width:' + item.percent + '%'" :class="item.status === 'error' ? '!bg-red-500' : ''"></span></div>
+      <div x-show="item.status === 'error'" x-cloak class="flex flex-wrap items-center gap-3">
+        <span class="text-xs text-red-500" x-text="item.error"></span>
+        <button type="button" @click="$store.uploads.retry(item)" class="btn btn-secondary btn-sm"><x-ui.icon name="refresh" class="size-4" />Retry upload</button>
+      </div>
+    </div>
+  </template>
   <div class="flex flex-wrap gap-2">
     <a data-edit target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Open in a new tab</a>
     <a data-index target="_blank" rel="noopener" class="btn btn-secondary btn-sm">View list</a>
