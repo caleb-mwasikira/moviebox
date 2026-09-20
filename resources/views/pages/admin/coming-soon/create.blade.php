@@ -12,8 +12,7 @@
     <h2 class="card-title">Details</h2>
     <div class="grid gap-5 sm:grid-cols-2">
       <div class="sm:col-span-2"><x-ui.field name="title" label="Title" :value="old('title')" placeholder="Film title" /></div>
-      <x-ui.select name="genre" label="Genre" placeholder="— Select genre —" :selected="old('genre')"
-        :options="['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Fantasy', 'Horror', 'Musical', 'Mystery', 'Romance', 'Science Fiction', 'Thriller', 'Western']" />
+      <x-admin.genre-select :selected="old('genre')" />
       <x-ui.field name="year" type="number" label="Release year" :value="old('year')" :placeholder="date('Y')" />
     </div>
     <x-ui.textarea name="description" label="Description" :value="old('description')" rows="5" placeholder="Brief description of the film…" />

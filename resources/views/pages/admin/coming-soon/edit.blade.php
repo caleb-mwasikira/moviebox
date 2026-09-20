@@ -26,8 +26,7 @@
   <div class="space-y-5 p-5 sm:p-6">
     <div class="grid gap-5 sm:grid-cols-2">
       <div class="sm:col-span-2"><x-ui.field name="title" label="Title" :value="old('title', $film->title)" /></div>
-      <x-ui.select name="genre" label="Genre" placeholder="— Select genre —" :selected="old('genre', $film->genre)"
-        :options="['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Fantasy', 'Horror', 'Musical', 'Mystery', 'Romance', 'Science Fiction', 'Thriller', 'Western']" />
+      <x-admin.genre-select :selected="old('genre', $film->genre)" />
       <x-ui.field name="year" type="number" label="Release year" :value="old('year', $film->year)" />
     </div>
     <x-ui.textarea name="description" label="Description" :value="old('description', $film->description)" rows="5" />

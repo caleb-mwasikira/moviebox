@@ -33,7 +33,7 @@
   <div class="space-y-5 p-5 sm:p-6">
     <div class="grid gap-5 sm:grid-cols-2">
       <div class="sm:col-span-2"><x-ui.field name="title" label="Title" :value="old('title', $movie->title)" /></div>
-      <x-ui.select name="genre" label="Genre" placeholder="— Select genre —" :selected="old('genre', $movie->genre)" :options="$genres" />
+      <x-admin.genre-select :selected="old('genre', $movie->genre)" />
       <x-ui.field name="year" type="number" label="Year" :value="old('year', $movie->year)" />
       <x-ui.field name="duration" type="number" label="Duration (minutes)" :value="old('duration', $movie->duration)" />
       <x-ui.select name="status" label="Status" :selected="old('status', $movie->status)" :options="['hidden' => 'Hidden', 'published' => 'Published']" />

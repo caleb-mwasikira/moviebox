@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\ContactController as AdminContactController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\TestEmailController as AdminTestEmailController;
 use App\Http\Controllers\Admin\VideoHealthController as AdminVideoHealthController;
+use App\Http\Controllers\Admin\GenreController as AdminGenreController;
 use App\Http\Controllers\Admin\CollectionController as AdminCollectionController;
 use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\ActivityController as AdminActivityController;
@@ -193,6 +194,9 @@ Route::middleware(['auth', 'verified', 'not.shared.guest'])->prefix('account')->
 
 Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+
+    // Genres (added inline from the movie / series / coming-soon forms)
+    Route::post('genres', [AdminGenreController::class, 'store'])->name('genres.store');
 
     // Analytics
     Route::get('analytics', [AdminAnalyticsController::class, 'index'])

@@ -16,8 +16,7 @@
     <h2 class="card-title">Details</h2>
     <div class="grid gap-5 sm:grid-cols-2">
       <div class="sm:col-span-2"><x-ui.field name="title" label="Title" :value="old('title')" /></div>
-      <x-ui.select name="genre" label="Genre" placeholder="— Select genre —" :selected="old('genre')"
-        :options="['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Fantasy', 'Horror', 'Musical', 'Mystery', 'Romance', 'Science Fiction', 'Thriller', 'Western']" />
+      <x-admin.genre-select :selected="old('genre')" />
       <x-ui.field name="year" type="number" label="Year" :value="old('year')" placeholder="e.g. 2024" />
       <x-ui.select name="status" label="Status" :selected="old('status', 'hidden')" :options="['hidden' => 'Hidden', 'published' => 'Published']" />
       <div class="flex items-end pb-2.5"><x-ui.check name="is_free" label="Free to watch" hint="(no login required)" :checked="old('is_free')" /></div>
