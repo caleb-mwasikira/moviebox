@@ -44,6 +44,7 @@ class ResolveChunkedUploads
 
         if (! $failed) {
             foreach ($this->claimed as $upload) {
+                \App\Models\VideoUpload::whereKey($upload->id)->delete();
                 $upload->discard();
             }
         }

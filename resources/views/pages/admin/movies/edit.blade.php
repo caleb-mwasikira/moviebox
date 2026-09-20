@@ -11,6 +11,10 @@
   $genres   = ['Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary', 'Drama', 'Fantasy', 'Horror', 'Musical', 'Mystery', 'Romance', 'Science Fiction', 'Thriller', 'Western'];
   $videoAccept = 'video/mp4,video/webm,video/ogg,video/x-matroska,.mkv';
   $tabBtn = 'border-b-2 px-1 pb-2 text-sm font-semibold transition';
+  $uploadCfg = fn (string $kind, string $route) => [
+      'targetType' => 'movie', 'targetId' => $movie->id, 'kind' => $kind, 'url' => route($route, $movie), 'label' => $movie->title . ' — ' . $kind,
+      'upload' => ($u = $movie->activeUpload($kind)) ? ['id' => $u->id, 'name' => $u->file_name, 'size' => $u->file_size] : null,
+  ];
 @endphp
 
 <x-ui.page-header :title="$movie->title" subtitle="Manage metadata, video, and trailer.">
@@ -76,17 +80,18 @@
 
 <div x-show="step === 1" x-cloak class="space-y-6">
 {{-- Video --}}
-<section class="card" x-data="movieVideoReplace">
+<section class="card" x-data='movieVideoReplace(@json($uploadCfg('video', 'admin.movies.video')))' x-init="initUploads()">
   <div class="card-header"><h2 class="card-title">Video</h2></div>
   <div class="space-y-5 p-5 sm:p-6">
     <div class="flex flex-wrap items-center gap-3">
+      <span x-show="up()" x-cloak class="badge badge-warning"><span class="size-1.5 animate-pulse rounded-full bg-amber-500"></span> <span x-text="up() && up().status === 'stalled' ? 'Upload interrupted' : 'Uploading ' + (up() ? up().percent : 0) + '%'"></span></span>
       @if ($movie->streaming_path)
-        <span class="badge badge-success"><span class="size-1.5 rounded-full bg-emerald-500"></span> Streaming ready</span>
+        <span x-show="!up()" class="badge badge-success"><span class="size-1.5 rounded-full bg-emerald-500"></span> Streaming ready</span>
         <code class="rounded-md bg-surface-2 px-2 py-1 text-xs text-muted">{{ $movie->streaming_path }}</code>
       @elseif ($movie->video_path)
-        <span class="badge badge-warning"><span class="size-1.5 animate-pulse rounded-full bg-amber-500"></span> Processing</span>
+        <span x-show="!up()" class="badge badge-warning"><span class="size-1.5 animate-pulse rounded-full bg-amber-500"></span> Processing</span>
       @else
-        <span class="badge badge-neutral">No video uploaded</span>
+        <span x-show="!up()" class="badge badge-neutral">No video uploaded</span>
       @endif
       <div class="ml-auto flex flex-wrap items-center gap-2">
         <x-admin.video-preview :title="$movie->title" :src="$movie->streaming_path ? $movie->streamingUrl() : ($movie->video_path ? $movie->videoUrl() : null)" :hls="(bool) $movie->streaming_path"
@@ -94,6 +99,8 @@
         <button type="button" @click="open = !open" class="btn btn-secondary btn-sm">Replace / set URL</button>
       </div>
     </div>
+
+    <x-admin.upload-status />
 
     <div x-show="open" x-cloak x-transition class="panel space-y-4 p-5">
       <div class="flex gap-5 border-b border-line">
@@ -113,13 +120,7 @@
             <input x-ref="videoInput" type="file" name="video" accept="{{ $videoAccept }}" :disabled="tab !== 'upload'" class="sr-only"
               @change="fileName = $event.target.files[0] ? $event.target.files[0].name : 'MP4, WebM, OGG, MKV'">
           </label>
-          <div x-show="uploading" x-cloak class="space-y-2">
-            <div class="flex justify-between text-xs font-semibold uppercase tracking-wider text-muted"><span>Uploading…</span><span x-text="progress < 100 ? progress + '%' : 'Saving…'">0%</span></div>
-            <div class="progress"><span class="transition-all" :style="'width:' + progress + '%'"></span></div>
-            <p class="text-xs text-muted">Do not close this tab until the upload completes.</p>
-          </div>
-          <p x-show="error" x-cloak x-text="error" class="field-error"></p>
-<x-admin.retry-upload />
+          <p x-show="pickError" x-cloak x-text="pickError" class="field-error"></p>
         </div>
 
         <div x-show="tab === 'url'" x-cloak>
@@ -129,7 +130,7 @@
         </div>
 
         <div class="flex gap-2">
-          <button type="submit" :disabled="uploading" x-text="submitLabel" class="btn btn-primary">Upload</button>
+          <button type="submit" x-text="submitLabel" class="btn btn-primary">Upload</button>
           <button type="button" @click="open = false" class="btn btn-secondary">Cancel</button>
         </div>
       </form>
@@ -209,21 +210,12 @@
       <span class="badge badge-warning"><span class="size-1.5 animate-pulse rounded-full bg-amber-500"></span> Trailer processing…</span>
     @endif
 
-    <form x-data="trailerUpload" method="POST" action="{{ route('admin.movies.trailer', $movie) }}" enctype="multipart/form-data" @submit.prevent="upload($el)" class="max-w-xl space-y-4">
+    <form x-data='trailerUpload(@json($uploadCfg('trailer', 'admin.movies.trailer')))' x-init="initUploads()" method="POST" action="{{ route('admin.movies.trailer', $movie) }}" enctype="multipart/form-data" @submit.prevent="upload($el)" class="max-w-xl space-y-4">
       @csrf
+      <x-admin.upload-status />
       <x-ui.file name="trailer" id="movie-trailer" :label="$movie->trailer_path ? 'Replace trailer' : 'Upload trailer'" hint="MP4, WebM, OGG or MKV — will be transcoded to MP4" :accept="$videoAccept" />
-      <div x-show="uploading" x-cloak class="space-y-2">
-        <div class="flex justify-between text-xs font-semibold uppercase tracking-wider text-muted"><span>Uploading trailer…</span><span x-text="progress < 100 ? progress + '%' : 'Saving…'">0%</span></div>
-        <div class="progress"><span class="transition-all" :style="'width:' + progress + '%'"></span></div>
-        <p class="text-xs text-muted">Large files may take a few minutes. Do not close this tab.</p>
-      </div>
-      <p x-show="error" x-cloak x-text="error" class="field-error"></p>
-<x-admin.retry-upload />
-      <button type="submit" :disabled="uploading" class="btn btn-primary">
-        <span x-show="!uploading">{{ $movie->trailer_path ? 'Replace trailer' : 'Upload trailer' }}</span>
-        <span x-show="uploading && progress < 100" x-cloak>Uploading…</span>
-        <span x-show="uploading && progress >= 100" x-cloak>Saving…</span>
-      </button>
+      <p x-show="pickError" x-cloak x-text="pickError" class="field-error"></p>
+      <button type="submit" class="btn btn-primary">{{ $movie->trailer_path ? 'Replace trailer' : 'Upload trailer' }}</button>
     </form>
   </div>
 </section>
@@ -343,43 +335,14 @@
 
 // ── Alpine components ─────────────────────────────────────────
 document.addEventListener('alpine:init', function () {
-  function videoUpload(inputName) {
-    return function (form) {
-      var input = form.querySelector('[name="' + inputName + '"]');
-      if (!input || !input.files.length) { form.submit(); return; }
-      var self = this;
-      self.uploading = true; self.progress = 0; self.error = ''; self.failed = false;
-      window.prepareResumableUpload(form, function (pct) { self.progress = pct; }).then(function (fd) {
-        var xhr = new XMLHttpRequest();
-        self.progress = 100;
-        xhr.addEventListener('load', function () {
-        if (xhr.status >= 200 && xhr.status < 400) { window.location.href = xhr.responseURL; }
-        else { self.uploading = false; self.failed = true; self.error = 'Upload failed (' + xhr.status + ') — try again.'; }
-      });
-        xhr.addEventListener('error', function () { self.uploading = false; self.failed = true; self.error = 'Upload failed — press Retry to continue.'; });
-        xhr.open('POST', form.action);
-        xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
-        xhr.send(fd);
-      }).catch(function (e) { self.uploading = false; self.failed = true; self.error = e.message; });
-    };
-  }
-
-  Alpine.data('movieVideoReplace', function () {
-    return {
+  Alpine.data('movieVideoReplace', function (cfg) {
+    return Object.assign(window.uploadMixin(cfg), {
       open: false,
       tab: 'upload',
-      uploading: false,
-      failed: false,
-      progress: 0,
       fileName: 'MP4, WebM, OGG, MKV',
       dragging: false,
-      error: '',
-      get submitLabel() {
-        if (this.tab === 'url') return 'Save URL';
-        if (this.uploading) return this.progress < 100 ? 'Uploading…' : 'Saving…';
-        return 'Upload';
-      },
-      upload: videoUpload('video'),
+      get submitLabel() { return this.tab === 'url' ? 'Save URL' : 'Upload'; },
+      upload: function (form) { this.beginUpload(form, { optional: this.tab === 'url' }); },
       drop: function (e) {
         this.dragging = false;
         var files = e.dataTransfer.files;
@@ -387,7 +350,7 @@ document.addEventListener('alpine:init', function () {
         if (this.$refs.videoInput) { this.$refs.videoInput.files = files; }
         this.fileName = files[0].name;
       }
-    };
+    });
   });
 
   Alpine.data('encodingQuality', function (opts) {
@@ -505,34 +468,10 @@ document.addEventListener('alpine:init', function () {
     };
   });
 
-  Alpine.data('trailerUpload', function () {
-    return {
-      uploading: false,
-      failed: false,
-      progress: 0,
-      error: '',
-      upload: function (form) {
-        var input = form.querySelector('[name="trailer"]');
-        if (!input || !input.files.length) {
-          this.error = 'Please select a file first.';
-          return;
-        }
-        var self = this;
-      self.uploading = true; self.progress = 0; self.error = ''; self.failed = false;
-      window.prepareResumableUpload(form, function (pct) { self.progress = pct; }).then(function (fd) {
-        var xhr = new XMLHttpRequest();
-        self.progress = 100;
-        xhr.addEventListener('load', function () {
-          if (xhr.status >= 200 && xhr.status < 400) { window.location.href = xhr.responseURL; }
-          else { self.uploading = false; self.failed = true; self.error = 'Upload failed (' + xhr.status + ') — try again.'; }
-        });
-        xhr.addEventListener('error', function () { self.uploading = false; self.failed = true; self.error = 'Upload failed — press Retry to continue.'; });
-        xhr.open('POST', form.action);
-        xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
-        xhr.send(fd);
-      }).catch(function (e) { self.uploading = false; self.failed = true; self.error = e.message; });
-      }
-    };
+  Alpine.data('trailerUpload', function (cfg) {
+    return Object.assign(window.uploadMixin(cfg), {
+      upload: function (form) { this.beginUpload(form); }
+    });
   });
 });
 </script>

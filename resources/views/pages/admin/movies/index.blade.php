@@ -40,6 +40,11 @@
                   <p class="truncate font-semibold text-fg">{{ $movie->title }}</p>
                   @if ($movie->genre || $movie->year)<p class="truncate text-xs text-muted">{{ collect([$movie->genre, $movie->year])->filter()->implode(' · ') }}</p>@endif
                   <div class="mt-1 flex flex-wrap gap-1">
+                    @if ($up = $movie->activeUpload('video'))
+                      <span x-data x-init="$store.uploads.watch(['{{ $up->id }}'])" class="badge badge-warning"><span class="size-1.5 animate-pulse rounded-full bg-amber-500"></span><span x-text="$store.uploads.label('{{ $up->id }}', {{ $up->percent() }})">Processing — uploading {{ $up->percent() }}%</span></span>
+                    @elseif (! $movie->coming_soon && $movie->video_path && ! $movie->streaming_path)
+                      <span class="badge badge-warning"><span class="size-1.5 animate-pulse rounded-full bg-amber-500"></span>Processing</span>
+                    @endif
                     @if ($movie->is_free)<span class="badge badge-success">Free</span>@endif
                     @if ($movie->is_corrupted)<span class="badge badge-danger"><x-ui.icon name="alert" class="size-3" /> Corrupted</span>@endif
                   </div>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\PlansBackgroundUploads;
 use App\Http\Traits\TriggersHlsEncoding;
 use App\Jobs\SendNewContentAlerts;
 use App\Models\ActivityLog;
@@ -13,6 +14,7 @@ use Illuminate\Support\Str;
 
 class SeriesController extends Controller
 {
+    use PlansBackgroundUploads;
     use TriggersHlsEncoding;
 
     public function index(Request $request)
@@ -48,7 +50,7 @@ class SeriesController extends Controller
             'status'      => ['required', 'in:published,hidden'],
             'posters'     => ['nullable', 'array'],
             'posters.*'   => ['image', 'max:4096'],
-        ]);
+        ] + $this->deferredFileRules());
 
         $data = [
             'title'       => $validated['title'],
@@ -88,12 +90,21 @@ class SeriesController extends Controller
             );
         }
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'uploads'   => $this->planUploads($request, $series, ['trailer' => route('admin.series.trailer', $series)]),
+                'title'     => $series->title,
+                'edit_url'  => route('admin.series.edit', $series),
+                'index_url' => route('admin.series.index'),
+            ]);
+        }
+
         return redirect()->route('admin.series.edit', $series)->with('status', 'series-created');
     }
 
     public function edit(Series $series)
     {
-        $series->load(['seasons.episodes', 'posters']);
+        $series->load(['seasons.episodes.videoUploads', 'posters', 'videoUploads']);
         $nextSeasonNumber = ($series->seasons->max('season_number') ?? 0) + 1;
         return view('pages.admin.series.edit', compact('series', 'nextSeasonNumber'));
     }

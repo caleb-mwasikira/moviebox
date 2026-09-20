@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\PlansBackgroundUploads;
 use App\Http\Traits\TriggersHlsEncoding;
 use App\Jobs\SendNewContentAlerts;
 use App\Models\ActivityLog;
@@ -15,6 +16,7 @@ use Illuminate\Support\Str;
 
 class MovieController extends Controller
 {
+    use PlansBackgroundUploads;
     use TriggersHlsEncoding;
 
     public function index(Request $request)
@@ -23,7 +25,7 @@ class MovieController extends Controller
 
         $movies = $trashed
             ? Movie::onlyTrashed()->latest('deleted_at')->paginate(20)->withQueryString()
-            : Movie::latest()->paginate(20)->withQueryString();
+            : Movie::with('videoUploads')->latest()->paginate(20)->withQueryString();
 
         return view('pages.admin.movies.index', compact('movies', 'trashed'));
     }
@@ -42,19 +44,22 @@ class MovieController extends Controller
             'year'        => ['nullable', 'integer', 'min:1888', 'max:2100'],
             'duration'    => ['nullable', 'integer', 'min:1'],
             'thumbnail'   => ['nullable', 'image', 'max:2048'],
-            'video'       => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
+            'video'       => ['required_without:video_size', 'nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
             'trailer'     => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
             'status'      => ['required', 'in:published,hidden'],
             'is_free'     => ['nullable', 'boolean'],
             'posters'     => ['nullable', 'array'],
             'posters.*'   => ['image', 'max:4096'],
-        ]);
+        ] + $this->deferredFileRules());
 
-        $ext       = $request->file('video')->getClientOriginalExtension();
+        // Without a file the video is sent from the browser after the movie exists (see planUploads).
+        $ext       = $request->hasFile('video') ? $request->file('video')->getClientOriginalExtension() : null;
         $uuid      = Str::uuid();
-        $finalPath = "videos/movies/{$uuid}.{$ext}";
+        $finalPath = $ext ? "videos/movies/{$uuid}.{$ext}" : null;
 
-        $request->file('video')->storeAs('videos/movies', "{$uuid}.{$ext}", 'public');
+        if ($ext) {
+            $request->file('video')->storeAs('videos/movies', "{$uuid}.{$ext}", 'public');
+        }
 
         $data = [
             'title'       => $validated['title'],
@@ -81,7 +86,7 @@ class MovieController extends Controller
             ]);
         }
 
-        if (strtolower($ext) === 'mkv') {
+        if ($finalPath && strtolower($ext) === 'mkv') {
             $mp4RelPath = "videos/movies/{$uuid}.mp4";
             $this->convertMkv(
                 $movie->uuid,
@@ -92,12 +97,14 @@ class MovieController extends Controller
             );
         }
 
-        $this->convertVideo(
-            $movie->uuid,
-            'movies',
-            $movie->title,
-            storage_path('app/public/' . $finalPath),
-        );
+        if ($finalPath) {
+            $this->convertVideo(
+                $movie->uuid,
+                'movies',
+                $movie->title,
+                storage_path('app/public/' . $finalPath),
+            );
+        }
 
         if ($request->hasFile('trailer')) {
             $tExt         = $request->file('trailer')->getClientOriginalExtension();
@@ -112,6 +119,18 @@ class MovieController extends Controller
                 $movie->title,
                 storage_path('app/public/' . $tStagingPath),
             );
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'uploads'   => $this->planUploads($request, $movie, [
+                    'video'   => route('admin.movies.video', $movie),
+                    'trailer' => route('admin.movies.trailer', $movie),
+                ]),
+                'title'     => $movie->title,
+                'edit_url'  => route('admin.movies.edit', $movie),
+                'index_url' => route('admin.movies.index'),
+            ]);
         }
 
         return redirect()->route('admin.movies.index')->with('status', 'movie-processing');

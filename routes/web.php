@@ -198,7 +198,9 @@ Route::middleware(['auth', 'verified', 'admin', 'chunked'])->prefix('admin')->na
 
     // Resumable (chunked) video uploads
     Route::post('uploads', [ChunkedUploadController::class, 'init'])->name('uploads.init');
+    Route::get('uploads/progress', [ChunkedUploadController::class, 'progress'])->name('uploads.progress');
     Route::get('uploads/{id}', [ChunkedUploadController::class, 'status'])->name('uploads.status');
+    Route::delete('uploads/{id}', [ChunkedUploadController::class, 'cancel'])->name('uploads.cancel');
     Route::put('uploads/{id}', [ChunkedUploadController::class, 'append'])->name('uploads.append');
 
     // Genres (added inline from the movie / series / coming-soon forms)

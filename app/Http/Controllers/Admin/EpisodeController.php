@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\PlansBackgroundUploads;
 use App\Http\Traits\TriggersHlsEncoding;
 use App\Models\ActivityLog;
 use App\Models\Episode;
@@ -13,6 +14,7 @@ use Illuminate\Support\Str;
 
 class EpisodeController extends Controller
 {
+    use PlansBackgroundUploads;
     use TriggersHlsEncoding;
 
     public function store(Request $request, Season $season)
@@ -23,14 +25,17 @@ class EpisodeController extends Controller
             'description'    => ['nullable', 'string'],
             'duration'       => ['nullable', 'integer', 'min:1'],
             'is_free'        => ['nullable', 'boolean'],
-            'video'          => ['required', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
-        ]);
+            'video'          => ['required_without:video_size', 'nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
+        ] + $this->deferredFileRules());
 
-        $ext       = $request->file('video')->getClientOriginalExtension();
+        // Without a file the video is sent from the browser after the episode exists (see planUploads).
+        $ext       = $request->hasFile('video') ? $request->file('video')->getClientOriginalExtension() : null;
         $uuid      = Str::uuid();
-        $finalPath = "videos/series/{$uuid}.{$ext}";
+        $finalPath = $ext ? "videos/series/{$uuid}.{$ext}" : null;
 
-        $request->file('video')->storeAs('videos/series', "{$uuid}.{$ext}", 'public');
+        if ($ext) {
+            $request->file('video')->storeAs('videos/series', "{$uuid}.{$ext}", 'public');
+        }
 
         $episode = $season->episodes()->create([
             'episode_number' => $validated['episode_number'],
@@ -43,7 +48,7 @@ class EpisodeController extends Controller
 
         $series = $season->series;
 
-        if (strtolower($ext) === 'mkv') {
+        if ($finalPath && strtolower($ext) === 'mkv') {
             $mp4RelPath = "videos/series/{$uuid}.mp4";
             $this->convertMkv(
                 $episode->uuid,
@@ -54,15 +59,26 @@ class EpisodeController extends Controller
             );
         }
 
-        $this->convertVideo(
-            $episode->uuid,
-            'series',
-            $episode->label(),
-            storage_path('app/public/' . $finalPath),
-            $series->title,
-        );
+        if ($finalPath) {
+            $this->convertVideo(
+                $episode->uuid,
+                'series',
+                $episode->label(),
+                storage_path('app/public/' . $finalPath),
+                $series->title,
+            );
+        }
 
         ActivityLog::record('created', 'Episode', $episode->id, $episode->label() . ' — ' . $series->title);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'uploads'   => $this->planUploads($request, $episode, ['video' => route('admin.episodes.video', $episode)]),
+                'title'     => $episode->label(),
+                'edit_url'  => route('admin.series.edit', $series),
+                'index_url' => route('admin.series.edit', $series),
+            ]);
+        }
 
         return redirect()
             ->route('admin.series.edit', $series)

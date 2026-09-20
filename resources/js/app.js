@@ -1,8 +1,9 @@
 import Alpine from 'alpinejs';
-import './resumable-upload';
+import { uploadsStore } from './resumable-upload';
 
 // Bundled locally (instead of a CDN) so pages don't stall waiting on a third-party host.
 window.Alpine = Alpine;
+Alpine.store('uploads', uploadsStore());
 document.addEventListener('DOMContentLoaded', () => Alpine.start());
 
 import Echo from 'laravel-echo';

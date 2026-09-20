@@ -40,7 +40,7 @@
     <h2 class="card-title">Media</h2>
     <x-ui.file name="video" label="Video file" required hint="MP4, WebM, OGG or MKV" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv" />
     <x-ui.file name="trailer" label="Trailer" optional hint="Short preview clip shown on the movie page" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv" />
-    <x-admin.upload-progress />
+    <x-admin.create-upload :fields="['video', 'trailer']" label="Upload movie" />
   </div>
 
   <div class="flex flex-wrap items-center gap-3">
@@ -86,54 +86,6 @@
 
   attachPreview('thumbnail', 'thumbnail-preview');
   attachPreview('posters-input', 'posters-preview');
-
-  // ── Upload progress via XHR ───────────────────────────────────
-  var form = document.getElementById('upload-form');
-  var progressWrap = document.getElementById('upload-progress-wrap');
-  var progressBar = document.getElementById('upload-progress-bar');
-  var progressLabel = document.getElementById('upload-progress-label');
-  var submitBtn = document.getElementById('upload-submit');
-
-  if (!form || !progressWrap) return;
-  var retryBtn = document.getElementById('upload-retry');
-
-    form.addEventListener('submit', function (e) {
-      if (!(function(){var v=document.getElementById('video');return v && v.files.length;})()) return; // nothing large to upload — regular submit
-      e.preventDefault();
-
-      progressWrap.classList.remove('hidden');
-      retryBtn.hidden = true;
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Uploading…';
-      progressLabel.textContent = '0%';
-      progressBar.style.width = '0%';
-
-      function fail(message) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Upload movie';
-        progressLabel.textContent = message;
-        retryBtn.hidden = false;
-      }
-
-      window.prepareResumableUpload(form, function (pct) {
-        progressBar.style.width = pct + '%';
-        progressLabel.textContent = pct + '%';
-      }).then(function (formData) {
-        var xhr = new XMLHttpRequest();
-        progressBar.style.width = '100%';
-        progressLabel.textContent = 'Saving…';
-        submitBtn.textContent = 'Saving…';
-
-        xhr.addEventListener('load', function () {
-          if (xhr.status >= 200 && xhr.status < 400) { window.location.href = xhr.responseURL; }
-          else { fail('Upload failed (' + xhr.status + ') — press Retry to continue.'); }
-        });
-        xhr.addEventListener('error', function () { fail('Upload failed — press Retry to continue.'); });
-        xhr.open('POST', form.action);
-        xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
-        xhr.send(formData);
-      }).catch(function (e) { fail(e.message); });
-    });
 })();
 </script>
 @endpush

@@ -86,4 +86,15 @@ class Series extends Model
         $baseUrl = rtrim(config('services.streaming.base_url'), '/');
         return $baseUrl . '/' . ltrim($this->trailer_path, '/');
     }
+
+    public function videoUploads(): MorphMany
+    {
+        return $this->morphMany(VideoUpload::class, 'uploadable');
+    }
+
+    /** The video/trailer still being sent from the browser, if any. */
+    public function activeUpload(string $kind = 'video'): ?VideoUpload
+    {
+        return $this->videoUploads->firstWhere('kind', $kind);
+    }
 }

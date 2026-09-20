@@ -72,4 +72,15 @@ class Episode extends Model
     {
         return 'E' . str_pad($this->episode_number, 2, '0', STR_PAD_LEFT) . ' — ' . $this->title;
     }
+
+    public function videoUploads(): MorphMany
+    {
+        return $this->morphMany(VideoUpload::class, 'uploadable');
+    }
+
+    /** The video/trailer still being sent from the browser, if any. */
+    public function activeUpload(string $kind = 'video'): ?VideoUpload
+    {
+        return $this->videoUploads->firstWhere('kind', $kind);
+    }
 }

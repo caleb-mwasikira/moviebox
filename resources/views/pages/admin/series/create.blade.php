@@ -35,7 +35,7 @@
     </div>
     <x-ui.file name="trailer" label="Trailer" optional hint="Short preview clip shown on the series page" accept="video/mp4,video/webm,video/ogg,video/x-matroska,.mkv" />
     <p class="alert alert-info"><x-ui.icon name="info" class="mt-0.5 size-4 shrink-0" />Episode videos are uploaded per episode after creating the series.</p>
-    <x-admin.upload-progress />
+    <x-admin.create-upload :fields="['trailer']" label="Create series" />
   </div>
 
   <div class="flex flex-wrap items-center gap-3">
@@ -81,55 +81,6 @@
 
   attachPreview('thumbnail', 'thumbnail-preview');
   attachPreview('posters-input', 'posters-preview');
-
-  // ── XHR upload for trailer ────────────────────────────────────
-  var form         = document.getElementById('upload-form');
-  var progressWrap = document.getElementById('upload-progress-wrap');
-  var progressBar  = document.getElementById('upload-progress-bar');
-  var progressLabel= document.getElementById('upload-progress-label');
-  var submitBtn    = document.getElementById('upload-submit');
-
-  var retryBtn = document.getElementById('upload-retry');
-
-  if (form) {
-    form.addEventListener('submit', function (e) {
-      if (!(function(){var t=document.getElementById('trailer');return t && t.files.length;})()) return; // nothing large to upload — regular submit
-      e.preventDefault();
-
-      progressWrap.classList.remove('hidden');
-      retryBtn.hidden = true;
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Uploading…';
-      progressLabel.textContent = '0%';
-      progressBar.style.width = '0%';
-
-      function fail(message) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Create series';
-        progressLabel.textContent = message;
-        retryBtn.hidden = false;
-      }
-
-      window.prepareResumableUpload(form, function (pct) {
-        progressBar.style.width = pct + '%';
-        progressLabel.textContent = pct + '%';
-      }).then(function (formData) {
-        var xhr = new XMLHttpRequest();
-        progressBar.style.width = '100%';
-        progressLabel.textContent = 'Saving…';
-        submitBtn.textContent = 'Saving…';
-
-        xhr.addEventListener('load', function () {
-          if (xhr.status >= 200 && xhr.status < 400) { window.location.href = xhr.responseURL; }
-          else { fail('Upload failed (' + xhr.status + ') — press Retry to continue.'); }
-        });
-        xhr.addEventListener('error', function () { fail('Upload failed — press Retry to continue.'); });
-        xhr.open('POST', form.action);
-        xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
-        xhr.send(formData);
-      }).catch(function (e) { fail(e.message); });
-    });
-  }
 })();
 </script>
 @endpush

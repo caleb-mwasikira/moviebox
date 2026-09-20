@@ -199,6 +199,7 @@
       });
   </script>
 
+  <x-admin.upload-tray />
   @stack('scripts')
 </body>
 </html>
