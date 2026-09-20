@@ -1,4 +1,5 @@
 import Alpine from 'alpinejs';
+import './resumable-upload';
 
 // Bundled locally (instead of a CDN) so pages don't stall waiting on a third-party host.
 window.Alpine = Alpine;

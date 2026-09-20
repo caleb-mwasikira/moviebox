@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\TestEmailController as AdminTestEmailController;
 use App\Http\Controllers\Admin\VideoHealthController as AdminVideoHealthController;
 use App\Http\Controllers\Admin\GenreController as AdminGenreController;
+use App\Http\Controllers\Admin\ChunkedUploadController;
 use App\Http\Controllers\Admin\CollectionController as AdminCollectionController;
 use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\ActivityController as AdminActivityController;
@@ -192,8 +193,13 @@ Route::middleware(['auth', 'verified', 'not.shared.guest'])->prefix('account')->
     Route::delete('delete-account', [AccountController::class, 'deleteAccount'])->name('delete-account.destroy');
 });
 
-Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'admin', 'chunked'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
+
+    // Resumable (chunked) video uploads
+    Route::post('uploads', [ChunkedUploadController::class, 'init'])->name('uploads.init');
+    Route::get('uploads/{id}', [ChunkedUploadController::class, 'status'])->name('uploads.status');
+    Route::put('uploads/{id}', [ChunkedUploadController::class, 'append'])->name('uploads.append');
 
     // Genres (added inline from the movie / series / coming-soon forms)
     Route::post('genres', [AdminGenreController::class, 'store'])->name('genres.store');

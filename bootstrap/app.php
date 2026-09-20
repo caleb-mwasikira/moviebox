@@ -7,6 +7,7 @@ use App\Http\Middleware\CheckBanned;
 use App\Http\Middleware\EnsureNotSharedGuest;
 use App\Http\Middleware\RequireActiveSubscription;
 use App\Http\Middleware\RequireAuthModal;
+use App\Http\Middleware\ResolveChunkedUploads;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -27,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.modal'       => RequireAuthModal::class,
             'subscription'     => RequireActiveSubscription::class,
             'not.shared.guest' => EnsureNotSharedGuest::class,
+            'chunked'          => ResolveChunkedUploads::class,
         ]);
         $middleware->appendToGroup('web', CheckBanned::class);
         $middleware->preventRequestForgery([

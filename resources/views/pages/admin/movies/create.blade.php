@@ -95,48 +95,45 @@
   var submitBtn = document.getElementById('upload-submit');
 
   if (!form || !progressWrap) return;
+  var retryBtn = document.getElementById('upload-retry');
 
-  form.addEventListener('submit', function (e) {
-    e.preventDefault();
+    form.addEventListener('submit', function (e) {
+      if (!(function(){var v=document.getElementById('video');return v && v.files.length;})()) return; // nothing large to upload — regular submit
+      e.preventDefault();
 
-    var videoInput = document.getElementById('video');
-    if (!videoInput || !videoInput.files.length) {
-      form.submit();
-      return;
-    }
+      progressWrap.classList.remove('hidden');
+      retryBtn.hidden = true;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Uploading…';
+      progressLabel.textContent = '0%';
+      progressBar.style.width = '0%';
 
-    var formData = new FormData(form);
-    var xhr = new XMLHttpRequest();
+      function fail(message) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Upload movie';
+        progressLabel.textContent = message;
+        retryBtn.hidden = false;
+      }
 
-    progressWrap.classList.remove('hidden');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Uploading…';
-
-    xhr.upload.addEventListener('progress', function (e) {
-      if (!e.lengthComputable) return;
-      var pct = Math.round((e.loaded / e.total) * 100);
-      progressBar.style.width = pct + '%';
-      progressLabel.textContent = pct + '%';
-      if (pct === 100) {
+      window.prepareResumableUpload(form, function (pct) {
+        progressBar.style.width = pct + '%';
+        progressLabel.textContent = pct + '%';
+      }).then(function (formData) {
+        var xhr = new XMLHttpRequest();
+        progressBar.style.width = '100%';
         progressLabel.textContent = 'Saving…';
         submitBtn.textContent = 'Saving…';
-      }
-    });
 
-    xhr.addEventListener('load', function () {
-      window.location.href = xhr.responseURL;
+        xhr.addEventListener('load', function () {
+          if (xhr.status >= 200 && xhr.status < 400) { window.location.href = xhr.responseURL; }
+          else { fail('Upload failed (' + xhr.status + ') — press Retry to continue.'); }
+        });
+        xhr.addEventListener('error', function () { fail('Upload failed — press Retry to continue.'); });
+        xhr.open('POST', form.action);
+        xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
+        xhr.send(formData);
+      }).catch(function (e) { fail(e.message); });
     });
-
-    xhr.addEventListener('error', function () {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Upload Movie';
-      progressLabel.textContent = 'Upload failed — try again.';
-      progressBar.style.width = '0%';
-    });
-
-    xhr.open('POST', form.action);
-    xhr.send(formData);
-  });
 })();
 </script>
 @endpush

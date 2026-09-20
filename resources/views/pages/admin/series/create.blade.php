@@ -89,48 +89,45 @@
   var progressLabel= document.getElementById('upload-progress-label');
   var submitBtn    = document.getElementById('upload-submit');
 
+  var retryBtn = document.getElementById('upload-retry');
+
   if (form) {
     form.addEventListener('submit', function (e) {
-      var trailerInput = document.getElementById('trailer');
-      if (!trailerInput || !trailerInput.files.length) return; // no trailer — regular submit
-
+      if (!(function(){var t=document.getElementById('trailer');return t && t.files.length;})()) return; // nothing large to upload — regular submit
       e.preventDefault();
-      var formData = new FormData(form);
-      var xhr = new XMLHttpRequest();
 
       progressWrap.classList.remove('hidden');
+      retryBtn.hidden = true;
       submitBtn.disabled = true;
       submitBtn.textContent = 'Uploading…';
+      progressLabel.textContent = '0%';
+      progressBar.style.width = '0%';
 
-      xhr.upload.addEventListener('progress', function (ev) {
-        if (!ev.lengthComputable) return;
-        var pct = Math.round((ev.loaded / ev.total) * 100);
+      function fail(message) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create series';
+        progressLabel.textContent = message;
+        retryBtn.hidden = false;
+      }
+
+      window.prepareResumableUpload(form, function (pct) {
         progressBar.style.width = pct + '%';
         progressLabel.textContent = pct + '%';
-        if (pct === 100) { progressLabel.textContent = 'Saving…'; submitBtn.textContent = 'Saving…'; }
-      });
+      }).then(function (formData) {
+        var xhr = new XMLHttpRequest();
+        progressBar.style.width = '100%';
+        progressLabel.textContent = 'Saving…';
+        submitBtn.textContent = 'Saving…';
 
-      xhr.addEventListener('load', function () {
-        if (xhr.status >= 200 && xhr.status < 400) {
-          window.location.href = xhr.responseURL;
-        } else {
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Create Series';
-          progressLabel.textContent = 'Upload failed (' + xhr.status + ') — try again.';
-          progressBar.style.width = '0%';
-        }
-      });
-
-      xhr.addEventListener('error', function () {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Create Series';
-        progressLabel.textContent = 'Upload failed — try again.';
-        progressBar.style.width = '0%';
-      });
-
-      xhr.open('POST', form.action);
-      xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
-      xhr.send(formData);
+        xhr.addEventListener('load', function () {
+          if (xhr.status >= 200 && xhr.status < 400) { window.location.href = xhr.responseURL; }
+          else { fail('Upload failed (' + xhr.status + ') — press Retry to continue.'); }
+        });
+        xhr.addEventListener('error', function () { fail('Upload failed — press Retry to continue.'); });
+        xhr.open('POST', form.action);
+        xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
+        xhr.send(formData);
+      }).catch(function (e) { fail(e.message); });
     });
   }
 })();

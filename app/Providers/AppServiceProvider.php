@@ -22,7 +22,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // terminate() must run on the same instance that claimed the uploads.
+        $this->app->singleton(\App\Http\Middleware\ResolveChunkedUploads::class);
     }
 
     /**

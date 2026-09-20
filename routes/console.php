@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('subscriptions:remind')->dailyAt('09:00');
 Schedule::command('watch-parties:expire')->daily();
+Schedule::call(fn () => \App\Support\ChunkedUpload::prune())->daily()->name('chunked-uploads:prune');

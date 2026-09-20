@@ -119,6 +119,7 @@
             <p class="text-xs text-muted">Do not close this tab until the upload completes.</p>
           </div>
           <p x-show="error" x-cloak x-text="error" class="field-error"></p>
+<x-admin.retry-upload />
         </div>
 
         <div x-show="tab === 'url'" x-cloak>
@@ -217,6 +218,7 @@
         <p class="text-xs text-muted">Large files may take a few minutes. Do not close this tab.</p>
       </div>
       <p x-show="error" x-cloak x-text="error" class="field-error"></p>
+<x-admin.retry-upload />
       <button type="submit" :disabled="uploading" class="btn btn-primary">
         <span x-show="!uploading">{{ $movie->trailer_path ? 'Replace trailer' : 'Upload trailer' }}</span>
         <span x-show="uploading && progress < 100" x-cloak>Uploading…</span>
@@ -345,21 +347,20 @@ document.addEventListener('alpine:init', function () {
     return function (form) {
       var input = form.querySelector('[name="' + inputName + '"]');
       if (!input || !input.files.length) { form.submit(); return; }
-      var fd = new FormData(form);
-      var xhr = new XMLHttpRequest();
       var self = this;
-      self.uploading = true; self.progress = 0; self.error = '';
-      xhr.upload.addEventListener('progress', function (ev) {
-        if (ev.lengthComputable) self.progress = Math.round(ev.loaded / ev.total * 100);
-      });
-      xhr.addEventListener('load', function () {
+      self.uploading = true; self.progress = 0; self.error = ''; self.failed = false;
+      window.prepareResumableUpload(form, function (pct) { self.progress = pct; }).then(function (fd) {
+        var xhr = new XMLHttpRequest();
+        self.progress = 100;
+        xhr.addEventListener('load', function () {
         if (xhr.status >= 200 && xhr.status < 400) { window.location.href = xhr.responseURL; }
-        else { self.uploading = false; self.error = 'Upload failed (' + xhr.status + ') — try again.'; }
+        else { self.uploading = false; self.failed = true; self.error = 'Upload failed (' + xhr.status + ') — try again.'; }
       });
-      xhr.addEventListener('error', function () { self.uploading = false; self.error = 'Upload failed — try again.'; });
-      xhr.open('POST', form.action);
-      xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
-      xhr.send(fd);
+        xhr.addEventListener('error', function () { self.uploading = false; self.failed = true; self.error = 'Upload failed — press Retry to continue.'; });
+        xhr.open('POST', form.action);
+        xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
+        xhr.send(fd);
+      }).catch(function (e) { self.uploading = false; self.failed = true; self.error = e.message; });
     };
   }
 
@@ -368,6 +369,7 @@ document.addEventListener('alpine:init', function () {
       open: false,
       tab: 'upload',
       uploading: false,
+      failed: false,
       progress: 0,
       fileName: 'MP4, WebM, OGG, MKV',
       dragging: false,
@@ -506,6 +508,7 @@ document.addEventListener('alpine:init', function () {
   Alpine.data('trailerUpload', function () {
     return {
       uploading: false,
+      failed: false,
       progress: 0,
       error: '',
       upload: function (form) {
@@ -514,21 +517,20 @@ document.addEventListener('alpine:init', function () {
           this.error = 'Please select a file first.';
           return;
         }
-        var fd = new FormData(form);
-        var xhr = new XMLHttpRequest();
         var self = this;
-        self.uploading = true; self.progress = 0; self.error = '';
-        xhr.upload.addEventListener('progress', function (ev) {
-          if (ev.lengthComputable) self.progress = Math.round(ev.loaded / ev.total * 100);
-        });
+      self.uploading = true; self.progress = 0; self.error = ''; self.failed = false;
+      window.prepareResumableUpload(form, function (pct) { self.progress = pct; }).then(function (fd) {
+        var xhr = new XMLHttpRequest();
+        self.progress = 100;
         xhr.addEventListener('load', function () {
           if (xhr.status >= 200 && xhr.status < 400) { window.location.href = xhr.responseURL; }
-          else { self.uploading = false; self.error = 'Upload failed (' + xhr.status + ') — try again.'; }
+          else { self.uploading = false; self.failed = true; self.error = 'Upload failed (' + xhr.status + ') — try again.'; }
         });
-        xhr.addEventListener('error', function () { self.uploading = false; self.error = 'Upload failed — try again.'; });
+        xhr.addEventListener('error', function () { self.uploading = false; self.failed = true; self.error = 'Upload failed — press Retry to continue.'; });
         xhr.open('POST', form.action);
         xhr.setRequestHeader('Accept', 'text/html,application/xhtml+xml');
         xhr.send(fd);
+      }).catch(function (e) { self.uploading = false; self.failed = true; self.error = e.message; });
       }
     };
   });
