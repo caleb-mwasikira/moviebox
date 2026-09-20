@@ -43,13 +43,15 @@ class MovieController extends Controller
             'genre'       => ['nullable', 'string', 'max:100'],
             'year'        => ['nullable', 'integer', 'min:1888', 'max:2100'],
             'duration'    => ['nullable', 'integer', 'min:1'],
-            'thumbnail'   => ['nullable', 'image', 'max:2048'],
             'video'       => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
             'trailer'     => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
             'status'      => ['required', 'in:published,hidden'],
             'is_free'     => ['nullable', 'boolean'],
             'posters'     => ['nullable', 'array'],
             'posters.*'   => ['image', 'max:4096'],
+            'main_poster' => ['nullable', 'string', 'max:20'],
+            'remove_posters'   => ['nullable', 'array'],
+            'remove_posters.*' => ['integer'],
         ] + $this->deferredFileRules());
 
         // The video is optional: it can be sent from the browser after the movie exists (see planUploads)
@@ -73,19 +75,10 @@ class MovieController extends Controller
             'video_path'  => $finalPath,
         ];
 
-        if ($request->hasFile('thumbnail')) {
-            $data['thumbnail'] = $request->file('thumbnail')->store('thumbnails/movies', 'public');
-        }
-
         $movie = Movie::create($data);
         ActivityLog::record('created', 'Movie', $movie->id, $movie->title);
 
-        foreach ($request->file('posters', []) as $i => $file) {
-            $movie->posters()->create([
-                'path'       => $file->store('posters/movies', 'public'),
-                'sort_order' => $i,
-            ]);
-        }
+        $movie->applyPosterChanges($request, 'posters/movies');
 
         if ($finalPath && strtolower($ext) === 'mkv') {
             $mp4RelPath = "videos/movies/{$uuid}.mp4";
@@ -144,6 +137,7 @@ class MovieController extends Controller
 
     public function edit(Movie $movie)
     {
+        $movie->ensureThumbnailIsPoster();
         $movie->load('posters');
         return view('pages.admin.movies.edit', compact('movie'));
     }
@@ -156,12 +150,14 @@ class MovieController extends Controller
             'genre'       => ['nullable', 'string', 'max:100'],
             'year'        => ['nullable', 'integer', 'min:1888', 'max:2100'],
             'duration'    => ['nullable', 'integer', 'min:1'],
-            'thumbnail'   => ['nullable', 'image', 'max:2048'],
             'video'       => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
             'status'      => ['required', 'in:published,hidden'],
             'is_free'     => ['nullable', 'boolean'],
             'posters'     => ['nullable', 'array'],
             'posters.*'   => ['image', 'max:4096'],
+            'main_poster' => ['nullable', 'string', 'max:20'],
+            'remove_posters'   => ['nullable', 'array'],
+            'remove_posters.*' => ['integer'],
         ]);
 
         $data = [
@@ -173,13 +169,6 @@ class MovieController extends Controller
             'status'      => $validated['status'],
             'is_free'     => $request->boolean('is_free'),
         ];
-
-        if ($request->hasFile('thumbnail')) {
-            if ($movie->thumbnail) {
-                Storage::disk('public')->delete($movie->thumbnail);
-            }
-            $data['thumbnail'] = $request->file('thumbnail')->store('thumbnails/movies', 'public');
-        }
 
         $newVideoPath = null;
         if ($request->hasFile('video')) {
@@ -205,13 +194,7 @@ class MovieController extends Controller
             );
         }
 
-        $offset = $movie->posters()->max('sort_order') ?? -1;
-        foreach ($request->file('posters', []) as $i => $file) {
-            $movie->posters()->create([
-                'path'       => $file->store('posters/movies', 'public'),
-                'sort_order' => $offset + $i + 1,
-            ]);
-        }
+        $movie->applyPosterChanges($request, 'posters/movies');
 
         ActivityLog::record('updated', 'Movie', $movie->id, $movie->title);
 

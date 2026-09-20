@@ -45,11 +45,13 @@ class SeriesController extends Controller
             'description' => ['required', 'string'],
             'genre'       => ['nullable', 'string', 'max:100'],
             'year'        => ['nullable', 'integer', 'min:1888', 'max:2100'],
-            'thumbnail'   => ['nullable', 'image', 'max:2048'],
             'trailer'     => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
             'status'      => ['required', 'in:published,hidden'],
             'posters'     => ['nullable', 'array'],
             'posters.*'   => ['image', 'max:4096'],
+            'main_poster' => ['nullable', 'string', 'max:20'],
+            'remove_posters'   => ['nullable', 'array'],
+            'remove_posters.*' => ['integer'],
         ] + $this->deferredFileRules());
 
         $data = [
@@ -60,19 +62,10 @@ class SeriesController extends Controller
             'status'      => $validated['status'],
         ];
 
-        if ($request->hasFile('thumbnail')) {
-            $data['thumbnail'] = $request->file('thumbnail')->store('thumbnails/series', 'public');
-        }
-
         $series = Series::create($data);
         ActivityLog::record('created', 'Series', $series->id, $series->title);
 
-        foreach ($request->file('posters', []) as $i => $file) {
-            $series->posters()->create([
-                'path'       => $file->store('posters/series', 'public'),
-                'sort_order' => $i,
-            ]);
-        }
+        $series->applyPosterChanges($request, 'posters/series');
 
         if ($request->hasFile('trailer')) {
             $tExt         = $request->file('trailer')->getClientOriginalExtension();
@@ -104,6 +97,7 @@ class SeriesController extends Controller
 
     public function edit(Series $series)
     {
+        $series->ensureThumbnailIsPoster();
         $series->load(['seasons.episodes.videoUploads', 'posters', 'videoUploads']);
         $nextSeasonNumber = ($series->seasons->max('season_number') ?? 0) + 1;
         return view('pages.admin.series.edit', compact('series', 'nextSeasonNumber'));
@@ -116,11 +110,13 @@ class SeriesController extends Controller
             'description' => ['required', 'string'],
             'genre'       => ['nullable', 'string', 'max:100'],
             'year'        => ['nullable', 'integer', 'min:1888', 'max:2100'],
-            'thumbnail'   => ['nullable', 'image', 'max:2048'],
             'trailer'     => ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/ogg,video/x-matroska'],
             'status'      => ['required', 'in:published,hidden'],
             'posters'     => ['nullable', 'array'],
             'posters.*'   => ['image', 'max:4096'],
+            'main_poster' => ['nullable', 'string', 'max:20'],
+            'remove_posters'   => ['nullable', 'array'],
+            'remove_posters.*' => ['integer'],
         ]);
 
         $data = [
@@ -130,13 +126,6 @@ class SeriesController extends Controller
             'year'        => $validated['year'] ?? null,
             'status'      => $validated['status'],
         ];
-
-        if ($request->hasFile('thumbnail')) {
-            if ($series->thumbnail) {
-                Storage::disk('public')->delete($series->thumbnail);
-            }
-            $data['thumbnail'] = $request->file('thumbnail')->store('thumbnails/series', 'public');
-        }
 
         $series->update($data);
 
@@ -159,13 +148,7 @@ class SeriesController extends Controller
             );
         }
 
-        $offset = $series->posters()->max('sort_order') ?? -1;
-        foreach ($request->file('posters', []) as $i => $file) {
-            $series->posters()->create([
-                'path'       => $file->store('posters/series', 'public'),
-                'sort_order' => $offset + $i + 1,
-            ]);
-        }
+        $series->applyPosterChanges($request, 'posters/series');
 
         ActivityLog::record('updated', 'Series', $series->id, $series->title);
 

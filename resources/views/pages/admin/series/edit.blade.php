@@ -43,31 +43,7 @@
     </div>
     <x-ui.textarea name="description" label="Description" :value="old('description', $series->description)" rows="5" />
 
-    <div>
-      <label class="label">Thumbnail</label>
-      @if ($series->thumbnail)<img src="{{ $series->thumbnailUrl() }}" alt="" class="mb-3 h-32 w-auto rounded-lg border border-line object-cover">@endif
-      <x-ui.file name="thumbnail" id="series-thumbnail" accept="image/*" />
-      <div id="series-thumbnail-preview" class="mt-3 flex flex-wrap gap-3"></div>
-    </div>
-
-    <div>
-      <label class="label">Posters</label>
-      @if ($series->posters->isNotEmpty())
-        <div class="mb-3 flex flex-wrap gap-3">
-          @foreach ($series->posters as $poster)
-            <div class="group relative">
-              <img src="{{ $poster->url() }}" alt="" class="h-28 w-auto rounded-lg border border-line object-cover">
-              <form method="POST" action="{{ route('admin.posters.destroy', $poster) }}" onsubmit="return confirm('Remove this poster?')" class="absolute right-1.5 top-1.5">
-                @csrf @method('DELETE')
-                <button type="submit" class="grid size-6 place-items-center rounded-full bg-black/70 text-xs text-white opacity-0 transition hover:bg-red-500 group-hover:opacity-100">✕</button>
-              </form>
-            </div>
-          @endforeach
-        </div>
-      @endif
-      <x-ui.file name="posters[]" id="series-posters-input" accept="image/*" multiple hint="Select multiple to add more posters" />
-      <div id="series-posters-preview" class="mt-3 flex flex-wrap gap-3"></div>
-    </div>
+    <x-admin.poster-picker :posters="$series->posters" />
 
     <button type="submit" class="btn btn-primary">Save metadata</button>
   </div>
@@ -89,7 +65,7 @@
       <span class="badge badge-warning"><span class="size-1.5 animate-pulse rounded-full bg-amber-500"></span> Trailer processing…</span>
     @endif
 
-    <form x-data='trailerUpload(@json($uploadCfg($series, 'series', 'trailer', 'admin.series.trailer', $series->title . ' — trailer')))' x-init="initUploads()" method="POST" action="{{ route('admin.series.trailer', $series) }}" enctype="multipart/form-data" @submit.prevent="upload($el)" class="max-w-xl space-y-4">
+    <form x-data="trailerUpload({{ \Illuminate\Support\Js::from($uploadCfg($series, 'series', 'trailer', 'admin.series.trailer', $series->title . ' — trailer')) }})" x-init="initUploads()" method="POST" action="{{ route('admin.series.trailer', $series) }}" enctype="multipart/form-data" @submit.prevent="upload($el)" class="max-w-xl space-y-4">
       @csrf
       <x-admin.upload-status />
       <x-ui.file name="trailer" id="series-trailer" :label="$series->trailer_path ? 'Replace trailer' : 'Upload trailer'" hint="MP4, WebM, OGG or MKV — will be transcoded to MP4" :accept="$videoAccept" />
@@ -119,7 +95,7 @@
             <thead><tr><th class="w-14">#</th><th>Title</th><th>Duration</th><th>Video</th><th class="text-right">Actions</th></tr></thead>
             @foreach ($season->episodes as $episode)
               {{-- Each episode pair gets its own tbody for Alpine scoping --}}
-              <tbody x-data='seriesVideoReplace({{ $episode->is_free ? 'true' : 'false' }}, @json(route('admin.episodes.toggle-free', $episode)), @json($uploadCfg($episode, 'episode', 'video', 'admin.episodes.video', $series->title . ' — ' . $episode->label())))' x-init="initUploads()">
+              <tbody x-data="seriesVideoReplace({{ $episode->is_free ? 'true' : 'false' }}, {{ \Illuminate\Support\Js::from(route('admin.episodes.toggle-free', $episode)) }}, {{ \Illuminate\Support\Js::from($uploadCfg($episode, 'episode', 'video', 'admin.episodes.video', $series->title . ' — ' . $episode->label())) }})" x-init="initUploads()">
                 <tr>
                   <td class="font-semibold tabular-nums text-fg">{{ str_pad($episode->episode_number, 2, '0', STR_PAD_LEFT) }}</td>
                   <td class="font-semibold text-fg">{{ $episode->title }}</td>
@@ -399,39 +375,6 @@
   } else {
     video.src = src;
   }
-})();
-
-// ── Image previews ────────────────────────────────────────────
-(function () {
-  function attachPreview(inputId, containerId) {
-    var input = document.getElementById(inputId);
-    var container = document.getElementById(containerId);
-    if (!input || !container) return;
-    input.addEventListener('change', function () {
-      container.innerHTML = '';
-      Array.from(input.files).forEach(function (file) {
-        if (!file.type.startsWith('image/')) return;
-        var reader = new FileReader();
-        reader.onload = function (e) {
-          var wrap = document.createElement('div');
-          wrap.className = 'relative';
-          var img = document.createElement('img');
-          img.src = e.target.result;
-          img.className = 'h-24 w-auto rounded-lg border border-line object-cover';
-          var name = document.createElement('p');
-          name.className = 'mt-1 max-w-[96px] truncate text-[10px] text-muted';
-          name.textContent = file.name;
-          wrap.appendChild(img);
-          wrap.appendChild(name);
-          container.appendChild(wrap);
-        };
-        reader.readAsDataURL(file);
-      });
-    });
-  }
-
-  attachPreview('series-thumbnail', 'series-thumbnail-preview');
-  attachPreview('series-posters-input', 'series-posters-preview');
 })();
 
 // ── Alpine components ─────────────────────────────────────────

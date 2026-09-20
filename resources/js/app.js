@@ -1,9 +1,11 @@
 import Alpine from 'alpinejs';
 import { uploadsStore } from './resumable-upload';
+import { posterPicker } from './poster-picker';
 
 // Bundled locally (instead of a CDN) so pages don't stall waiting on a third-party host.
 window.Alpine = Alpine;
 Alpine.store('uploads', uploadsStore());
+Alpine.data('posterPicker', posterPicker);
 document.addEventListener('DOMContentLoaded', () => Alpine.start());
 
 import Echo from 'laravel-echo';

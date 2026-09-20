@@ -52,6 +52,7 @@
       started.querySelector('[data-edit]').href = data.edit_url;
       started.querySelector('[data-index]').href = data.index_url;
       started.hidden = false;
+      started.scrollIntoView({ behavior: 'smooth', block: 'center' });
       submit.closest('div').hidden = true;
       form.querySelectorAll('input, select, textarea').forEach(function (el) { el.disabled = true; });
     }).catch(function (err) {

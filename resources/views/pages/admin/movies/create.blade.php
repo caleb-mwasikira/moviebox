@@ -26,14 +26,7 @@
 
   <div class="card card-pad space-y-5" x-show="step === 1" x-cloak>
     <h2 class="card-title">Artwork</h2>
-    <div>
-      <x-ui.file name="thumbnail" label="Thumbnail image" accept="image/*" />
-      <div id="thumbnail-preview" class="mt-3 flex flex-wrap gap-3"></div>
-    </div>
-    <div>
-      <x-ui.file name="posters[]" id="posters-input" label="Posters" optional hint="Select multiple images" accept="image/*" multiple />
-      <div id="posters-preview" class="mt-3 flex flex-wrap gap-3"></div>
-    </div>
+    <x-admin.poster-picker />
   </div>
 
   <div class="card card-pad space-y-5" x-show="step === 2" x-cloak>
@@ -53,39 +46,3 @@
 </form>
 @endsection
 
-@push('scripts')
-<script>
-(function () {
-  // ── Image previews ────────────────────────────────────────────
-  function attachPreview(inputId, containerId) {
-    var input = document.getElementById(inputId);
-    var container = document.getElementById(containerId);
-    if (!input || !container) return;
-    input.addEventListener('change', function () {
-      container.innerHTML = '';
-      Array.from(input.files).forEach(function (file) {
-        if (!file.type.startsWith('image/')) return;
-        var reader = new FileReader();
-        reader.onload = function (e) {
-          var wrap = document.createElement('div');
-          wrap.className = 'relative';
-          var img = document.createElement('img');
-          img.src = e.target.result;
-          img.className = 'h-24 w-auto object-cover rounded-lg border border-line';
-          var name = document.createElement('p');
-          name.className = 'text-[10px] text-muted mt-1 truncate max-w-[96px]';
-          name.textContent = file.name;
-          wrap.appendChild(img);
-          wrap.appendChild(name);
-          container.appendChild(wrap);
-        };
-        reader.readAsDataURL(file);
-      });
-    });
-  }
-
-  attachPreview('thumbnail', 'thumbnail-preview');
-  attachPreview('posters-input', 'posters-preview');
-})();
-</script>
-@endpush

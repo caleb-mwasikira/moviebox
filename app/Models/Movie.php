@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 
 class Movie extends Model
 {
+    use \App\Models\Concerns\ManagesPosters;
     use SoftDeletes;
     protected $fillable = [
         'title',

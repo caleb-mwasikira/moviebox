@@ -12,6 +12,7 @@ use Illuminate\Support\Str;
 
 class Series extends Model
 {
+    use \App\Models\Concerns\ManagesPosters;
     use SoftDeletes;
     protected $fillable = [
         'title', 'description', 'genre', 'year',

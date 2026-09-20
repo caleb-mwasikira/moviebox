@@ -46,31 +46,7 @@
 
     <x-ui.textarea name="description" label="Description" :value="old('description', $movie->description)" rows="5" />
 
-    <div>
-      <label class="label">Thumbnail</label>
-      @if ($movie->thumbnail)<img src="{{ $movie->thumbnailUrl() }}" alt="" class="mb-3 h-32 w-auto rounded-lg border border-line object-cover">@endif
-      <x-ui.file name="thumbnail" id="edit-thumbnail" accept="image/*" hint="Leave blank to keep current thumbnail" />
-      <div id="edit-thumbnail-preview" class="mt-3 flex flex-wrap gap-3"></div>
-    </div>
-
-    <div>
-      <label class="label">Posters</label>
-      @if ($movie->posters->isNotEmpty())
-        <div class="mb-3 flex flex-wrap gap-3">
-          @foreach ($movie->posters as $poster)
-            <div class="group relative">
-              <img src="{{ $poster->url() }}" alt="" class="h-28 w-auto rounded-lg border border-line object-cover">
-              <form method="POST" action="{{ route('admin.posters.destroy', $poster) }}" onsubmit="return confirm('Remove this poster?')" class="absolute right-1.5 top-1.5">
-                @csrf @method('DELETE')
-                <button type="submit" class="grid size-6 place-items-center rounded-full bg-black/70 text-xs text-white opacity-0 transition hover:bg-red-500 group-hover:opacity-100">✕</button>
-              </form>
-            </div>
-          @endforeach
-        </div>
-      @endif
-      <x-ui.file name="posters[]" id="edit-posters-input" accept="image/*" multiple hint="Select multiple to add more posters" />
-      <div id="edit-posters-preview" class="mt-3 flex flex-wrap gap-3"></div>
-    </div>
+    <x-admin.poster-picker :posters="$movie->posters" />
 
     <button type="submit" class="btn btn-primary">Save metadata</button>
   </div>
@@ -80,7 +56,7 @@
 
 <div x-show="step === 1" x-cloak class="space-y-6">
 {{-- Video --}}
-<section class="card" x-data='movieVideoReplace(@json($uploadCfg('video', 'admin.movies.video')))' x-init="initUploads()" @dragover.prevent @drop.prevent="drop($event)">
+<section class="card" x-data="movieVideoReplace({{ \Illuminate\Support\Js::from($uploadCfg('video', 'admin.movies.video')) }})" x-init="initUploads()" @dragover.prevent @drop.prevent="drop($event)">
   <div class="card-header"><h2 class="card-title">Video</h2></div>
   <div class="space-y-5 p-5 sm:p-6">
     <div class="flex flex-wrap items-center gap-3">
@@ -96,13 +72,12 @@
       <div class="ml-auto flex flex-wrap items-center gap-2">
         <x-admin.video-preview :title="$movie->title" :src="$movie->streaming_path ? $movie->streamingUrl() : ($movie->video_path ? $movie->videoUrl() : null)" :hls="(bool) $movie->streaming_path"
           :report-url="route('admin.movies.corrupted', $movie)" :clear-url="route('admin.movies.corrupted.clear', $movie)" :corrupted="$movie->is_corrupted" :token="$hlsToken" />
-        <button type="button" @click="open = !open" class="btn btn-secondary btn-sm">Replace / set URL</button>
       </div>
     </div>
 
     <x-admin.upload-status />
 
-    <div x-show="open" x-cloak x-transition class="panel space-y-4 p-5">
+    <div class="panel space-y-4 p-5">
       <div class="flex gap-5 border-b border-line">
         <button type="button" @click="tab = 'upload'" :class="tab === 'upload' ? 'border-brand text-brand' : 'border-transparent text-muted hover:text-fg'" class="{{ $tabBtn }}">Upload file</button>
         <button type="button" @click="tab = 'url'" :class="tab === 'url' ? 'border-brand text-brand' : 'border-transparent text-muted hover:text-fg'" class="{{ $tabBtn }}">Streaming URL</button>
@@ -130,8 +105,7 @@
         </div>
 
         <div class="flex gap-2">
-          <button type="submit" x-text="submitLabel" class="btn btn-primary">Upload</button>
-          <button type="button" @click="open = false" class="btn btn-secondary">Cancel</button>
+          <button type="submit" x-text="tab === 'url' ? 'Save URL' : '{{ $movie->video_path ? 'Replace video' : 'Upload video' }}'" class="btn btn-primary">Upload video</button>
         </div>
       </form>
     </div>
@@ -210,7 +184,7 @@
       <span class="badge badge-warning"><span class="size-1.5 animate-pulse rounded-full bg-amber-500"></span> Trailer processing…</span>
     @endif
 
-    <form x-data='trailerUpload(@json($uploadCfg('trailer', 'admin.movies.trailer')))' x-init="initUploads()" method="POST" action="{{ route('admin.movies.trailer', $movie) }}" enctype="multipart/form-data" @submit.prevent="upload($el)" class="max-w-xl space-y-4">
+    <form x-data="trailerUpload({{ \Illuminate\Support\Js::from($uploadCfg('trailer', 'admin.movies.trailer')) }})" x-init="initUploads()" method="POST" action="{{ route('admin.movies.trailer', $movie) }}" enctype="multipart/form-data" @submit.prevent="upload($el)" class="max-w-xl space-y-4">
       @csrf
       <x-admin.upload-status />
       <x-ui.file name="trailer" id="movie-trailer" :label="$movie->trailer_path ? 'Replace trailer' : 'Upload trailer'" hint="MP4, WebM, OGG or MKV — will be transcoded to MP4" :accept="$videoAccept" />
@@ -300,48 +274,13 @@
   }
 })();
 
-// ── Image previews ────────────────────────────────────────────
-(function () {
-  function attachPreview(inputId, containerId) {
-    var input = document.getElementById(inputId);
-    var container = document.getElementById(containerId);
-    if (!input || !container) return;
-    input.addEventListener('change', function () {
-      container.innerHTML = '';
-      Array.from(input.files).forEach(function (file) {
-        if (!file.type.startsWith('image/')) return;
-        var reader = new FileReader();
-        reader.onload = function (e) {
-          var wrap = document.createElement('div');
-          wrap.className = 'relative';
-          var img = document.createElement('img');
-          img.src = e.target.result;
-          img.className = 'h-24 w-auto rounded-lg border border-line object-cover';
-          var name = document.createElement('p');
-          name.className = 'mt-1 max-w-[96px] truncate text-[10px] text-muted';
-          name.textContent = file.name;
-          wrap.appendChild(img);
-          wrap.appendChild(name);
-          container.appendChild(wrap);
-        };
-        reader.readAsDataURL(file);
-      });
-    });
-  }
-
-  attachPreview('edit-thumbnail', 'edit-thumbnail-preview');
-  attachPreview('edit-posters-input', 'edit-posters-preview');
-})();
-
 // ── Alpine components ─────────────────────────────────────────
 document.addEventListener('alpine:init', function () {
   Alpine.data('movieVideoReplace', function (cfg) {
     return Object.assign(window.uploadMixin(cfg), {
-      open: false,
       tab: 'upload',
       fileName: 'MP4, WebM, OGG, MKV',
       dragging: false,
-      get submitLabel() { return this.tab === 'url' ? 'Save URL' : 'Upload'; },
       upload: function (form) { this.beginUpload(form, { optional: this.tab === 'url' }); },
       drop: function (e) {
         this.dragging = false;
@@ -349,8 +288,7 @@ document.addEventListener('alpine:init', function () {
         if (!files.length) return;
         if (this.$refs.videoInput) { this.$refs.videoInput.files = files; }
         this.fileName = files[0].name;
-        // Dropping anywhere on the Video card opens the upload panel with the file ready to send.
-        this.open = true;
+        // Dropping anywhere on the Video card selects the file and switches to the upload tab.
         this.tab = 'upload';
       }
     });

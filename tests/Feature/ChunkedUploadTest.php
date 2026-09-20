@@ -126,3 +126,52 @@ it('lets an admin create a movie and a series without any video or trailer', fun
     expect(App\Models\Movie::where('title', 'Bare')->first()->video_path)->toBeNull()
         ->and(App\Models\Series::where('title', 'Bare show')->exists())->toBeTrue();
 });
+
+it('keeps one list of posters with a main one that mirrors the thumbnail', function () {
+    Illuminate\Support\Facades\Storage::fake('public');
+    $admin = chunkAdmin();
+
+    $this->actingAs($admin)->post('/admin/movies', [
+        'title' => 'Art', 'description' => 'd', 'status' => 'hidden', 'main_poster' => 'n1',
+        'posters' => [Illuminate\Http\UploadedFile::fake()->image('a.jpg'), Illuminate\Http\UploadedFile::fake()->image('b.jpg')],
+    ])->assertRedirect();
+
+    $movie = App\Models\Movie::where('title', 'Art')->firstOrFail();
+    $posters = $movie->posters()->orderBy('sort_order')->get();
+    expect($posters)->toHaveCount(2)
+        ->and($posters[1]->is_main)->toBeTrue()->and($posters[0]->is_main)->toBeFalse()
+        ->and($movie->thumbnail)->toBe($posters[1]->path);
+
+    // Switch main to the first, drop the second, add a third.
+    $this->actingAs($admin)->put(route('admin.movies.update', $movie), [
+        'title' => 'Art', 'description' => 'd', 'status' => 'hidden', 'main_poster' => 'e' . $posters[0]->id,
+        'remove_posters' => [$posters[1]->id], 'posters' => [Illuminate\Http\UploadedFile::fake()->image('c.jpg')],
+    ])->assertRedirect();
+
+    $movie->refresh();
+    expect($movie->posters()->count())->toBe(2)
+        ->and($movie->posters()->where('is_main', true)->count())->toBe(1)
+        ->and($movie->thumbnail)->toBe($posters[0]->path);
+
+    // Removing the main poster promotes another.
+    $this->actingAs($admin)->put(route('admin.movies.update', $movie), [
+        'title' => 'Art', 'description' => 'd', 'status' => 'hidden', 'remove_posters' => [$posters[0]->id],
+    ])->assertRedirect();
+    expect($movie->fresh()->posters()->where('is_main', true)->count())->toBe(1)
+        ->and($movie->fresh()->thumbnail)->not->toBe($posters[0]->path);
+});
+
+it('renders the movie and series edit pages, including a title with an apostrophe', function () {
+    $admin = chunkAdmin();
+
+    $movie  = App\Models\Movie::create(['title' => "Ocean's Eleven", 'description' => 'd', 'status' => 'hidden']);
+    $series = App\Models\Series::create(['title' => "Grey's Anatomy", 'description' => 'd', 'status' => 'hidden']);
+    $season = $series->seasons()->create(['season_number' => 1]);
+    $season->episodes()->create(['episode_number' => 1, 'title' => 'Pilot']);
+
+    $this->actingAs($admin)->get(route('admin.movies.edit', $movie))->assertOk()->assertSee('movieVideoReplace', false);
+    $this->actingAs($admin)->get(route('admin.series.edit', $series))->assertOk()->assertSee('seriesVideoReplace', false);
+    $this->actingAs($admin)->get(route('admin.movies.create'))->assertOk();
+    $this->actingAs($admin)->get(route('admin.series.create'))->assertOk();
+    $this->actingAs($admin)->get(route('admin.movies.index'))->assertOk();
+});
