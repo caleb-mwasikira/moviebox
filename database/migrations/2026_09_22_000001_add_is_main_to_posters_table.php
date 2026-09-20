@@ -9,9 +9,12 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('posters', function (Blueprint $table) {
-            $table->boolean('is_main')->default(false)->after('sort_order');
-        });
+        // MySQL can't roll back DDL, so a run that failed after this point must be safe to repeat.
+        if (! Schema::hasColumn('posters', 'is_main')) {
+            Schema::table('posters', function (Blueprint $table) {
+                $table->boolean('is_main')->default(false)->after('sort_order');
+            });
+        }
 
         // Artwork is now one list of posters with one marked as main. Existing thumbnails become
         // posters (the `thumbnail` column stays as a copy of the main poster's path for fast lookups).
@@ -23,7 +26,7 @@ return new class extends Migration
                 if (! $existing) {
                     $id = DB::table('posters')->insertGetId([
                         'posterable_type' => $type, 'posterable_id' => $row->id, 'path' => $row->thumbnail,
-                        'sort_order' => -1, 'created_at' => now(), 'updated_at' => now(),
+                        'sort_order' => 0, 'created_at' => now(), 'updated_at' => now(),
                     ]);
                 } else {
                     $id = $existing->id;
@@ -36,8 +39,10 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('posters', function (Blueprint $table) {
-            $table->dropColumn('is_main');
-        });
+        if (Schema::hasColumn('posters', 'is_main')) {
+            Schema::table('posters', function (Blueprint $table) {
+                $table->dropColumn('is_main');
+            });
+        }
     }
 };

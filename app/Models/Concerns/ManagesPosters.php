@@ -59,7 +59,7 @@ trait ManagesPosters
     public function ensureThumbnailIsPoster(): void
     {
         if ($this->thumbnail && ! $this->posters()->where('path', $this->thumbnail)->exists()) {
-            $this->posters()->create(['path' => $this->thumbnail, 'sort_order' => -1, 'is_main' => ! $this->posters()->where('is_main', true)->exists()]);
+            $this->posters()->create(['path' => $this->thumbnail, 'sort_order' => 0, 'is_main' => ! $this->posters()->where('is_main', true)->exists()]);
         }
     }
 }
